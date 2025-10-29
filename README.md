@@ -78,7 +78,7 @@ Desenvolvedor independente apaixonado por IA e jogos estratégicos.
 > “Cada jogada é um cálculo. Cada vitória, uma evolução.”
 
 🔗 [GitHub](https://github.com/Paulo968)  
-📧 paulo.zaqueu@apagricola.com.br  
+📧 paulozaqueu3@gmail.com  
 
 ---
 
@@ -151,7 +151,7 @@ Independent developer passionate about AI, creativity and strategic gameplay.
 > “Every move is a calculation. Every victory, an evolution.”
 
 🔗 [GitHub](https://github.com/Paulo968)  
-📧 paulo.zaqueu@apagricola.com.br  
+📧 paulozaqueu3@gmail.com  
 
 ---
 
