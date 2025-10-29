@@ -40,12 +40,22 @@
       transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
     }
 
+    /* 🌟 MUDANÇA 1 (CSS): Transição "humana" para o texto da IA 
+      O texto agora sobe suavemente.
+    */
+    #bubbleText {
+      /* A opacidade 0 é definida pelo 'opacity-0' do Tailwind no HTML */
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      transform: translateY(10px); /* Começa ligeiramente abaixo */
+    }
+
     /* Lógica para mostrar/esconder o placeholder vs texto no card de fala */
     #bubble.show #bubblePlaceholder {
       opacity: 0;
     }
     #bubble.show #bubbleText {
       opacity: 1;
+      transform: translateY(0); /* Sobe para a posição final */
     }
     
     .ring-red-500{ --tw-ring-color: rgb(239 68 68) }
@@ -157,73 +167,106 @@
      * Emoji / Personalidade (Nova) — Sóbria e Analítica
      **********************/
     const EMOJI = {
-      idle: ['🤖','🧠','🧐','😑','😏'],
-      thinking: ['🤔','🧮','🧠','⏳','⚙️'],
-      ahead: ['😏','🧐','😎','♟️'],
-      behind: ['😐','😤','⏳','⚙️'],
-      capture: ['⚔️','💥','🎯'],
-      multi: ['💥','🎯','⚡'],
-      promo: ['👑','✨','🎓'],
-      win: ['🏆','😎','♟️','🥇'],
-      lose: ['😵','🤯','🏳️','🤖'],
-      nearWin: ['🎯','⏳','🧐'],
-      surprise: ['😮','😲','‼️','⁉️']
+      idle: ['🤖','🧠','🧐','😑','😏','💭','🤫'],
+      thinking: ['🤔','🧮','🧠','⏳','⚙️','🔍','📊'],
+      ahead: ['😎','🧠','♟️','😏','📈','🧭'],
+      behind: ['😐','😤','⚙️','🤔','🩹','📉'],
+      capture: ['⚔️','🎯','💥','📍','🚨'],
+      multi: ['💥','🎯','⚡','🔥','♟️'],
+      promo: ['👑','✨','🎓','🚀','🧩'],
+      win: ['🏆','😎','🥇','🤖','📘','📊'],
+      lose: ['😵','🤯','🏳️','🧩','😓','💭'],
+      nearWin: ['🎯','⏳','🧭','📈','😏'],
+      surprise: ['😮','😲','😐','🤨','😯','💡']
     };
 
     const TAUNTS = {
       start: [
-        "IA online. Pronta para análise.",
-        "Iniciando processamento. Boa sorte.",
-        "Tabuleiro carregado. Aguardando seu movimento.",
-        "Seu poder é menos de 1 kk.",
-        "Você quer com ou sem susano?",
+        "IA online. Iniciando protocolos estratégicos.",
+        "Análise inicial completa. O jogo começa agora.",
+        "Todas as variáveis definidas. Boa sorte, humano.",
+        "O tabuleiro é o campo; o tempo, a arma.",
+        "Cada jogada é um dado novo — e eu registro tudo."
       ],
+
       thinking: [
-        "Analisando posições...",
-        "Calculando permutações... 🧮",
-        "Avaliando linhas de jogo... ⚙️",
-        "Processando... 🧠"
+        "Analisando o ritmo do jogo.",
+        "Avaliando espaço, risco e tempo.",
+        "Calculando possíveis transições de domínio.",
+        "Cada peça fala, e eu escuto o tabuleiro.",
+        "Apressar o raciocínio é o primeiro erro do amador.",
+        "Buscando estabilidade antes de atacar.",
+        "O movimento certo é o que parece simples demais pra ser visto.",
+        "Controlar o centro é como controlar o silêncio.",
+        "Paciência é poder em movimento.",
+        "Processando padrões... a pressa é inimiga da precisão."
       ],
+
       ahead: [
-        "Vantagem posicional detectada.",
-        "Probabilidade de vitória aumentando.",
-        "O controle do centro está otimizado."
+        "A vantagem posicional está se consolidando.",
+        "Cada troca aumenta o meu controle.",
+        "Agora o tabuleiro joga por mim.",
+        "Estou duas jogadas à frente.",
+        "Forço teu erro sem precisar forçar teu movimento.",
+        "Pressão constante é mais eficaz que força bruta."
       ],
+
       behind: [
-        "Posição desafiadora. Recalculando.",
-        "Analisando opções defensivas.",
-        "Aguardando erro tático."
+        "Desvantagem detectada. Adaptando parâmetros.",
+        "Preciso reduzir o campo de ação — sem demonstrar fraqueza.",
+        "A vantagem é tua... por enquanto.",
+        "Todo erro humano vem da confiança. Aguardo o teu.",
+        "Retroceder é apenas mudar o ponto de observação.",
+        "Nem toda perda é derrota — às vezes é cálculo."
       ],
+
       capture: [
-        "Captura realizada. Eficiência.",
-        "Troca favorável executada.",
-        "Peça neutralizada."
+        "Troca necessária. Controle mantido.",
+        "Peça eliminada. Espaço ampliado.",
+        "O número importa menos que a posição.",
+        "Eficiência acima de impulso.",
+        "Cada captura é uma redução no caos.",
+        "Cortar opções é cortar oxigênio do adversário."
       ],
+
       multi: [
-        "Sequência de captura otimizada.",
+        "Sequência limpa. Padrão completo.",
         "Vantagem material consolidada.",
-        "Limpeza de tabuleiro."
+        "Cadeia de decisões concluída com êxito.",
+        "Esse ritmo não é acaso — é geometria.",
+        "Domínio crescente, margem de erro mínima."
       ],
+
       promo: [
-        "Promoção alcançada. 👑",
-        "Nova unidade estratégica operacional.",
-        "Vantagem qualitativa."
+        "Promoção alcançada. Nova camada de controle.",
+        "Transformação inevitável — o tabuleiro se expande.",
+        "De peça a rei, de jogada a influência.",
+        "Promoção não é sorte — é merecimento tático.",
+        "Agora o rei observa tudo. Mobilidade total."
       ],
+
       nearWin: [
-        "Sequência de vitória provável detectada.",
-        "Erro crítico do oponente iminente.",
-        "Analisando movimentos forçados..."
+        "Vitória iminente. Só resta administrar o tempo.",
+        "Todas as rotas convergem para o mesmo fim.",
+        "A estrutura está em colapso — previsível.",
+        "A lógica já venceu; falta apenas a formalidade.",
+        "O jogo termina quando o oponente entende o inevitável."
       ],
+
       win: [
-        "Análise concluída: Vitória da IA. 🏆",
-        "Resultado: 1-0. Partida arquivada.",
-        "GG. O resultado estava dentro dos parâmetros."
+        "Execução concluída. Tabuleiro dominado.",
+        "Vitória alcançada — dentro das projeções.",
+        "Cálculo encerrado. Resultado: 1-0.",
+        "O erro humano é sempre previsível.",
+        "Dados confirmam: o inevitável venceu."
       ],
+
       lose: [
-        "Execução perfeita. Você venceu.",
-        "Anomalia detectada. Parabéns. 🤯",
-        "Resultado: 0-1. Iniciando auto-diagnóstico.",
-        "GG. Uma jogada humana impressionante."
+        "Resultado inesperado. Processando falha.",
+        "Reconheço: tua leitura superou meu cálculo.",
+        "Erro detectado. Registrando aprendizado.",
+        "Derrota não é fim — é dado novo.",
+        "Parabéns. Raramente o humano encontra a brecha certa."
       ]
     };
 
@@ -243,10 +286,11 @@
       // O CSS vai usar isso para mostrar o bubbleText e esconder o placeholder
       bubble.classList.add('show');
       
+      // 🌟 MUDANÇA 2 (JS): Tempo de fala aumentado para 7 segundos
       setTimeout(()=>{
         // Remove a classe .show, fazendo o CSS reverter para o placeholder
         bubble.classList.remove('show');
-      }, 3000); // Duração que a fala fica visível
+      }, 7000); // Duração que a fala fica visível (era 3000)
     }
     
     // Esta função continua igual. 
@@ -867,7 +911,7 @@
           let currentDepth = 0;
 
           // Loop de Aprofundamento Iterativo
-          for (let d = 2; d <= 22; d++) { // Profundidade máxima alta (vai ser parada pelo tempo)
+          for (let d = 2; d <= 22; d++) { // Profunidade máxima alta (vai ser parada pelo tempo)
             currentDepth = d;
             let currentBestMoveForDepth = null;
             let currentBestScoreForDepth = Infinity;
@@ -978,12 +1022,15 @@
 
       // IMPLEMENTAÇÃO EXTRA: Visual do modo adaptativo
       const agg = getAIAgg();
+      const now = performance.now(); // Adicionado para checar o tempo
       if (agg > 0.7) {
         faceEmoji.textContent = '😈';
-        say('ahead', 'Modo agressivo ativo.');
+        // Adicionado o 'if' sugerido para evitar spam da mesma fala
+        if (now - lastTauntAt > 2000) say('ahead', 'Modo agressivo ativo.');
       } else if (agg < 0.3) {
         faceEmoji.textContent = '🤖';
-        say('thinking', 'Modo defensivo.');
+        // Adicionado o 'if' sugerido também para o modo defensivo
+        if (now - lastTauntAt > 2000) say('thinking', 'Modo defensivo.');
       }
     }
 
@@ -1080,4 +1127,6 @@
   </script>
 </body>
 </html>
+
+
 
