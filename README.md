@@ -1,6 +1,7 @@
 # 🤖♟️ Damas vs IA — Nível Grão-Mestre Reflexiva
 IA adaptativa com aprendizado, reflexões e emoções em tempo real.  
-🎮 **[Jogar Agora]([https://teu-link-no-netlify-aqui.app](https://paulo968.github.io/damas-ia-graomestre/))**
+
+🎮 **[Jogar Agora](https://paulo968.github.io/damas-ia-graomestre/)**
 
 ---
 
