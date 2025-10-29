@@ -1,11 +1,12 @@
 # 🤖♟️ Damas vs IA — Nível Grão-Mestre Reflexiva
 IA adaptativa com aprendizado, reflexões e emoções em tempo real.  
-🎮 **[Jogar Agora](https://teu-link-no-netlify-aqui.app)**
+🎮 **[Jogar Agora]([https://teu-link-no-netlify-aqui.app](https://paulo968.github.io/damas-ia-graomestre/))**
 
 ---
 
-## 🖼️ Capa do Projeto
-*(adicione aqui uma imagem do tabuleiro ou print do jogo, ex: `assets/capa.png`)*
+<p align="center">
+  <img src="capa.png" alt="Capa do Projeto" width="720">
+</p>
 
 ---
 
