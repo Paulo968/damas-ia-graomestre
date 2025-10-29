@@ -487,89 +487,91 @@
       }
     }
 
-
+    // ✅ FUNÇÃO CORRIGIDA COM OS SETTIMEOUTS
     function onGameOver(winner){
-      current=null;
-      // 💬 Pós-jogo: Adicionadas variáveis para análise
+      current = null;
       const { w, r } = countPieces();
       const diff = r - w;
 
-      if(winner===RED){
-        stats.losses++; localStorage.setItem('damasStats', JSON.stringify(stats));
+      if (winner === RED) {
+        stats.losses++;
+        localStorage.setItem('damasStats', JSON.stringify(stats));
         elOverlay.innerHTML = "🤖♟️ <br/> IA VENCEU. Fim de jogo.";
-        setFace('win',{ahead:true}); say('win');
-        sLose.play().catch(()=>{});
+        setFace('win', { ahead: true });
+        say('win');
+        sLose.play().catch(() => {});
 
         // 💬 Pós-jogo: provocações e análises técnicas (IA VENCEU)
-        if (diff > 5) {
-          say([
-            "Domínio completo. Tua defesa foi lenta demais.",
-            "Essa diferença de peças mostra o controle do ritmo.",
-            "Vitória tática — o centro foi meu desde o início."
-          ]);
-        } else if (diff >= 2) {
-          say([
-            "Equilíbrio até o meio-jogo, mas minha leitura foi superior.",
-            "Tuas trocas abriram diagonais que eu precisava.",
-            "O jogo estava parelho, até tua pressa entregar espaço."
-          ]);
-        } else {
-          say([
-            "Partida disputada. Um erro e a vantagem virou avalanche.",
-            "Um cálculo adiantado te surpreendeu — precisão vence impulso.",
-            "Pequenas brechas definem grandes vitórias."
-          ]);
-        }
-        // Comentário final estilo 'coach'
-        setTimeout(() => say("Reiniciando protocolos para revanche..."), 6000);
+        setTimeout(() => {
+          if (diff > 5) {
+            say([
+              "Domínio completo. Tua defesa foi lenta demais.",
+              "Essa diferença de peças mostra o controle do ritmo.",
+              "Vitória tática — o centro foi meu desde o início."
+            ]);
+          } else if (diff >= 2) {
+            say([
+              "Equilíbrio até o meio-jogo, mas minha leitura foi superior.",
+              "Tuas trocas abriram diagonais que eu precisava.",
+              "O jogo estava parelho, até tua pressa entregar espaço."
+            ]);
+          } else {
+            say([
+              "Partida disputada. Um erro e a vantagem virou avalanche.",
+              "Um cálculo adiantado te surpreendeu — precisão vence impulso.",
+              "Pequenas brechas definem grandes vitórias."
+            ]);
+          }
+
+          setTimeout(() => say("Reiniciando protocolos para revanche..."), 5000);
+        }, 1500);
 
       } else {
-        stats.wins++; localStorage.setItem('damasStats', JSON.stringify(stats));
+        stats.wins++;
+        localStorage.setItem('damasStats', JSON.stringify(stats));
         elOverlay.innerHTML = "🏆👏 <br/> VOCÊ VENCEU! Parabéns.";
-        setFace('lose',{behind:true,shake:true}); say('lose');
-        sWin.play().catch(()=>{});
+        setFace('lose', { behind: true, shake: true });
+        say('lose');
+        sWin.play().catch(() => {});
 
         // 💬 Pós-jogo: provocações e análises técnicas (JOGADOR VENCEU)
-        if (diff < -5) {
-          say([
-            "Derrota ampla. Teu domínio foi técnico e frio.",
-            "Perdi o centro cedo demais, e você aproveitou.",
-            "Errei na leitura das diagonais longas."
-          ]);
-        } else if (diff <= -2) {
-          say([
-            "Boa partida. Tuas trocas foram mais eficientes que o previsto.",
-            "Teus avanços foram precisos — o controle do tempo foi teu.",
-            "Subestimei tua mobilidade nas colunas laterais."
-          ]);
-        } else {
-          say([
-            "Margem pequena, mas tua paciência venceu.",
-            "Equilíbrio técnico — tua última jogada foi cirúrgica.",
-            "Uma vitória justa. Anotado para o aprendizado."
-          ]);
-        }
-        setTimeout(() => say("Reajustando parâmetros... pronto para a revanche."), 6000);
+        setTimeout(() => {
+          if (diff < -5) {
+            say([
+              "Derrota ampla. Teu domínio foi técnico e frio.",
+              "Perdi o centro cedo demais, e você aproveitou.",
+              "Errei na leitura das diagonais longas."
+            ]);
+          } else if (diff <= -2) {
+            say([
+              "Boa partida. Tuas trocas foram mais eficientes que o previsto.",
+              "Teus avanços foram precisos — o controle do tempo foi teu.",
+              "Subestimei tua mobilidade nas colunas laterais."
+            ]);
+          } else {
+            say([
+              "Margem pequena, mas tua paciência venceu.",
+              "Equilíbrio técnico — tua última jogada foi cirúrgica.",
+              "Uma vitória justa. Anotado para o aprendizado."
+            ]);
+          }
+
+          setTimeout(() => say("Reajustando parâmetros... pronto para a revanche."), 5000);
+        }, 1500);
       }
-      
+
       // IMPLEMENTAÇÃO 2: IA "aprende" com o resultado
-      if(winner===RED){
-        updateAIProfile('win');
-      } else {
-        updateAIProfile('lose');
-      }
+      updateAIProfile(winner === RED ? 'win' : 'lose');
 
       // Mostra a tela de fim de jogo (overlay)
       elOverlay.classList.add('show');
-      
+
       // 🎬 Efeito de transição suave no final
-      // 1️⃣ Mantém a tela visível por 3s para o jogador ver o resultado
       setTimeout(() => {
         elOverlay.style.transition = 'opacity 1s ease';
-        elOverlay.style.opacity = '0'; // Começa a desaparecer suavemente
+        elOverlay.style.opacity = '0';
       }, 3000);
 
-      // 2️⃣ Após o fade, reinicia o jogo e restaura o fundo
       setTimeout(() => {
         elOverlay.classList.remove('show');
         elOverlay.style.opacity = '';
@@ -1201,5 +1203,4 @@
   </script>
 </body>
 </html>
-
 
