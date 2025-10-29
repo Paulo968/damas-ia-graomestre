@@ -57,6 +57,12 @@
       z-index:50; text-align:center; padding: 1rem;
     }
     .overlay.show{ opacity:1; pointer-events:auto }
+
+    /* Estilos para o novo modal de manual */
+    /* Adiciona transição para o painel */
+    .manual-panel {
+      transition: opacity 300ms ease-out, transform 300ms ease-out;
+    }
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
@@ -760,7 +766,7 @@
         
         const TT = new Map(); // Tabela de Transposição (cache)
 
-        // *** FUNÇÃO depthByPieces FOI REMOVIDA ***
+        // *** FUNÇÃO depthByPieces FOI REMOIDA ***
 
         // Algoritmo Minimax (inalterado, continua sendo o motor)
         function minimax(b, depth, isMax, alpha, beta){
@@ -987,6 +993,89 @@
     document.addEventListener('DOMContentLoaded', ()=>{
       initWorker();
       initBoard();
+    });
+  </script>
+
+  <!-- 🔹 BOTÃO E MODAL DE INSTRUÇÕES COM ANIMAÇÃO FUTURISTA -->
+  <button id="btnManual" 
+    class="fixed top-3 right-3 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 backdrop-blur-sm border border-slate-500">
+    ❓ Instruções
+  </button>
+  
+  <!-- 🔸 Modal -->
+  <div id="manualModal" 
+    class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+    
+    <div class="manual-panel bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 border border-cyan-400/40 
+                shadow-[0_0_25px_rgba(56,189,248,0.5)] p-6 rounded-2xl w-[90%] max-w-lg relative overflow-hidden transform scale-95 opacity-0">
+      
+      <!-- Luz de fundo animada -->
+      <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 via-transparent to-blue-500/10 blur-3xl"></div>
+      
+      <h2 class="text-2xl font-bold mb-3 text-center text-cyan-300 drop-shadow-lg">
+        📘 Manual de Instruções
+      </h2>
+
+      <div class="text-sm leading-relaxed space-y-2 max-h-[60vh] overflow-y-auto relative z-10 px-1">
+        <p><strong>🎯 Objetivo:</strong> Capturar todas as peças do inimigo ou deixá-lo sem jogadas.</p>
+        <p><strong>🎮 Movimentos:</strong> Clique em uma peça branca para selecionar e escolha a casa iluminada para mover.</p>
+        <p><strong>⚔️ Capturas:</strong> Pule sobre as peças vermelhas para capturá-las. Capturas múltiplas são possíveis.</p>
+        <p><strong>👑 Promoção:</strong> Ao chegar na linha final, a peça vira Dama e pode mover-se em todas as direções.</p>
+        <p><strong>🤖 Inteligência Artificial:</strong> A IA pensa, reage e evolui — mudando de estilo conforme as partidas.</p>
+        <p><strong>💬 Modo Reflexivo:</strong> A IA explica seus movimentos e reage emocionalmente às jogadas.</p>
+        <p><strong>🔊 Sons:</strong> O jogo possui sons de captura, vitória e derrota.</p>
+        <p><strong>🏁 Vitória:</strong> Vence quem deixar o oponente sem movimentos ou sem peças.</p>
+        <p><strong>💡 Dica:</strong> Controle o centro e evite peças isoladas. Observe o comportamento da IA — ela aprende com você.</p>
+      </div>
+
+      <button id="closeManual" 
+        class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
+        Fechar
+      </button>
+    </div>
+  </div>
+  
+  <!-- 🔊 Som de interface -->
+  <audio id="openSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+  <audio id="closeSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" preload="auto"></audio>
+  
+  <!-- 🔹 Script de Controle + Animação -->
+  <script>
+    const btnManual = document.getElementById('btnManual');
+    const manualModal = document.getElementById('manualModal');
+    // Assegura que o painel é selecionado corretamente dentro do modal
+    const panel = manualModal.querySelector('.manual-panel'); 
+    const closeManual = document.getElementById('closeManual');
+    const openSound = document.getElementById('openSound');
+    const closeSound = document.getElementById('closeSound');
+
+    btnManual.addEventListener('click', () => {
+      manualModal.classList.remove('hidden');
+      openSound.play().catch(()=>{}); // Toca som de abrir
+      setTimeout(() => {
+        // Aplica estilos de entrada
+        panel.style.opacity = '1';
+        panel.style.transform = 'scale(1)';
+      }, 20); // Pequeno delay para garantir que a transição CSS ocorra
+    });
+
+    function closeModal() {
+      closeSound.play().catch(()=>{}); // Toca som de fechar
+      // Aplica estilos de saída
+      panel.style.opacity = '0';
+      panel.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        manualModal.classList.add('hidden');
+      }, 250); // Deve corresponder à duração da transição (ou um pouco mais)
+    }
+
+    closeManual.addEventListener('click', closeModal);
+    
+    // Opcional: Fechar clicando fora do painel
+    manualModal.addEventListener('click', (e) => {
+      if (e.target === manualModal) {
+        closeModal();
+      }
     });
   </script>
 </body>
