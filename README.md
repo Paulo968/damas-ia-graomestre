@@ -50,10 +50,9 @@ for (let d = 2; d <= 22; d++) {
 Esse loop faz a IA pensar até 1 segundo por jogada, prevendo de 2 a 22 camadas à frente —
 mantendo o raciocínio profundo e a resposta instantânea.
 
-📊 Exemplo de Análise Pós-Partida
+📊 Análise Pós-Partida
 Após cada partida, a IA gera um feedback técnico automático, avaliando o desempenho com base em estratégia, controle e ritmo de jogo.
 
-<p align="center"> <img src="https://raw.githubusercontent.com/Paulo968/damas-ia-graomestre/master/1.png" alt="Análise da Partida — Exemplo" width="420" style="border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.25);"> </p>
 🧠 A análise identifica:
 
 Oscilações de vantagem (instabilidade estratégica);
@@ -168,10 +167,9 @@ Applies evolutionary heuristics focused on position, mobility, and board control
 "Promotion achieved. Range supremacy guaranteed."
 "You fell into my trap... from the very start."
 
-📊 Example of Post-Match Analysis
+📊 Post-Match Analysis
 After each match, the AI produces a technical feedback summary, evaluating performance, control, and rhythm.
 
-<p align="center"> <img src="https://raw.githubusercontent.com/Paulo968/damas-ia-graomestre/master/1.png" alt="Match Analysis Example" width="420" style="border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.25);"> </p>
 🧠 The analysis identifies:
 
 Advantage swings (strategic instability);
