@@ -53,7 +53,7 @@ mantendo o raciocínio profundo e a resposta instantânea.
 📊 Exemplo de Análise Pós-Partida
 Após cada partida, a IA gera um feedback técnico automático, avaliando o desempenho com base em estratégia, controle e ritmo de jogo.
 
-<p align="center"> <img src="https://raw.githubusercontent.com/Paulo968/damas-ia-graomestre/main/1.png" alt="Análise da Partida — Exemplo" width="420" style="border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.25);"> </p>
+<p align="center"> <!-- Caminho RELATIVO: funciona em qualquer branch porque a imagem está na raiz --> <img src="1.png" alt="Análise da Partida — Exemplo" width="420" style="border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.25);"> </p>
 🧠 A análise identifica:
 
 Oscilações de vantagem (instabilidade estratégica);
@@ -171,7 +171,7 @@ Applies evolutionary heuristics focused on position, mobility, and board control
 📊 Example of Post-Match Analysis
 After each match, the AI produces a technical feedback summary, evaluating performance, control, and rhythm.
 
-<p align="center"> <img src="https://raw.githubusercontent.com/Paulo968/damas-ia-graomestre/main/1.png" alt="Match Analysis Example" width="420" style="border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.25);"> </p>
+<p align="center"> <!-- Relative path as well --> <img src="1.png" alt="Match Analysis Example" width="420" style="border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.25);"> </p>
 🧠 The analysis identifies:
 
 Advantage swings (strategic instability);
@@ -208,3 +208,6 @@ Independent developer passionate about AI and strategic gameplay.
 🧬 License
 This project is open source under the MIT License.
 Feel free to study, modify, and improve it — just keep the credits.
+
+yaml
+Copiar código
