@@ -56,7 +56,7 @@ mantendo o raciocínio profundo e a resposta instantânea.
 📊 Exemplo de Análise Pós-Partida
 Após cada partida, a IA gera um feedback técnico automático, avaliando o desempenho com base em estratégia, controle e ritmo de jogo.
 
-<p align="center"> <img src="1.png" alt="Análise da Partida — Exemplo" width="420"> </p>
+<p align="center"> <img src="https://github.com/Paulo968/damas-ia-graomestre/blob/main/1.png?raw=true" alt="Análise da Partida — Exemplo" width="420"> </p>
 🧠 A análise identifica:
 
 Oscilações de vantagem (instabilidade estratégica);
@@ -192,7 +192,7 @@ This allows the AI to think up to 1 second per move, exploring 2–22 layers ahe
 📊 Example of Post-Match Analysis
 After each match, the AI produces a technical feedback summary, evaluating performance, control, and rhythm.
 
-<p align="center"> <img src="1.png" alt="Match Analysis Example" width="420"> </p>
+<p align="center"> <img src="https://github.com/Paulo968/damas-ia-graomestre/blob/main/1.png?raw=true" alt="Match Analysis Example" width="420"> </p>
 🧠 The analysis identifies:
 
 Advantage swings (strategic instability);
@@ -208,38 +208,7 @@ Personalized improvement tips.
 • Strong material advantage — solid board control.
 • Watch AI’s center control — avoid retreating too early in openings.
 
-🧮 Board Evaluation
-The evalBoard() function scores the board by:
-
-Center control
-
-Piece mobility
-
-Promotion potential
-
-Mutual protection
-
-Game phase (opening, mid, end)
-
-Adaptive aggressiveness
-
-🔁 Learning Between Matches
-The AI dynamically adjusts its behavior:
-
-js
-Copiar código
-if(result === 'win')  aiProfile.agg = Math.max(0.1, aiProfile.agg - 0.05);
-if(result === 'lose') aiProfile.agg = Math.min(0.9, aiProfile.agg + 0.1);
-It becomes calmer when winning and bolder when losing — simulating symbolic learning.
-
-🤖 Reflections and Reactions
-During play, the AI displays contextual reflections:
-
-"Analyzing tempo..."
-"Positional advantage consolidating."
-"Unexpected result. Adjusting strategy."
-
-⚙️ Technologies Used
+🧩 Technologies Used
 Technology	Purpose
 HTML5 / TailwindCSS	Modern and responsive UI
 JavaScript (ES6)	Core logic and AI engine
@@ -247,26 +216,6 @@ Web Worker API	Parallel computation
 Local Storage	Persistent adaptive learning
 Audio API	Game effects
 Dynamic Emotions	AI expressions and reflections
-
-🧩 Advanced AI Features
-🧮 Zobrist Hashing (planned) — collision-free caching
-
-🧠 Self-Play (experimental) — AI training against itself
-
-⏱️ Dynamic Time Allocation — variable thinking time
-
-🧬 Neural Evaluation (future) — lightweight neural heuristic
-
-🏆 Highlights
-⚡ Ultra-fast and adaptive AI
-
-🧠 Self-tuning difficulty
-
-💬 Reflective mode with intelligent dialogue
-
-👑 Animated promotions
-
-💥 Realistic sound and visual effects
 
 🧑‍💻 Author
 Paulo Zaqueu
