@@ -68,9 +68,9 @@
     }
     .overlay.show{ opacity:1; pointer-events:auto }
 
-    /* Estilos para o novo modal de manual */
+    /* Estilos para o novo modal de manual E ANÁLISE */
     /* Adiciona transição para o painel */
-    .manual-panel {
+    .manual-panel, .analysis-panel {
       transition: opacity 300ms ease-out, transform 300ms ease-out;
     }
 
@@ -138,6 +138,8 @@
     let selected = null;      // {row,col,el}
     let legal = [];
     let stats = JSON.parse(localStorage.getItem('damasStats') || '{"wins":0,"losses":0}');
+    let matchHistory = JSON.parse(localStorage.getItem('matchHistory') || '[]'); // 🧠 ETAPA 1: Histórico de partidas salvo
+    let gameHistory = []; // 🧠 Histórico da partida atual
     
     /**********************
      * IA Adaptativa — Perfil Dinâmico (IMPLEMENTAÇÃO 1)
@@ -287,7 +289,8 @@
       lastTauntAt = now;
 
       const pick = (arr)=>arr[Math.floor(Math.random()*arr.length)];
-      const text = (Array.isArray(group) ? pick(group) : pick(TAUNTS[group])) + (extra ? " " + extra : "");
+      // 🐞 CORREÇÃO: Adicionada verificação se 'group' é válido em TAUNTS
+      const text = (Array.isArray(group) ? pick(group) : (TAUNTS[group] ? pick(TAUNTS[group]) : group)) + (extra ? " " + extra : "");
       
       // Coloca o texto no span de texto
       bubbleText.textContent = text;
@@ -359,6 +362,9 @@
     }
 
     function initBoard(){
+      // 🧠 ETAPA 1 (Reset): Reinicia histórico da partida
+      gameHistory = []; 
+
       // 5️⃣ Limpeza de cache entre partidas
       if (worker) worker.postMessage({ resetCache: true });
 
@@ -447,6 +453,17 @@
         say('capture');
       }
 
+      // 🧠 ETAPA 2: Registrar jogada no histórico (ATUALIZADO)
+      const { w, r } = countPieces();
+      gameHistory.push({
+        player: current, // 'current' é o jogador que ACABOU de mover
+        move: mv,
+        white: w,
+        red: r,
+        diff: r - w, // vantagem da IA (positivo = IA à frente)
+        time: Date.now()
+      });
+
       promoteIfNeeded(to[0],to[1],pieceEl);
       clearSelect();
     }
@@ -487,7 +504,7 @@
       }
     }
 
-    // ✅ FUNÇÃO CORRIGIDA COM OS SETTIMEOUTS
+    // ✅ FUNÇÃO ONGAMEOVER (MODIFICADA PARA CHAMAR ANÁLISE)
     function onGameOver(winner){
       current = null;
       const { w, r } = countPieces();
@@ -522,8 +539,8 @@
               "Pequenas brechas definem grandes vitórias."
             ]);
           }
-
-          setTimeout(() => say("Reiniciando protocolos para revanche..."), 5000);
+          // 🐞 CORREÇÃO: Envolvido em array []
+          setTimeout(() => say(["Reiniciando protocolos para revanche..."]), 5000);
         }, 1500);
 
       } else {
@@ -555,31 +572,40 @@
               "Uma vitória justa. Anotado para o aprendizado."
             ]);
           }
-
-          setTimeout(() => say("Reajustando parâmetros... pronto para a revanche."), 5000);
+          // 🐞 CORREÇÃO: Envolvido em array []
+          setTimeout(() => say(["Reajustando parâmetros... pronto para a revanche."]), 5000);
         }, 1500);
       }
 
       // IMPLEMENTAÇÃO 2: IA "aprende" com o resultado
       updateAIProfile(winner === RED ? 'win' : 'lose');
 
+      // 🧠 ETAPA 4: Salva partida no histórico e Gera análise
+      matchHistory.push({ winner, date: new Date().toISOString(), moves: gameHistory });
+      if (matchHistory.length > 3) matchHistory.shift(); // mantém apenas as 3 últimas
+      localStorage.setItem('matchHistory', JSON.stringify(matchHistory));
+      
+      const feedback = analyzeMatch(gameHistory, winner);
+
       // Mostra a tela de fim de jogo (overlay)
       elOverlay.classList.add('show');
 
-      // 🎬 Efeito de transição suave no final
+      // 🎬 Efeito de transição: Mostra overlay, DEPOIS mostra análise
       setTimeout(() => {
         elOverlay.style.transition = 'opacity 1s ease';
-        elOverlay.style.opacity = '0';
-      }, 3000);
+        elOverlay.style.opacity = '0'; // Começa a desaparecer
+      }, 3000); // Mantém overlay por 3s
 
       setTimeout(() => {
         elOverlay.classList.remove('show');
         elOverlay.style.opacity = '';
-        document.body.style.background = '#0f172a';
-        initBoard();
-      }, 4500);
+        // Em vez de reiniciar, MOSTRA O MODAL DE ANÁLISE
+        openAnalysisModal(feedback);
+      }, 4000); // Mostra modal 1s após fade começar
     }
 
+    
+    /* 🐞 CORREÇÃO: Bloco de 'Geração de lances' reintroduzido */
     /**********************
      * Geração de lances
      **********************/
@@ -686,6 +712,12 @@
       }
       return scored.filter(s=>s.len===bestLen).map(s=>s.m);
     }
+    /* Fim do bloco reintroduzido */
+
+    
+    /* ❌ Bloco duplicado removido.
+    */
+
 
     /**********************
      * IA via Web Worker
@@ -1111,6 +1143,39 @@
     }
 
     /**********************
+     * 🧠 ETAPA 3: Função de Análise
+     **********************/
+    function analyzeMatch(history, winner) {
+      let tips = [];
+      if (history.length < 3) {
+        tips.push("Partida curta demais para análise detalhada.");
+      } else {
+        // 1️⃣ Mudanças de vantagem
+        let swings = 0;
+        for (let i = 1; i < history.length; i++) {
+          if (Math.abs(history[i].diff - history[i - 1].diff) >= 2) swings++;
+        }
+        if (swings > 2) tips.push("Muitas oscilações de vantagem — tente manter uma linha estratégica mais estável.");
+
+        // 2️⃣ Controle de material
+        const last = history[history.length - 1];
+        // Ajustado para usar constantes RED/WHITE
+        if (last.diff < 0 && winner === RED) tips.push("Perdeu mais peças do que o necessário — foque em trocas vantajosas.");
+        if (last.diff > 0 && winner === RED) tips.push("Boa vantagem material — controle sólido do tabuleiro!");
+
+        // 3️⃣ Duração e ritmo
+        if (history.length > 50) tips.push("Partida longa — considere encurtar trocas e forçar o avanço das damas.");
+        else if (history.length < 20) tips.push("Partida rápida — reveja aberturas e defesas iniciais.");
+
+        // 4️⃣ Dica genérica com base no vencedor
+        // Ajustado para usar constantes RED/WHITE
+        if (winner === WHITE) tips.push("Vitória estratégica! Continue priorizando o centro e as diagonais longas.");
+        else tips.push("Observe o controle de centro da IA — evitar recuar demais nas aberturas.");
+      }
+      return tips;
+    }
+
+    /**********************
      * Boot
      **********************/
     document.addEventListener('DOMContentLoaded', ()=>{
@@ -1125,7 +1190,7 @@
     ❓ Instruções
   </button>
   
-  <!-- 🔸 Modal -->
+  <!-- 🔸 Modal Manual -->
   <div id="manualModal" 
     class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
     
@@ -1157,6 +1222,29 @@
       </button>
     </div>
   </div>
+
+  <!-- 📊 ETAPA 5 (HTML): Modal de Análise Pós-Jogo -->
+  <div id="analysisModal" 
+    class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+    
+    <div class="analysis-panel bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 border border-cyan-400/40 
+                shadow-[0_0_25px_rgba(56,189,248,0.5)] p-6 rounded-2xl w-[90%] max-w-lg relative overflow-hidden transform scale-95 opacity-0">
+      
+      <h2 class="text-2xl font-bold mb-3 text-center text-cyan-300 drop-shadow-lg">
+        📊 Análise da Partida
+      </h2>
+
+      <!-- Conteúdo da análise será injetado aqui -->
+      <div id="analysisContent" class="text-sm leading-relaxed space-y-2 max-h-[60vh] overflow-y-auto relative z-10 px-1">
+        <!-- Ex: <p>• Muitas oscilações de vantagem...</p> -->
+      </div>
+
+      <button id="closeAnalysis" 
+        class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
+        Jogar Novamente
+      </button>
+    </div>
+  </div>
   
   <!-- 🔊 Som de interface -->
   <audio id="openSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
@@ -1164,9 +1252,9 @@
   
   <!-- 🔹 Script de Controle + Animação -->
   <script>
+    // --- Controle do Modal Manual ---
     const btnManual = document.getElementById('btnManual');
     const manualModal = document.getElementById('manualModal');
-    // Assegura que o painel é selecionado corretamente dentro do modal
     const panel = manualModal.querySelector('.manual-panel'); 
     const closeManual = document.getElementById('closeManual');
     const openSound = document.getElementById('openSound');
@@ -1174,33 +1262,69 @@
 
     btnManual.addEventListener('click', () => {
       manualModal.classList.remove('hidden');
-      openSound.play().catch(()=>{}); // Toca som de abrir
+      openSound.play().catch(()=>{});
       setTimeout(() => {
-        // Aplica estilos de entrada
         panel.style.opacity = '1';
         panel.style.transform = 'scale(1)';
-      }, 20); // Pequeno delay para garantir que a transição CSS ocorra
+      }, 20);
     });
 
     function closeModal() {
-      closeSound.play().catch(()=>{}); // Toca som de fechar
-      // Aplica estilos de saída
+      closeSound.play().catch(()=>{});
       panel.style.opacity = '0';
       panel.style.transform = 'scale(0.95)';
       setTimeout(() => {
         manualModal.classList.add('hidden');
-      }, 250); // Deve corresponder à duração da transição (ou um pouco mais)
+      }, 250);
+    }
+    closeManual.addEventListener('click', closeModal);
+    manualModal.addEventListener('click', (e) => {
+      if (e.target === manualModal) closeModal();
+    });
+
+    // --- 🧠 ETAPA 5 (JS): Controle do Modal de Análise ---
+    const analysisModal = document.getElementById('analysisModal');
+    const analysisPanel = analysisModal.querySelector('.analysis-panel');
+    const analysisContent = document.getElementById('analysisContent');
+    const closeAnalysis = document.getElementById('closeAnalysis');
+
+    function openAnalysisModal(feedback) {
+      // Preenche o conteúdo do modal
+      let msg = "";
+      feedback.forEach((tip) => {
+        msg += `<p class="border-b border-cyan-900/50 pb-2 mb-2">• ${tip}</p>`;
+      });
+      analysisContent.innerHTML = msg;
+
+      // Mostra o modal
+      analysisModal.classList.remove('hidden');
+      openSound.play().catch(()=>{});
+      setTimeout(() => {
+        analysisPanel.style.opacity = '1';
+        analysisPanel.style.transform = 'scale(1)';
+      }, 20);
     }
 
-    closeManual.addEventListener('click', closeModal);
+    function closeAnalysisModal() {
+      closeSound.play().catch(()=>{});
+      analysisPanel.style.opacity = '0';
+      analysisPanel.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        analysisModal.classList.add('hidden');
+        // REINICIA O JOGO
+        document.body.style.background = '#0f172a';
+        initBoard(); 
+      }, 250);
+    }
     
-    // Opcional: Fechar clicando fora do painel
-    manualModal.addEventListener('click', (e) => {
-      if (e.target === manualModal) {
-        closeModal();
-      }
-    });
+    closeAnalysis.addEventListener('click', closeAnalysisModal);
+    // Opcional: Fechar clicando fora (mas o botão é mais claro)
+    // analysisModal.addEventListener('click', (e) => {
+    //   if (e.target === analysisModal) closeAnalysisModal();
+    // });
+
   </script>
 </body>
 </html>
+
 
