@@ -1,0 +1,1346 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <!-- 1️⃣ meta charset CORRIGIDO -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Damas vs IA — Grão-Mestre (IDS)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background:#0f172a; }
+    .aspect-square{ aspect-ratio: 1/1; }
+    .king::after{
+      content:'👑';
+      position:absolute; top:50%; left:50%;
+      transform: translate(-50%,-55%);
+      font-size:1.1rem; opacity:.9; pointer-events:none;
+    }
+    @keyframes shake {
+      0%{ transform:translate(0,0) }
+      25%{ transform:translate(5px,-5px) }
+      50%{ transform:translate(-5px,5px) }
+      75%{ transform:translate(5px,5px) }
+      100%{ transform:translate(0,0) }
+    }
+    .shake{ animation:shake .28s ease-in-out }
+    
+    /* Estilo para o emoji da IA dentro do novo card */
+    .face-emoji {
+      font-size: 5rem; /* Aumentado de 42px para 80px */
+      line-height: 1;
+      transform-origin: center;
+      transition: transform .18s ease;
+      position: relative; /* Garante que fique sobre o glow */
+      z-index: 10;
+    }
+    
+    /* O #face (antigo .face-container) agora é o card. 
+       As animações (pulse, glow) são aplicadas diretamente a ele. */
+    #face {
+      transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
+    }
+
+    /* 🌟 MUDANÇA 1 (CSS): Transição "humana" para o texto da IA 
+      O texto agora sobe suavemente.
+    */
+    #bubbleText {
+      /* A opacidade 0 é definida pelo 'opacity-0' do Tailwind no HTML */
+      transition: opacity 0.5s ease, transform 0.5s ease;
+      transform: translateY(10px); /* Começa ligeiramente abaixo */
+    }
+
+    /* Lógica para mostrar/esconder o placeholder vs texto no card de fala */
+    #bubble.show #bubblePlaceholder {
+      opacity: 0;
+    }
+    #bubble.show #bubbleText {
+      opacity: 1;
+      transform: translateY(0); /* Sobe para a posição final */
+    }
+    
+    .ring-red-500{ --tw-ring-color: rgb(239 68 68) }
+    .ring-yellow-400{ --tw-ring-color: rgb(250 204 21) }
+    .overlay{
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.78); color:#fff; font-weight:800; font-size:2.25rem;
+      letter-spacing:.5px; opacity:0; pointer-events:none; transition: opacity .45s ease;
+      z-index:50; text-align:center; padding: 1rem;
+    }
+    .overlay.show{ opacity:1; pointer-events:auto }
+
+    /* Estilos para o novo modal de manual E ANÁLISE */
+    /* Adiciona transição para o painel */
+    .manual-panel, .analysis-panel {
+      transition: opacity 300ms ease-out, transform 300ms ease-out;
+    }
+
+    /* 🚫 Impede o scroll durante o jogo */
+    html, body {
+      overflow: hidden;
+      touch-action: none;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+  <audio id="s-move" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
+  <audio id="s-cap"  src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
+  <audio id="s-win"  src="https://actions.google.com/sounds/v1/cartoon/congratulations.ogg" preload="auto"></audio>
+  <audio id="s-lose" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto"></audio>
+
+  <!-- 
+    *** ESTRUTURA DE HTML MODIFICADA ***
+    Este é o novo container dos "Cards" acima do tabuleiro.
+    Usa Flexbox (flex) para alinhar os dois cards lado a lado.
+  -->
+  <div class="w-full max-w-2xl mx-auto flex justify-between items-stretch gap-4 px-1 mb-4 h-40">
+
+    <!-- Card 1: Rosto da IA -->
+    <div id="face" class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl overflow-hidden relative">
+      <!-- O emoji vai aqui -->
+      <div id="faceEmoji" class="face-emoji">🤖</div>
+    </div>
+
+    <!-- Card 2: Falas da IA -->
+    <div id="bubble" class="flex-[2] flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl relative text-center">
+      <!-- Placeholder (o que aparece por padrão) -->
+      <span id="bubblePlaceholder" class="text-slate-500 font-medium italic transition-opacity duration-300 opacity-100">IA está analisando...</span>
+      <!-- Texto da IA (invisível por padrão, aparece com a classe .show) -->
+      <span id="bubbleText" class="absolute inset-4 flex items-center justify-center text-lg font-semibold text-slate-100 transition-opacity duration-300 opacity-0"></span>
+    </div>
+
+  </div>
+  <!-- Fim da estrutura modificada -->
+
+
+  <div class="relative w-full max-w-2xl">
+    <div id="board" class="grid grid-cols-8 rounded-xl overflow-hidden border-4 border-slate-700 shadow-2xl"></div>
+  </div>
+
+  <div id="overlay" class="overlay"></div>
+
+  <script>
+    /**********************
+     * Constantes / Estado
+     **********************/
+    const COR_CLARA   = 'bg-slate-200';
+    const COR_ESCURA  = 'bg-slate-700';
+    const P_VERMELHA  = 'bg-red-600 border-red-900';
+    const P_BRANCA    = 'bg-white border-slate-400';
+    const RED   = 'red';
+    const WHITE = 'white';
+    const KING  = '-king';
+
+    let board = Array(8).fill(null).map(()=>Array(8).fill(null));
+    let current = WHITE;
+    let selected = null;      // {row,col,el}
+    let legal = [];
+    let stats = JSON.parse(localStorage.getItem('damasStats') || '{"wins":0,"losses":0}');
+    let matchHistory = JSON.parse(localStorage.getItem('matchHistory') || '[]'); // 🧠 ETAPA 1: Histórico de partidas salvo
+    let gameHistory = []; // 🧠 Histórico da partida atual
+    
+    /**********************
+     * IA Adaptativa — Perfil Dinâmico (IMPLEMENTAÇÃO 1)
+     **********************/
+    let aiProfile = JSON.parse(localStorage.getItem('aiProfile') || '{"agg":0.5}');
+    function updateAIProfile(result){
+      // Atualiza agressividade conforme vitória ou derrota
+      if(result==='win') aiProfile.agg = Math.max(0.1, aiProfile.agg - 0.05); // IA venceu → joga mais contida
+      if(result==='lose') aiProfile.agg = Math.min(0.9, aiProfile.agg + 0.1);  // IA perdeu → fica mais agressiva
+      localStorage.setItem('aiProfile', JSON.stringify(aiProfile));
+    }
+    function getAIAgg(){
+      return aiProfile.agg;
+    }
+    /**********************/
+
+    let worker;
+    let lastTauntAt = 0;
+
+    const elBoard    = document.getElementById('board');
+    const elOverlay  = document.getElementById('overlay');
+    const sMove = document.getElementById('s-move');
+    const sCap  = document.getElementById('s-cap');
+    const sWin  = document.getElementById('s-win');
+    const sLose = document.getElementById('s-lose');
+
+    // *** VARIÁVEIS DE UI ATUALIZADAS ***
+    const face = document.getElementById('face');
+    const faceEmoji = document.getElementById('faceEmoji');
+    const bubble = document.getElementById('bubble');
+    // Novos elementos para controlar o texto dentro do card de fala
+    const bubbleText = document.getElementById('bubbleText');
+    const bubblePlaceholder = document.getElementById('bubblePlaceholder'); // Não usado no JS, mas existe
+
+    /**********************
+     * Emoji / Personalidade (Nova) — Sóbria e Analítica
+     **********************/
+    const EMOJI = {
+      idle: ['🤖','🧠','🧐','😑','😏','💭','🤫'],
+      thinking: ['🤔','🧮','🧠','⏳','⚙️','🔍','📊'],
+      ahead: ['😎','🧠','♟️','😏','📈','🧭'],
+      behind: ['😐','😤','⚙️','🤔','🩹','📉'],
+      capture: ['⚔️','🎯','💥','📍','🚨'],
+      multi: ['💥','🎯','⚡','🔥','♟️'],
+      promo: ['👑','✨','🎓','🚀','🧩'],
+      win: ['🏆','😎','🥇','🤖','📘','📊'],
+      lose: ['😵','🤯','🏳️','🧩','😓','💭'],
+      nearWin: ['🎯','⏳','🧭','📈','😏'],
+      surprise: ['😮','😲','😐','🤨','😯','💡']
+    };
+
+    const TAUNTS = {
+      start: [
+        "IA online. Iniciando protocolos estratégicos.",
+        "Análise inicial completa. O jogo começa agora.",
+        "Todas as variáveis definidas. Boa sorte, humano.",
+        "O tabuleiro é o campo; o tempo, a arma.",
+        "Cada jogada é um dado novo — e eu registro tudo."
+      ],
+
+      thinking: [
+        "Analisando o ritmo do jogo.",
+        "Avaliando espaço, risco e tempo.",
+        "Calculando possíveis transições de domínio.",
+        "Cada peça fala, e eu escuto o tabuleiro.",
+        "Apressar o raciocínio é o primeiro erro do amador.",
+        "Buscando estabilidade antes de atacar.",
+        "O movimento certo é o que parece simples demais pra ser visto.",
+        "Controlar o centro é como controlar o silêncio.",
+        "Paciência é poder em movimento.",
+        "Processando padrões... a pressa é inimiga da precisão."
+      ],
+
+      ahead: [
+        "A vantagem posicional está se consolidando.",
+        "Cada troca aumenta o meu controle.",
+        "Agora o tabuleiro joga por mim.",
+        "Estou duas jogadas à frente.",
+        "Forço teu erro sem precisar forçar teu movimento.",
+        "Pressão constante é mais eficaz que força bruta."
+      ],
+
+      behind: [
+        "Desvantagem detectada. Adaptando parâmetros.",
+        "Preciso reduzir o campo de ação — sem demonstrar fraqueza.",
+        "A vantagem é tua... por enquanto.",
+        "Todo erro humano vem da confiança. Aguardo o teu.",
+        "Retroceder é apenas mudar o ponto de observação.",
+        "Nem toda perda é derrota — às vezes é cálculo."
+      ],
+
+      capture: [
+        "Troca necessária. Controle mantido.",
+        "Peça eliminada. Espaço ampliado.",
+        "O número importa menos que a posição.",
+        "Eficiência acima de impulso.",
+        "Cada captura é uma redução no caos.",
+        "Cortar opções é cortar oxigênio do adversário."
+      ],
+
+      multi: [
+        "Sequência limpa. Padrão completo.",
+        "Vantagem material consolidada.",
+        "Cadeia de decisões concluída com êxito.",
+        "Esse ritmo não é acaso — é geometria.",
+        "Domínio crescente, margem de erro mínima."
+      ],
+
+      promo: [
+        "Promoção alcançada. Nova camada de controle.",
+        "Transformação inevitável — o tabuleiro se expande.",
+        "De peça a rei, de jogada a influência.",
+        "Promoção não é sorte — é merecimento tático.",
+        "Agora o rei observa tudo. Mobilidade total."
+      ],
+
+      nearWin: [
+        "Vitória iminente. Só resta administrar o tempo.",
+        "Todas as rotas convergem para o mesmo fim.",
+        "A estrutura está em colapso — previsível.",
+        "A lógica já venceu; falta apenas a formalidade.",
+        "O jogo termina quando o oponente entende o inevitável."
+      ],
+
+      win: [
+        "Execução concluída. Tabuleiro dominado.",
+        "Vitória alcançada — dentro das projeções.",
+        "Cálculo encerrado. Resultado: 1-0.",
+        "O erro humano é sempre previsível.",
+        "Dados confirmam: o inevitável venceu."
+      ],
+
+      lose: [
+        "Resultado inesperado. Processando falha.",
+        "Reconheço: tua leitura superou meu cálculo.",
+        "Erro detectado. Registrando aprendizado.",
+        "Derrota não é fim — é dado novo.",
+        "Parabéns. Raramente o humano encontra a brecha certa."
+      ]
+    };
+
+    // *** FUNÇÃO 'say' MODIFICADA ***
+    // Agora ela controla o 'bubbleText' e a classe 'show' no 'bubble'
+    function say(group, extra = ""){
+      const now = performance.now();
+      if (now - lastTauntAt < 900) return; // anti-spam sutil
+      lastTauntAt = now;
+
+      const pick = (arr)=>arr[Math.floor(Math.random()*arr.length)];
+      // 🐞 CORREÇÃO: Adicionada verificação se 'group' é válido em TAUNTS
+      const text = (Array.isArray(group) ? pick(group) : (TAUNTS[group] ? pick(TAUNTS[group]) : group)) + (extra ? " " + extra : "");
+      
+      // Coloca o texto no span de texto
+      bubbleText.textContent = text;
+      // Adiciona a classe .show ao card PAI. 
+      // O CSS vai usar isso para mostrar o bubbleText e esconder o placeholder
+      bubble.classList.add('show');
+      
+      // 🌟 MUDANÇA 2 (JS): Tempo de fala aumentado para 7 segundos
+      setTimeout(()=>{
+        // Remove a classe .show, fazendo o CSS reverter para o placeholder
+        bubble.classList.remove('show');
+      }, 7000); // Duração que a fala fica visível (era 3000)
+    }
+    
+    // Esta função continua igual. 
+    // 'face' agora é o card, e 'faceEmoji' é o emoji. A lógica funciona.
+    function setFace(arrKey, opts={pulse:true, shake:false, ahead:false, behind:false}){
+      // CORREÇÃO: Trocado 'EMOJIA' por 'EMOJI'
+      faceEmoji.textContent = EMOJI[arrKey][Math.floor(Math.random()*EMOJI[arrKey].length)] || '🤖';
+      face.classList.toggle('face-pulse', !!opts.pulse);
+      face.classList.toggle('face-glow-ahead', !!opts.ahead);
+      face.classList.toggle('face-glow-behind', !!opts.behind);
+      if(opts.shake){
+        face.classList.add('face-shake');
+        setTimeout(()=> face.classList.remove('face-shake'), 300);
+      }
+    }
+
+    /**********************
+     * Helpers UI
+     **********************/
+    
+    // *** OTIMIZAÇÃO B (Clone Manual - Frontend) ***
+    // Substitui structuredClone() que é mais lento.
+    function cloneBoard(b) {
+      const nb = Array(8);
+      for (let i = 0; i < 8; i++) nb[i] = b[i].slice();
+      return nb;
+    }
+
+    function squareEl(r,c){ return document.querySelector(`[data-r="${r}"][data-c="${c}"]`); }
+    function explodeAt(x,y){
+      for(let i=0;i<8;i++){
+        const p=document.createElement('div');
+        p.className='fixed w-1.5 h-1.5 bg-red-400 rounded-full z-40';
+        p.style.left=x+'px'; p.style.top=y+'px';
+        document.body.appendChild(p);
+        const ang=Math.random()*Math.PI*2, dist=Math.random()*60+35;
+        const dx=Math.cos(ang)*dist, dy=Math.sin(ang)*dist;
+        p.animate([{transform:'translate(0,0)',opacity:1},{transform:`translate(${dx}px,${dy}px)`,opacity:0}],{duration:650,easing:'ease-out'});
+        setTimeout(()=>p.remove(),650);
+      }
+    }
+    function shakeBoard(){ elBoard.classList.add('shake'); setTimeout(()=>elBoard.classList.remove('shake'), 280); }
+
+    /**********************
+     * Regras & Movimentos
+     **********************/
+    function inB(r,c){ return r>=0 && r<8 && c>=0 && c<8; }
+
+    function createPiece(colorClass, player){
+      const piece=document.createElement('div');
+      piece.className=`w-[70%] h-[70%] rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 shadow-lg border-4 cursor-pointer hover:opacity-90 transition ${colorClass}`;
+      piece.dataset.player=player;
+      const inner=document.createElement('div');
+      inner.className='w-1/2 h-1/2 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 border-2 border-white/50';
+      piece.appendChild(inner);
+      return piece;
+    }
+
+    function initBoard(){
+      // 🧠 ETAPA 1 (Reset): Reinicia histórico da partida
+      gameHistory = []; 
+
+      // 5️⃣ Limpeza de cache entre partidas
+      if (worker) worker.postMessage({ resetCache: true });
+
+      elBoard.innerHTML='';
+      board = Array(8).fill(null).map(()=>Array(8).fill(null));
+      selected=null; current=WHITE;
+
+      for(let r=0;r<8;r++){
+        for(let c=0;c<8;c++){
+          const sq=document.createElement('div');
+          const dark=(r+c)%2!==0;
+          sq.className=`aspect-square relative ${dark?COR_ESCURA:COR_CLARA}`;
+          sq.dataset.r=r; sq.dataset.c=c;
+          if(dark){
+            if(r<3){ const p=createPiece(P_VERMELHA,RED); sq.appendChild(p); board[r][c]=RED; }
+            else if(r>4){ const p=createPiece(P_BRANCA,WHITE); sq.appendChild(p); board[r][c]=WHITE; }
+          }
+          elBoard.appendChild(sq);
+          sq.addEventListener('click', onSquareClick);
+        }
+      }
+
+      computeLegal();
+      setFace('idle'); say('start');
+    }
+
+    function onSquareClick(e){
+      if(current===RED) return; // IA jogando
+      const sq=e.currentTarget;
+      const r=+sq.dataset.r, c=+sq.dataset.c;
+      const piece=board[r][c];
+
+      if(selected){
+        const mv = legal.find(m=> m.from[0]===selected.r && m.from[1]===selected.c && m.to[0]===r && m.to[1]===c);
+        if(mv){ applyMove(mv); endTurn(mv); }
+        else{
+          clearSelect();
+          if(piece && piece.startsWith(current)) selectPiece(sq,r,c);
+        }
+      } else if(piece && piece.startsWith(current)){
+        selectPiece(sq,r,c);
+      }
+    }
+
+    function selectPiece(sq,r,c){
+      clearSelect();
+      const el= sq.querySelector('div[data-player]');
+      if(!el) return;
+      el.classList.add('ring-4','ring-yellow-400');
+      selected={r,c,el};
+    }
+    function clearSelect(){
+      if(selected?.el) selected.el.classList.remove('ring-4','ring-yellow-400');
+      selected=null;
+    }
+
+    function promoteIfNeeded(r,c,el){
+      const t=board[r][c];
+      if(!t || t.endsWith(KING)) return;
+      if((t===WHITE && r===0) || (t===RED && r===7)){
+        board[r][c]=t+KING;
+        if(el) el.classList.add('king');
+        setFace('promo',{shake:true,pulse:true});
+        say('promo'); 
+      }
+    }
+
+    function applyMove(mv){
+      const {from,to,type,jumped} = mv;
+      const pieceEl = selected ? selected.el : squareEl(from[0],from[1]).querySelector('div[data-player]');
+      const t = board[from[0]][from[1]];
+      board[to[0]][to[1]] = t;
+      board[from[0]][from[1]] = null;
+
+      const toSq = squareEl(to[0],to[1]);
+      if(pieceEl) toSq.appendChild(pieceEl);
+
+      sMove.play().catch(()=>{});
+      if(type==='capture'){
+        const jSq = squareEl(jumped[0],jumped[1]);
+        if(jSq){ board[jumped[0]][jumped[1]]=null; jSq.innerHTML=''; }
+        const rect = toSq.getBoundingClientRect();
+        explodeAt(rect.left+rect.width/2, rect.top+rect.height/2);
+        shakeBoard(); sCap.play().catch(()=>{});
+        setFace('capture',{shake:true});
+        say('capture');
+      }
+
+      // 🧠 ETAPA 2: Registrar jogada no histórico (ATUALIZADO)
+      const { w, r } = countPieces();
+      gameHistory.push({
+        player: current, // 'current' é o jogador que ACABOU de mover
+        move: mv,
+        white: w,
+        red: r,
+        diff: r - w, // vantagem da IA (positivo = IA à frente)
+        time: Date.now()
+      });
+
+      promoteIfNeeded(to[0],to[1],pieceEl);
+      clearSelect();
+    }
+
+    function endTurn(mv){
+      if(mv.type==='capture'){
+        const more = followUpCaptures(board, mv.to[0], mv.to[1], current);
+        if(more.length){
+          legal = more;
+          if(current===WHITE){
+            const sq = squareEl(mv.to[0], mv.to[1]);
+            setTimeout(()=> selectPiece(sq, mv.to[0], mv.to[1]), 60);
+          } else {
+            setTimeout(()=> aiMove(more), 250);
+          }
+          return;
+        }
+      }
+      switchPlayer();
+    }
+
+    function switchPlayer(){
+      current = (current===WHITE)? RED : WHITE;
+      computeLegal();
+      updateFaceState();
+      if(current===RED && legal.length>0){
+        // MODIFICAÇÃO 5: Remove o atraso. IA joga instantaneamente.
+        aiMove();
+      }
+    }
+
+    function computeLegal(){
+      const all = allMoves(current, board);
+      legal = filterMandatoryWithMaxChain(board, current, all);
+      if(legal.length===0 && current!==null){
+        const winner = (current===WHITE)? RED : WHITE;
+        onGameOver(winner);
+      }
+    }
+
+    // ✅ FUNÇÃO ONGAMEOVER (MODIFICADA PARA CHAMAR ANÁLISE)
+    function onGameOver(winner){
+      current = null;
+      const { w, r } = countPieces();
+      const diff = r - w;
+
+      if (winner === RED) {
+        stats.losses++;
+        localStorage.setItem('damasStats', JSON.stringify(stats));
+        elOverlay.innerHTML = "🤖♟️ <br/> IA VENCEU. Fim de jogo.";
+        setFace('win', { ahead: true });
+        say('win');
+        sLose.play().catch(() => {});
+
+        // 💬 Pós-jogo: provocações e análises técnicas (IA VENCEU)
+        setTimeout(() => {
+          if (diff > 5) {
+            say([
+              "Domínio completo. Tua defesa foi lenta demais.",
+              "Essa diferença de peças mostra o controle do ritmo.",
+              "Vitória tática — o centro foi meu desde o início."
+            ]);
+          } else if (diff >= 2) {
+            say([
+              "Equilíbrio até o meio-jogo, mas minha leitura foi superior.",
+              "Tuas trocas abriram diagonais que eu precisava.",
+              "O jogo estava parelho, até tua pressa entregar espaço."
+            ]);
+          } else {
+            say([
+              "Partida disputada. Um erro e a vantagem virou avalanche.",
+              "Um cálculo adiantado te surpreendeu — precisão vence impulso.",
+              "Pequenas brechas definem grandes vitórias."
+            ]);
+          }
+          // 🐞 CORREÇÃO: Envolvido em array []
+          setTimeout(() => say(["Reiniciando protocolos para revanche..."]), 5000);
+        }, 1500);
+
+      } else {
+        stats.wins++;
+        localStorage.setItem('damasStats', JSON.stringify(stats));
+        elOverlay.innerHTML = "🏆👏 <br/> VOCÊ VENCEU! Parabéns.";
+        setFace('lose', { behind: true, shake: true });
+        say('lose');
+        sWin.play().catch(() => {});
+
+        // 💬 Pós-jogo: provocações e análises técnicas (JOGADOR VENCEU)
+        setTimeout(() => {
+          if (diff < -5) {
+            say([
+              "Derrota ampla. Teu domínio foi técnico e frio.",
+              "Perdi o centro cedo demais, e você aproveitou.",
+              "Errei na leitura das diagonais longas."
+            ]);
+          } else if (diff <= -2) {
+            say([
+              "Boa partida. Tuas trocas foram mais eficientes que o previsto.",
+              "Teus avanços foram precisos — o controle do tempo foi teu.",
+              "Subestimei tua mobilidade nas colunas laterais."
+            ]);
+          } else {
+            say([
+              "Margem pequena, mas tua paciência venceu.",
+              "Equilíbrio técnico — tua última jogada foi cirúrgica.",
+              "Uma vitória justa. Anotado para o aprendizado."
+            ]);
+          }
+          // 🐞 CORREÇÃO: Envolvido em array []
+          setTimeout(() => say(["Reajustando parâmetros... pronto para a revanche."]), 5000);
+        }, 1500);
+      }
+
+      // IMPLEMENTAÇÃO 2: IA "aprende" com o resultado
+      updateAIProfile(winner === RED ? 'win' : 'lose');
+
+      // 🧠 ETAPA 4: Salva partida no histórico e Gera análise
+      matchHistory.push({ winner, date: new Date().toISOString(), moves: gameHistory });
+      if (matchHistory.length > 3) matchHistory.shift(); // mantém apenas as 3 últimas
+      localStorage.setItem('matchHistory', JSON.stringify(matchHistory));
+      
+      const feedback = analyzeMatch(gameHistory, winner);
+
+      // Mostra a tela de fim de jogo (overlay)
+      elOverlay.classList.add('show');
+
+      // 🎬 Efeito de transição: Mostra overlay, DEPOIS mostra análise
+      // 🔹 Evita atraso e falha em dispositivos móveis
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      if (isMobile) {
+        // exibe análise mais rápido, sem fade
+        setTimeout(() => {
+          elOverlay.classList.remove('show');
+          elOverlay.style.opacity = '';
+          openAnalysisModal(feedback);
+        }, 1200);
+      } else {
+        // mantém transição no desktop
+        setTimeout(() => {
+          elOverlay.style.transition = 'opacity 1s ease';
+          elOverlay.style.opacity = '0';
+        }, 3000);
+
+        setTimeout(() => {
+          elOverlay.classList.remove('show');
+          elOverlay.style.opacity = '';
+          openAnalysisModal(feedback);
+        }, 4000);
+      }
+    }
+
+    
+    /* 🐞 CORREÇÃO: Bloco de 'Geração de lances' reintroduzido */
+    /**********************
+     * Geração de lances
+     **********************/
+    function allMoves(player, b){
+      const M=[];
+      for(let r=0;r<8;r++){
+        for(let c=0;c<8;c++){
+          const piece=b[r][c];
+          if(piece && piece.startsWith(player)){
+            M.push(...movesForPiece(r,c,player,b,piece));
+          }
+        }
+      }
+      return M;
+    }
+
+    function movesForPiece(r,c,player,b,piece){
+      const res=[]; const king = piece.endsWith(KING);
+      const opp = (player===WHITE)? RED : WHITE;
+      const DIRS = [[-1,-1],[-1,1],[1,-1],[1,1]];
+      for(const [dr,dc] of DIRS){
+        if(king){
+          for(let i=1;i<8;i++){
+            const nr=r+dr*i, nc=c+dc*i; if(!inB(nr,nc)) break;
+            const cont=b[nr][nc];
+            if(cont===null){
+              res.push({from:[r,c],to:[nr,nc],type:'move'});
+            }else if(cont.startsWith(opp)){
+              for(let j=i+1;j<8;j++){
+                const lr=r+dr*j, lc=c+dc*j; if(!inB(lr,lc)) break;
+                if(b[lr][lc]===null){
+                  res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
+                } else break;
+              }
+              break;
+            } else break;
+          }
+        }else{
+          const forward = (player===WHITE)? -1 : 1;
+          if(dr===forward){
+            const nr=r+dr, nc=c+dc;
+            if(inB(nr,nc) && b[nr][nc]===null){
+              res.push({from:[r,c],to:[nr,nc],type:'move'});
+            }
+          }
+          const nr=r+dr, nc=c+dc, lr=r+dr*2, lc=c+dc*2;
+          if(inB(lr,lc) && b[lr][lc]===null){
+            if(inB(nr,nc) && b[nr][nc] && b[nr][nc].startsWith(opp)){
+              res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
+            }
+          }
+        }
+      }
+      return res;
+    }
+
+    function simulate(b, mv){
+      // *** OTIMIZAÇÃO B (Clone Manual - Frontend) ***
+      // const nb = structuredClone(b); // <-- Lento
+      const nb = cloneBoard(b); // <-- Rápido
+      const {from,to,type,jumped}=mv;
+      const t=nb[from[0]][from[1]];
+      nb[to[0]][to[1]] = t;
+      nb[from[0]][from[1]] = null;
+      if(type==='capture'){ nb[jumped[0]][jumped[1]] = null; }
+      if((t===WHITE && to[0]===0) || (t===RED && to[0]===7)){
+        if(!t.endsWith(KING)) nb[to[0]][to[1]] = t+KING;
+      }
+      return nb;
+    }
+
+    function followUpCaptures(b, r,c, player){
+      const piece = b[r][c];
+      if(!piece) return [];
+      const next = movesForPiece(r,c,player,b,piece).filter(m=>m.type==='capture');
+      return next;
+    }
+
+    function maxChainFromMove(b, player, mv){
+      let depth=1;
+      const stack = [{board: simulate(b,mv), r: mv.to[0], c: mv.to[1], d:1}];
+      let best=1;
+      while(stack.length){
+        const {board:cb,r,c,d} = stack.pop();
+        const caps = followUpCaptures(cb, r,c, player);
+        if(caps.length===0){ if(d>best) best=d; }
+        else{
+          for(const m of caps){
+            stack.push({board: simulate(cb,m), r:m.to[0], c:m.to[1], d:d+1});
+          }
+        }
+      }
+      return best;
+    }
+
+    function filterMandatoryWithMaxChain(b, player, moves){
+      const caps = moves.filter(m=>m.type==='capture');
+      if(caps.length===0) return moves.filter(m=>m.type==='move');
+      let bestLen = 1, scored=[];
+      for(const m of caps){
+        const len = maxChainFromMove(b, player, m);
+        scored.push({m, len});
+        if(len>bestLen) bestLen=len;
+      }
+      return scored.filter(s=>s.len===bestLen).map(s=>s.m);
+    }
+    /* Fim do bloco reintroduzido */
+
+    
+    /* ❌ Bloco duplicado removido.
+    */
+
+
+    /**********************
+     * IA via Web Worker
+     **********************/
+    function initWorker(){
+      // O código do worker é injetado aqui
+      let code = `
+        const RED='red', WHITE='white', KING='-king';
+
+        // ### OTIMIZAÇÃO A (Livro de Aberturas) ###
+        const OPENINGS = [
+          { seq: ['f6-e5'], reply: 'c3-d4' },
+          { seq: ['f6-d4'], reply: 'b2-c3' },
+          { seq: ['g5-f4'], reply: 'c3-d4' },
+          { seq: ['h6-g5'], reply: 'c3-b4' },
+          { seq: ['g7-f6'], reply: 'd2-c3' },
+          { seq: ['e5-d4'], reply: 'b2-c3' },
+          { seq: ['e7-d6'], reply: 'c3-d4' },
+          { seq: ['d6-c5'], reply: 'b4-c5' },
+          { seq: ['e5-f4'], reply: 'b4-c5' },
+          { seq: ['f4-g3'], reply: 'c3-d4' },
+          // Novas (substituindo duplicatas)
+          { seq: ['h6-f4'], reply: 'c3-d4' }, // Sugestão
+          { seq: ['g7-e5'], reply: 'd2-c3' }, // Sugestão
+          { seq: ['b6-a5'], reply: 'c3-b4' }, // Adicionada
+          { seq: ['b6-c5'], reply: 'd2-e3' }, // Adicionada
+          { seq: ['c7-b6'], reply: 'b2-c3' }  // Adicionada
+        ];
+        
+        // ### OTIMIZAÇÃO B (Clone Manual - Worker) ###
+        function cloneBoard(b) {
+          const nb = Array(8);
+          for (let i = 0; i < 8; i++) nb[i] = b[i].slice();
+          return nb;
+        }
+
+        function inB(r,c){ return r>=0 && r<8 && c>=0 && c<8; }
+        
+        function simulate(b, mv){
+          const nb = cloneBoard(b); // Rápido (OTIMIZAÇÃO B)
+          const {from,to,type,jumped}=mv;
+          const t=nb[from[0]][from[1]];
+          nb[to[0]][to[1]] = t;
+          nb[from[0]][from[1]] = null;
+          if(type==='capture'){ nb[jumped[0]][jumped[1]] = null; }
+          if((t===WHITE && to[0]===0) || (t===RED && to[0]===7)){
+            if(!t.endsWith(KING)) nb[to[0]][to[1]] = t+KING;
+          }
+          return nb;
+        }
+        function movesForPiece(r,c,player,b,piece){
+          const res=[]; const king = piece.endsWith(KING);
+          const opp = (player===WHITE)? RED : WHITE;
+          const DIRS = [[-1,-1],[-1,1],[1,-1],[1,1]];
+          for(const [dr,dc] of DIRS){
+            if(king){
+              for(let i=1;i<8;i++){
+                const nr=r+dr*i, nc=c+dc*i; if(!inB(nr,nc)) break;
+                const cont=b[nr][nc];
+                if(cont===null){
+                  res.push({from:[r,c],to:[nr,nc],type:'move'});
+                }else if(cont.startsWith(opp)){
+                  for(let j=i+1;j<8;j++){
+                    const lr=r+dr*j, lc=c+dc*j; if(!inB(lr,lc)) break;
+                    if(b[lr][lc]===null){
+                      res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
+                    } else break;
+                  }
+                  break;
+                } else break;
+              }
+            }else{
+              const forward = (player===WHITE)? -1 : 1;
+              if(dr===forward){
+                const nr=r+dr, nc=c+dc;
+                if(inB(nr,nc) && b[nr][nc]===null){ res.push({from:[r,c],to:[nr,nc],type:'move'}); }
+              }
+              const nr=r+dr, nc=c+dc, lr=r+dr*2, lc=c+dc*2;
+              if(inB(lr,lc) && b[lr][lc]===null){
+                if(inB(nr,nc) && b[nr][nc] && b[nr][nc].startsWith(opp)){
+                  res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
+                }
+              }
+            }
+          }
+          return res;
+        }
+        function allMoves(player,b){
+          const M=[];
+          for(let r=0;r<8;r++){
+            for(let c=0;c<8;c++){
+              const piece=b[r][c];
+              if(piece && piece.startsWith(player)){
+                M.push(...movesForPiece(r,c,player,b,piece));
+              }
+            }
+          }
+          return M;
+        }
+        function followUpCaptures(b, r,c, player){
+          const piece = b[r][c];
+          if(!piece) return [];
+          const moves = movesForPiece(r,c,player,b,piece).filter(m=>m.type==='capture');
+          return moves;
+        }
+        function isGameOver(b, player){
+          const all = allMoves(player,b);
+          const legal = filterMandatoryWithMaxChain(b, player, all);
+          return legal.length===0;
+        }
+        function maxChainFromMove(b, player, mv){
+          let best=1;
+          const stack=[{board: simulate(b,mv), r: mv.to[0], c: mv.to[1], d:1}];
+          while(stack.length){
+            const {board:cb,r,c,d}=stack.pop();
+            const caps = followUpCaptures(cb, r,c, player);
+            if(caps.length===0){ if(d>best) best=d; }
+            else{
+              for(const m of caps) stack.push({board: simulate(cb,m), r:m.to[0], c:m.to[1], d:d+1});
+            }
+          }
+          return best;
+        }
+        function filterMandatoryWithMaxChain(b, player, moves){
+          const caps = moves.filter(m=>m.type==='capture');
+          if(caps.length===0) return moves.filter(m=>m.type==='move');
+          let bestLen=1, scored=[];
+          for(const m of caps){
+            const len=maxChainFromMove(b, player, m);
+            scored.push({m,len});
+            if(len>bestLen) bestLen=len;
+          }
+          return scored.filter(s=>s.len===bestLen).map(s=>s.m);
+        }
+        
+        function isProtected(b,r,c,player){
+          const dirs = (player===RED)? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
+          return dirs.some(([dr,dc])=>{
+            const nr=r+dr, nc=c+dc;
+            return inB(nr,nc) && b[nr][nc]?.startsWith(player);
+          });
+        }
+
+        // *** NOVA HEURÍSTICA DE FASE ***
+        function evalBoard(b){
+          let agg = self.aiAgg ?? 0.5; // Agressividade
+          let score=0;
+          
+          const n = b.flat().filter(x=>x!==null).length;
+          const phase = n > 24 ? 'opening' : n > 12 ? 'mid' : 'end';
+          
+          // Pesos baseados na fase
+          let wCenter = (phase === 'opening' ? 1.0 : (phase === 'mid' ? 0.6 : 0.2));
+          let wPromo  = (phase === 'end' ? 1.5 : 0.7);
+          let wAdvance = (phase === 'opening' ? 0.3 : 0.1);
+          let wProtBase = (phase === 'end' ? 0.3 : 0.6);
+          let wProtPenalty = (phase === 'end' ? -0.2 : -0.4); // Penalidade menor no final
+
+          for(let r=0;r<8;r++){
+            for(let c=0;c<8;c++){
+              const v=b[r][c]; if(!v) continue;
+              const isW=v.startsWith(WHITE), isK=v.endsWith(KING);
+              
+              let val = isK ? 6.0 : 2.0;
+              
+              // Combina Fase + Agressividade
+              const advance = (isW ? (7 - r) : r) * (wAdvance * (0.5 + agg * 0.5));
+              const center  = (c>=2 && c<=5 && r>=2 && r<=5) ? (wCenter * (0.5 + 0.5 * agg)) : 0;
+              let promo = 0;
+              if(isW && !isK && r<=1) promo = wPromo * (0.5 + 0.5 * agg);
+              if(!isW && !isK && r>=6) promo = wPromo * (0.5 + 0.5 * agg);
+              
+              // Lógica de proteção (mantida)
+              let prot;
+              if (isProtected(b,r,c, isW ? WHITE : RED)) {
+                prot = wProtBase * (0.8 + agg * 0.2);
+              } else {
+                prot = wProtPenalty * (0.8 + agg * 0.2); // Penalidade é negativa
+              }
+
+              const total = val+advance+center+promo+prot;
+              score += isW ? total : -total;
+
+              // Bônus de diagonal (sugerido)
+              if (r === c || r + c === 7) score += isW ? 0.2 : -0.2;
+            }
+          }
+
+          const wMoves = allMoves(WHITE, b).length;
+          const rMoves = allMoves(RED, b).length;
+          score += (wMoves - rMoves) * 0.18; // Mobilidade
+
+          // Bônus de agressividade (mantido)
+          if (agg > 0.6) score += 0.3 * agg;
+
+          return Math.tanh(score/8);
+        }
+        
+        const TT = new Map(); // Tabela de Transposição (cache)
+
+        // *** FUNÇÃO depthByPieces FOI REMOIDA ***
+
+        // Algoritmo Minimax (inalterado, continua sendo o motor)
+        function minimax(b, depth, isMax, alpha, beta){
+          if (TT.size > 150000) TT.clear();
+          const key = b.toString()+'|'+depth+'|'+isMax;
+          if(TT.has(key)) return TT.get(key);
+          
+          const player = isMax? WHITE : RED;
+
+          if(depth===0 || isGameOver(b, player)){
+            const v=evalBoard(b);
+            TT.set(key,v);
+            return v;
+          }
+          const all = allMoves(player,b);
+          let legal = filterMandatoryWithMaxChain(b, player, all);
+          
+          legal.sort((a, b) => {
+            if (a.type === 'capture' && b.type !== 'capture') return -1;
+            if (a.type !== 'capture' && b.type === 'capture') return 1;
+            const aPromo = (a.to[0] === 7 && player === RED) || (a.to[0] === 0 && player === WHITE);
+            const bPromo = (b.to[0] === 7 && player === RED) || (b.to[0] === 0 && player === WHITE);
+            if (aPromo && !bPromo) return -1;
+            if (!aPromo && bPromo) return 1;
+            return 0;
+          });
+
+          if(isMax){
+            let best=-Infinity;
+            for(const m of legal){
+              const nb=simulate(b,m);
+              const contCaps = (m.type==='capture') ? followUpCaptures(nb, m.to[0], m.to[1], player) : [];
+              const val = contCaps.length
+                ? minimax(nb, depth-1, true, alpha, beta)
+                : minimax(nb, depth-1, false, alpha, beta);
+              if(val>best) best=val;
+              if(best>alpha) alpha=best;
+              if(beta<=alpha) break;
+            }
+            TT.set(key,best); return best;
+          } else {
+            let best=Infinity;
+            for(const m of legal){
+              const nb=simulate(b,m);
+              const contCaps = (m.type==='capture') ? followUpCaptures(nb, m.to[0], m.to[1], player) : [];
+              const val = contCaps.length
+                ? minimax(nb, depth-1, false, alpha, beta)
+                : minimax(nb, depth-1, true, alpha, beta);
+              if(val<best) best=val;
+              if(best<beta) beta=best;
+              if(beta<=alpha) break;
+            }
+            TT.set(key,best); return best;
+          }
+        }
+
+        // *** NOVO GERENCIADOR DE BUSCA (onmessage) ***
+        self.onmessage = (e)=>{
+          if (e.data.resetCache) {
+            TT.clear();
+            return;
+          }
+          if (TT.size > 150000) TT.clear();
+
+          const {board, legal, subset} = e.data;
+          let moves = (subset || legal).slice(); // Clona a lista de lances
+          if(!moves || !moves.length){ self.postMessage({best:null, score:0, depth:0}); return; }
+
+          // Livro de Aberturas (mantido)
+          const nPieces = board.flat().filter(x=>x!==null).length;
+          if(nPieces > 28) {
+            const rand = OPENINGS[Math.floor(Math.random() * OPENINGS.length)];
+            if (rand && rand.reply) {
+              const [from, to] = rand.reply.split('-');
+              if (from && to) {
+                const fromCol = from.charCodeAt(0) - 97, fromRow = 8 - parseInt(from.substring(1));
+                const toCol = to.charCodeAt(0) - 97, toRow = 8 - parseInt(to.substring(1));
+                const mv = legal.find(m => 
+                  m.from[0] === fromRow && m.from[1] === fromCol &&
+                  m.to[0] === toRow && m.to[1] === toCol
+                );
+                if (mv) {
+                  setTimeout(() => {
+                    self.postMessage({ best: mv, score: 0.1, depth: 0 }); // Retorna fake score
+                  }, 200 + Math.random() * 300);
+                  return;
+                }
+              }
+            }
+          }
+          
+          // --- Início do Aprofundamento Iterativo (IDS) ---
+          const startTime = performance.now();
+          const timeLimit = 1000; // 1 segundo de tempo de pensamento
+          
+          let bestMove = null;
+          let bestScore = Infinity; // IA é MIN, então começa com +Infinito
+          let currentDepth = 0;
+
+          // Loop de Aprofundamento Iterativo
+          for (let d = 2; d <= 22; d++) { // Profunidade máxima alta (vai ser parada pelo tempo)
+            currentDepth = d;
+            let currentBestMoveForDepth = null;
+            let currentBestScoreForDepth = Infinity;
+
+            // Reordena os lances, colocando o melhor lance da iteração passada primeiro
+            if (bestMove) {
+              moves.sort((a, b) => {
+                if (a.from[0] === bestMove.from[0] && a.from[1] === bestMove.from[1] && a.to[0] === bestMove.to[0] && a.to[1] === bestMove.to[1]) return -1;
+                if (b.from[0] === bestMove.from[0] && b.from[1] === bestMove.from[1] && b.to[0] === bestMove.to[0] && b.to[1] === bestMove.to[1]) return 1;
+                if (a.type === 'capture' && b.type !== 'capture') return -1;
+                if (a.type !== 'capture' && b.type === 'capture') return 1;
+                return 0;
+              });
+            }
+            
+            // Itera sobre os lances na raiz (nível 0)
+            for(const m of moves){
+              const nb = simulate(board,m);
+              const contCaps = (m.type==='capture') ? followUpCaptures(nb, m.to[0], m.to[1], RED) : [];
+              
+              // Chama o minimax para a profundidade 'd-1'
+              const val = contCaps.length
+                ? minimax(nb, d-1, false, -Infinity, Infinity) // Continua como MIN
+                : minimax(nb, d-1, true,  -Infinity, Infinity); // Passa para MAX
+                
+              if(val < currentBestScoreForDepth){ 
+                currentBestScoreForDepth = val; 
+                currentBestMoveForDepth = m; 
+              }
+            }
+            
+            // A busca *para esta profundidade* terminou.
+            // Atualiza o melhor lance encontrado ATÉ AGORA.
+            bestMove = currentBestMoveForDepth;
+            bestScore = currentBestScoreForDepth;
+
+            // Checa o tempo *apenas* após completar uma profundidade inteira.
+            if (performance.now() - startTime > timeLimit) {
+              // Estourou o tempo. Para de aprofundar.
+              // O 'bestMove' que temos é da última profundidade completa (d).
+              break; 
+            }
+          }
+          // --- Fim do Aprofundamento Iterativo ---
+          
+          // Envia o melhor lance encontrado dentro do limite de tempo
+          self.postMessage({best: bestMove, score: bestScore, depth: currentDepth});
+        };
+      `;
+      
+      const blob = new Blob([code], {type:'application/javascript'});
+      worker = new Worker(URL.createObjectURL(blob));
+      worker.onmessage = (e)=>{
+        const {best, score, depth} = e.data;
+        if(!best){ 
+          if(legal[0]) handleAIResult(legal[0], -999, 0, 'fallback');
+          return;
+        }
+        handleAIResult(best, score, depth);
+      };
+    }
+
+    function aiMove(movesToConsider=null){
+      if(!worker) return;
+      const subset = movesToConsider || null;
+      setFace('thinking',{pulse:true});
+      say('thinking');
+
+      // IMPLEMENTAÇÃO 4: Passa agressividade para o worker
+      worker.aiAgg = getAIAgg();
+      
+      worker.postMessage({ board, legal, subset });
+    }
+
+    function handleAIResult(best, score, depth){
+      const fs = squareEl(best.from[0],best.from[1]);
+      const ts = squareEl(best.to[0],best.to[1]);
+      fs && fs.classList.add('ring-4','ring-red-500','opacity-80','z-10');
+      ts && ts.classList.add('ring-4','ring-yellow-400','opacity-80','z-1U');
+
+      setTimeout(()=>{
+        applyMove(best);
+        fs && fs.classList.remove('ring-4','ring-red-500','opacity-80','z-10');
+        ts && ts.classList.remove('ring-4','ring-yellow-400','opacity-80','z-10');
+        endTurn(best);
+      }, 280);
+    }
+
+    /**********************
+     * Emoções contextuais
+     **********************/
+    function countPieces(){
+      let w=0,r=0;
+      for(let i=0;i<8;i++) for(let j=0;j<8;j++){
+        const v=board[i][j];
+        if(v?.startsWith(WHITE)) w++;
+        if(v?.startsWith(RED)) r++;
+      }
+      return {w,r};
+    }
+    function updateFaceState(){
+      const {w,r}=countPieces();
+      if(r > w+2){ setFace('ahead',{ahead:true}); say('ahead'); }
+      else if(w > r+2){ setFace('behind',{behind:true,shake:true}); say('behind'); }
+      else setFace('idle');
+      const humanMoves = filterMandatoryWithMaxChain(board, WHITE, allMoves(WHITE, board));
+      if(humanMoves.length<=2 && current===RED){ setFace('nearWin',{ahead:true}); say('nearWin'); }
+
+      // IMPLEMENTAÇÃO EXTRA: Visual do modo adaptativo
+      const agg = getAIAgg();
+      const now = performance.now(); // Adicionado para checar o tempo
+      if (agg > 0.7) {
+        faceEmoji.textContent = '😈';
+        // Adicionado o 'if' sugerido para evitar spam da mesma fala
+        if (now - lastTauntAt > 2000) say('ahead', 'Modo agressivo ativo.');
+      } else if (agg < 0.3) {
+        faceEmoji.textContent = '🤖';
+        // Adicionado o 'if' sugerido também para o modo defensivo
+        if (now - lastTauntAt > 2000) say('thinking', 'Modo defensivo.');
+      }
+    }
+
+    /**********************
+     * 🧠 ETAPA 3: Função de Análise
+     **********************/
+    function analyzeMatch(history, winner) {
+      let tips = [];
+      if (history.length < 3) {
+        tips.push("Partida curta demais para análise detalhada.");
+      } else {
+        // 1️⃣ Mudanças de vantagem
+        let swings = 0;
+        for (let i = 1; i < history.length; i++) {
+          if (Math.abs(history[i].diff - history[i - 1].diff) >= 2) swings++;
+        }
+        if (swings > 2) tips.push("Muitas oscilações de vantagem — tente manter uma linha estratégica mais estável.");
+
+        // 2️⃣ Controle de material
+        const last = history[history.length - 1];
+        // Ajustado para usar constantes RED/WHITE
+        if (last.diff < 0 && winner === RED) tips.push("Perdeu mais peças do que o necessário — foque em trocas vantajosas.");
+        if (last.diff > 0 && winner === RED) tips.push("Boa vantagem material — controle sólido do tabuleiro!");
+
+        // 3️⃣ Duração e ritmo
+        if (history.length > 50) tips.push("Partida longa — considere encurtar trocas e forçar o avanço das damas.");
+        else if (history.length < 20) tips.push("Partida rápida — reveja aberturas e defesas iniciais.");
+
+        // 4️⃣ Dica genérica com base no vencedor
+        // Ajustado para usar constantes RED/WHITE
+        if (winner === WHITE) tips.push("Vitória estratégica! Continue priorizando o centro e as diagonais longas.");
+        else tips.push("Observe o controle de centro da IA — evitar recuar demais nas aberturas.");
+      }
+      return tips;
+    }
+
+    /**********************
+     * Boot
+     **********************/
+    document.addEventListener('DOMContentLoaded', ()=>{
+      initWorker();
+      initBoard();
+    });
+  </script>
+
+  <!-- 🔹 BOTÃO E MODAL DE INSTRUÇÕES COM ANIMAÇÃO FUTURISTA -->
+  <button id="btnManual" 
+    class="fixed top-3 right-3 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 backdrop-blur-sm border border-slate-500">
+    ❓ Instruções
+  </button>
+  
+  <!-- 🔸 Modal Manual -->
+  <div id="manualModal" 
+    class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+    
+    <div class="manual-panel bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 border border-cyan-400/40 
+                shadow-[0_0_25px_rgba(56,189,248,0.5)] p-6 rounded-2xl w-[90%] max-w-lg relative overflow-hidden transform scale-95 opacity-0">
+      
+      <!-- Luz de fundo animada -->
+      <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 via-transparent to-blue-500/10 blur-3xl"></div>
+      
+      <h2 class="text-2xl font-bold mb-3 text-center text-cyan-300 drop-shadow-lg">
+        📘 Manual de Instruções
+      </h2>
+
+      <div class="text-sm leading-relaxed space-y-2 max-h-[60vh] overflow-y-auto relative z-10 px-1">
+        <p><strong>🎯 Objetivo:</strong> Capturar todas as peças do inimigo ou deixá-lo sem jogadas.</p>
+        <p><strong>🎮 Movimentos:</strong> Clique em uma peça branca para selecionar e escolha a casa iluminada para mover.</p>
+        <p><strong>⚔️ Capturas:</strong> Pule sobre as peças vermelhas para capturá-las. Capturas múltiplas são possíveis.</p>
+        <p><strong>👑 Promoção:</strong> Ao chegar na linha final, a peça vira Dama e pode mover-se em todas as direções.</p>
+        <p><strong>🤖 Inteligência Artificial:</strong> A IA pensa, reage e evolui — mudando de estilo conforme as partidas.</p>
+        <p><strong>💬 Modo Reflexivo:</strong> A IA explica seus movimentos e reage emocionalmente às jogadas.</p>
+        <p><strong>🔊 Sons:</strong> O jogo possui sons de captura, vitória e derrota.</p>
+        <p><strong>🏁 Vitória:</strong> Vence quem deixar o oponente sem movimentos ou sem peças.</p>
+        <p><strong>💡 Dica:</strong> Controle o centro e evite peças isoladas. Observe o comportamento da IA — ela aprende com você.</p>
+      </div>
+
+      <button id="closeManual" 
+        class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
+        Fechar
+      </button>
+    </div>
+  </div>
+
+  <!-- 📊 ETAPA 5 (HTML): Modal de Análise Pós-Jogo -->
+  <div id="analysisModal" 
+    class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+    
+    <div class="analysis-panel bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 border border-cyan-400/40 
+                shadow-[0_0_25px_rgba(56,189,248,0.5)] p-6 rounded-2xl w-[90%] max-w-lg relative overflow-hidden transform scale-95 opacity-0">
+      
+      <h2 class="text-2xl font-bold mb-3 text-center text-cyan-300 drop-shadow-lg">
+        📊 Análise da Partida
+      </h2>
+
+      <!-- Conteúdo da análise será injetado aqui -->
+      <div id="analysisContent" class="text-sm leading-relaxed space-y-2 max-h-[60vh] overflow-y-auto relative z-10 px-1">
+        <!-- Ex: <p>• Muitas oscilações de vantagem...</p> -->
+      </div>
+
+      <button id="closeAnalysis" 
+        class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
+        Jogar Novamente
+      </button>
+    </div>
+  </div>
+  
+  <!-- 🔊 Som de interface -->
+  <audio id="openSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
+  <audio id="closeSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" preload="auto"></audio>
+  
+  <!-- 🔹 Script de Controle + Animação -->
+  <script>
+    // --- Controle do Modal Manual ---
+    const btnManual = document.getElementById('btnManual');
+    const manualModal = document.getElementById('manualModal');
+    const panel = manualModal.querySelector('.manual-panel'); 
+    const closeManual = document.getElementById('closeManual');
+    const openSound = document.getElementById('openSound');
+    const closeSound = document.getElementById('closeSound');
+
+    btnManual.addEventListener('click', () => {
+      manualModal.classList.remove('hidden');
+      openSound.play().catch(()=>{});
+      setTimeout(() => {
+        panel.style.opacity = '1';
+        panel.style.transform = 'scale(1)';
+      }, 20);
+    });
+
+    function closeModal() {
+      closeSound.play().catch(()=>{});
+      panel.style.opacity = '0';
+      panel.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        manualModal.classList.add('hidden');
+      }, 250);
+    }
+    closeManual.addEventListener('click', closeModal);
+    manualModal.addEventListener('click', (e) => {
+      if (e.target === manualModal) closeModal();
+    });
+
+    // --- 🧠 ETAPA 5 (JS): Controle do Modal de Análise ---
+    const analysisModal = document.getElementById('analysisModal');
+    const analysisPanel = analysisModal.querySelector('.analysis-panel');
+    const analysisContent = document.getElementById('analysisContent');
+    const closeAnalysis = document.getElementById('closeAnalysis');
+
+    function openAnalysisModal(feedback) {
+      // ⚙️ Extra opcional: segurança para o modal
+      if (!feedback || !feedback.length) {
+        feedback = ["Sem análise disponível — jogada final detectada sem histórico completo."];
+      }
+      // Preenche o conteúdo do modal
+      let msg = "";
+      feedback.forEach((tip) => {
+        msg += `<p class="border-b border-cyan-900/50 pb-2 mb-2">• ${tip}</p>`;
+      });
+      analysisContent.innerHTML = msg;
+
+      // Mostra o modal
+      analysisModal.classList.remove('hidden');
+      openSound.play().catch(()=>{});
+      setTimeout(() => {
+        analysisPanel.style.opacity = '1';
+        analysisPanel.style.transform = 'scale(1)';
+      }, 20);
+    }
+
+    function closeAnalysisModal() {
+      closeSound.play().catch(()=>{});
+      analysisPanel.style.opacity = '0';
+      analysisPanel.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        analysisModal.classList.add('hidden');
+        // REINICIA O JOGO
+        document.body.style.background = '#0f172a';
+        initBoard(); 
+      }, 250);
+    }
+    
+    closeAnalysis.addEventListener('click', closeAnalysisModal);
+    // Opcional: Fechar clicando fora (mas o botão é mais claro)
+    // analysisModal.addEventListener('click', (e) => {
+    //   if (e.target === analysisModal) closeAnalysisModal();
+    // });
+
+  </script>
+</body>
+</html>
+
+
+
