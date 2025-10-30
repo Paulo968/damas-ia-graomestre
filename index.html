@@ -6,6 +6,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Damas vs IA — Grão-Mestre (IDS)</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- ⚙️ 3️⃣ (Opcional) — Blindar Tailwind CDN -->
+  <script>
+    tailwind.config = {
+      safelist: [
+        'ring-4',
+        'ring-yellow-400',
+        'ring-red-500',
+        'bg-slate-800',
+        'bg-slate-700',
+        'shadow-xl',
+        'border-slate-700'
+      ]
+    }
+  </script>
   <style>
     body { background:#0f172a; }
     .aspect-square{ aspect-ratio: 1/1; }
@@ -75,49 +89,105 @@
       transition: opacity 300ms ease-out, transform 300ms ease-out;
     }
 
-    /* 🚫 Impede o scroll durante o jogo (Versão Otimizada) */
+    /* 🚫 2️⃣ Solução de layout moderna (anti-scroll/bounce) - CONFORME SUGESTÃO */
     html, body {
-      overflow: hidden;
-      touch-action: manipulation;
+      margin: 0;
+      padding: 0;
       width: 100%;
       height: 100%;
+      overflow: hidden !important; /* 🚫 bloqueia qualquer rolagem */
+      touch-action: manipulation;  /* melhora resposta no toque */
+      overscroll-behavior: none;   /* evita bounce em iOS/Android */
+      -webkit-overflow-scrolling: auto;
+    }
+    
+    /* Container principal da aplicação - CONFORME SUGESTÃO (Atualizado) */
+    #app {
+      width: 100vw;
+      height: 100svh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center; /* centraliza tudo verticalmente */
+      align-items: center;
+      background: #0f172a;
+    }
+
+    /* 🎯 3️⃣ Ajuste do topo e tabuleiro - CONFORME SUGESTÃO (Atualizado) */
+    #topCards {
+      display: flex;
+      justify-content: space-between;
+      align-items: stretch;
+      gap: 1rem;
+      width: 100%;
+      max-width: 32rem;
+      margin-bottom: 1rem; /* 🔹 distância entre os cards e o tabuleiro */
+      /* As classes w-full, max-w-2xl, mx-auto, etc. são movidas do HTML para cá */
+    }
+    
+    #boardWrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* 🔧 Bloco de @media substituído - CONFORME SUGESTÃO (Atualizado) */
+    @media (max-width: 640px) {
+      #topCards {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: stretch;
+        gap: 0.5rem;
+        padding: 0.5rem;
+      }
+
+      #face, #bubble {
+        flex: 1 1 0;
+        min-height: 80px;
+      }
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-center p-4">
+<body> <!-- Classes de layout removidas daqui -->
   <audio id="s-move" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
   <audio id="s-cap"  src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
   <audio id="s-win"  src="https://actions.google.com/sounds/v1/cartoon/congratulations.ogg" preload="auto"></audio>
   <audio id="s-lose" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto"></audio>
 
-  <!-- 
-    *** ESTRUTURA DE HTML MODIFICADA ***
-    Este é o novo container dos "Cards" acima do tabuleiro.
-    Usa Flexbox (flex) para alinhar os dois cards lado a lado.
-  -->
-  <div class="w-full max-w-2xl mx-auto flex justify-between items-stretch gap-4 px-1 mb-4 h-40">
+  <!-- 2️⃣ Novo container principal #app - CONFORME SUGESTÃO -->
+  <div id="app">
+    <!-- 
+      *** ESTRUTURA DE HTML MODIFICADA ***
+      Este é o novo container dos "Cards" acima do tabuleiro.
+      Usa Flexbox (flex) para alinhar os dois cards lado a lado.
+    -->
+    <!-- 3️⃣ Container do topo com novo ID e classes de layout removidas -->
+    <div id="topCards" class="mx-auto"> <!-- Removido: w-full max-w-2xl flex justify-between items-stretch gap-4 px-1 -->
 
-    <!-- Card 1: Rosto da IA -->
-    <div id="face" class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl overflow-hidden relative">
-      <!-- O emoji vai aqui -->
-      <div id="faceEmoji" class="face-emoji">🤖</div>
+      <!-- Card 1: Rosto da IA -->
+      <div id="face" class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl overflow-hidden relative">
+        <!-- O emoji vai aqui -->
+        <div id="faceEmoji" class="face-emoji">🤖</div>
+      </div>
+
+      <!-- Card 2: Falas da IA -->
+      <div id="bubble" class="flex-[2] flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl relative text-center">
+        <!-- Placeholder (o que aparece por padrão) -->
+        <span id="bubblePlaceholder" class="text-slate-500 font-medium italic transition-opacity duration-300 opacity-100">IA está analisando...</span>
+        <!-- Texto da IA (invisível por padrão, aparece com a classe .show) -->
+        <span id="bubbleText" class="absolute inset-4 flex items-center justify-center text-lg font-semibold text-slate-100 transition-opacity duration-300 opacity-0"></span>
+      </div>
+
     </div>
+    <!-- Fim da estrutura modificada -->
 
-    <!-- Card 2: Falas da IA -->
-    <div id="bubble" class="flex-[2] flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl relative text-center">
-      <!-- Placeholder (o que aparece por padrão) -->
-      <span id="bubblePlaceholder" class="text-slate-500 font-medium italic transition-opacity duration-300 opacity-100">IA está analisando...</span>
-      <!-- Texto da IA (invisível por padrão, aparece com a classe .show) -->
-      <span id="bubbleText" class="absolute inset-4 flex items-center justify-center text-lg font-semibold text-slate-100 transition-opacity duration-300 opacity-0"></span>
-    </div>
+    <!-- 3️⃣ Novo #boardWrap envolvendo o container do tabuleiro - CONFORME SUGESTÃO -->
+    <div id="boardWrap">
+      <div class="relative w-full max-w-2xl"> <!-- Este é o 'outer' do JS -->
+        <div id="board" class="grid grid-cols-8 rounded-xl overflow-hidden border-4 border-slate-700 shadow-2xl"></div>
+      </div>
+    </div> <!-- Fim do #boardWrap -->
+  </div> <!-- Fim do #app -->
 
-  </div>
-  <!-- Fim da estrutura modificada -->
-
-
-  <div class="relative w-full max-w-2xl">
-    <div id="board" class="grid grid-cols-8 rounded-xl overflow-hidden border-4 border-slate-700 shadow-2xl"></div>
-  </div>
 
   <div id="overlay" class="overlay"></div>
 
@@ -257,7 +327,7 @@
       ],
 
       nearWin: [
-        "Vitória iminente. Só resta administrar o tempo.",
+        "Vitória imimete. Só resta administrar o tempo.",
         "Todas as rotas convergem para o mesmo fim.",
         "A estrutura está em colapso — previsível.",
         "A lógica já venceu; falta apenas a formalidade.",
@@ -518,7 +588,7 @@
         say('win');
         sLose.play().catch(() => {});
 
-        // 💬 Pós-jogo: provocações e análises técnicas (IA VENCEU)
+        // 💬 Pós-jogo: provocações e análises técnicas (IA VENCEU) 
         setTimeout(() => {
           if (diff > 5) {
             say([
@@ -1187,11 +1257,55 @@
     }
 
     /**********************
+     * 🧩 4️⃣ Layout adaptável (sugerido pelo usuário) - CONFORME SUGESTÃO
+     **********************/
+    function layoutBoard() {
+      try { // Adiciona try/catch para segurança
+        const boardWrap = document.getElementById('boardWrap');
+        const top = document.getElementById('topCards');
+        const app = document.getElementById('app');
+
+        // Garante que os elementos existem
+        if (!boardWrap || !top || !app) {
+          console.warn("Elementos de layout (#app, #topCards, #boardWrap) não encontrados.");
+          return;
+        }
+
+        const pad = 8; // espaçamento
+        const availW = app.clientWidth - pad * 2;
+        
+        // 🧠 MODIFICAÇÃO DE CÁLCULO DE ALTURA
+        // Agora, 'top' pode não existir ou ter altura 0 se estiver oculto
+        const topHeight = top ? top.clientHeight : 0; 
+        
+        const availH = app.clientHeight - topHeight - pad * 3;
+
+        // Garante que o tamanho não seja negativo ou muito pequeno
+        const size = Math.max(200, Math.floor(Math.min(availW, availH)));
+        
+        const outer = boardWrap.querySelector('.relative');
+        if (outer) {
+          outer.style.width = size + 'px';
+          outer.style.height = size + 'px';
+        } else {
+          console.warn("Elemento '.relative' dentro de #boardWrap não encontrado.");
+        }
+      } catch (e) {
+        console.error("Erro em layoutBoard:", e);
+      }
+    }
+
+    // Adiciona o listener de resize - CONFORME SUGESTÃO
+    window.addEventListener('resize', layoutBoard);
+
+
+    /**********************
      * Boot
      **********************/
     document.addEventListener('DOMContentLoaded', ()=>{
       initWorker();
       initBoard();
+      layoutBoard(); // 🧠 Chama a função de layout no início - CONFORME SUGESTÃO
     });
   </script>
 
@@ -1329,6 +1443,7 @@
         // REINICIA O JOGO
         document.body.style.background = '#0f172a';
         initBoard(); 
+        layoutBoard(); // 🧠 Garante que o layout seja recalculado no reinício
       }, 250);
     }
     
