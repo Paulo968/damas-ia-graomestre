@@ -1,206 +1,215 @@
-🤖♟️ Damas vs IA — Nível Grão-Mestre Reflexiva
-
+# 🤖♟️ Damas vs IA — Nível Grão-Mestre Reflexiva  
 IA adaptativa com aprendizado, reflexões e emoções em tempo real.
 
-🎮 Jogar Agora
+🎮 **[Jogar Agora](https://paulo968.github.io/damas-ia-graomestre/)**  
+[![GitHub Pages](https://img.shields.io/badge/Online-Damas%20vs%20IA-brightgreen?style=for-the-badge&logo=github)](https://paulo968.github.io/damas-ia-graomestre/)  
+![IA Adaptativa](https://img.shields.io/badge/IA%20Adaptativa-Ativa-blue?style=for-the-badge&logo=python)  
+![Análise Automática](https://img.shields.io/badge/An%C3%A1lise%20Autom%C3%A1tica-Ativa-green?style=for-the-badge&logo=codeium)
 
+---
 
+<p align="center">
+  <img src="capa.png" alt="Capa do Projeto" width="720">
+</p>
 
+---
 
+## 🇧🇷 Versão em Português
 
+### 🧠 Sobre o Projeto
+Bem-vindo(a) ao **Damas vs IA**, um projeto que combina **inteligência artificial adaptativa**, **aprendizado dinâmico** e **emoções simuladas**.  
+Aqui, a IA **pensa, reage e evolui a cada partida** — alcançando o verdadeiro nível *Grão-Mestre*.
 
+Este jogo de Damas foi desenvolvido em **JavaScript puro**, com um motor de IA que:
 
-<p align="center"> <img src="capa.png" alt="Capa do Projeto" width="720"> </p>
-🇧🇷 Versão em Português
-🧠 Sobre o Projeto
+- Aprende com vitórias e derrotas (ajustando agressividade);
+- Analisa jogadas com **Minimax + poda Alpha-Beta**;
+- Usa **Aprofundamento Iterativo (IDS)** para pensar dentro do tempo limite;
+- Expressa emoções e reflexões analíticas em tempo real;
+- Aplica **heurísticas evolutivas** com foco em posição, mobilidade e controle do centro.
 
-Damas vs IA é mais que um jogo — é uma simulação cognitiva.
-Aqui, a inteligência artificial aprende, reflete e reage às suas decisões.
-Ela evolui a cada partida, alterando agressividade, emoção e estratégia em tempo real.
+💬 A IA comenta suas decisões:
+> "Promoção alcançada. A supremacia de alcance está garantida."  
+> “Você caiu na armadilha... desde o início!”
 
-💡 Desenvolvido em JavaScript puro, com uma IA baseada em:
+---
 
-Minimax com poda Alpha-Beta
+## 🧩 Inteligência Adaptativa — Estrutura Técnica
 
-Aprofundamento Iterativo (IDS)
+A IA combina **velocidade e estratégia real**, unindo pensamento estratégico e comportamento dinâmico.
 
-Heurística adaptativa
+### ⚙️ Núcleo de Decisão
+A base do motor é composta por:
 
-Aprendizado simbólico entre partidas
+1. **Minimax com poda Alpha-Beta** — garante decisões racionais dentro do limite de tempo.  
+2. **Aprofundamento Iterativo (IDS)** — a IA pensa o máximo possível dentro de 1 segundo, sem travar.  
+3. **Heurística Adaptativa** — muda o estilo de jogo conforme a fase da partida e os erros do jogador.
 
-💬 A IA pensa e fala:
-
-“A vantagem posicional está se consolidando.”
-“Você caiu na armadilha... desde o início.”
-“Derrota inesperada. Ajustando parâmetros.”
-
-⚙️ Arquitetura da Inteligência Artificial
-
-A IA é formada por 4 camadas cognitivas que simulam raciocínio humano:
-
-Camada	Descrição	Tipo
-🧮 Núcleo Decisório (Minimax + Alpha-Beta)	Calcula a melhor jogada dentro de limites de tempo	Estratégica
-⏳ Aprofundamento Iterativo (IDS)	Aumenta a profundidade enquanto houver tempo disponível	Temporal
-🧠 Heurística Adaptativa	Ajusta agressividade, mobilidade e prioridades conforme contexto	Comportamental
-💬 Camada Emocional Reflexiva	Gera falas, reações e "análises humanas"	Expressiva
-💡 Aprofundamento Iterativo (IDS)
-
-O motor cognitivo da IA raciocina progressivamente:
-
+#### 💡 Aprofundamento Iterativo (IDS)
+```js
 for (let d = 2; d <= 22; d++) {
   if (performance.now() - startTime > 1000) break;
 }
+Esse loop faz a IA pensar até 1 segundo por jogada, prevendo de 2 a 22 camadas à frente —
+mantendo o raciocínio profundo e a resposta instantânea.
 
+📊 Exemplo de Análise Pós-Partida
+Após cada partida, a IA gera um feedback técnico automático, avaliando o desempenho com base em estratégia, controle e ritmo de jogo.
 
-Ela pensa até 1 segundo por jogada, analisando de 2 a 22 camadas de profundidade,
-o que permite respostas rápidas e profundas ao mesmo tempo.
+<p align="center"> <img src="1.png" alt="Análise da Partida — Exemplo" width="420"> </p>
+🧠 A análise identifica:
 
-🧮 Heurística de Avaliação
+Oscilações de vantagem (instabilidade estratégica);
 
-A função evalBoard() analisa a força do tabuleiro considerando:
+Controle de material e promoções;
 
-Critério	Descrição
-Controle de Centro	Domínio posicional
-Mobilidade	Quantidade de opções de movimento
-Promoção	Potencial de virada e alcance
-Proteção Mútua	Peças cobertas e seguras
-Fase do Jogo	Abertura, meio e final
-Agressividade Adaptativa	Peso dinâmico conforme o desempenho
+Ritmo de jogo e duração da partida;
 
-Essa heurística cria um comportamento natural, estratégico e imprevisível —
-a IA pensa, mas também sente o jogo.
+Dicas de melhoria adaptadas ao estilo do jogador.
 
-🔁 Aprendizado entre Partidas
+💬 Exemplo real da IA:
 
-A IA lembra suas vitórias e derrotas e ajusta o perfil:
-
-if(result === 'win')  aiProfile.agg = Math.max(0.1, aiProfile.agg - 0.05);
-if(result === 'lose') aiProfile.agg = Math.min(0.9, aiProfile.agg + 0.1);
-
-
-Quando vence, joga mais técnica e fria.
-
-Quando perde, torna-se ousada e imprevisível.
-Os parâmetros ficam salvos no navegador via localStorage, garantindo aprendizado real.
-
-🗣️ Emoções e Reflexões Dinâmicas
-
-A IA reage de forma contextual:
-
-Situação	Reação
-Pensando	🤔 “Analisando o ritmo do jogo.”
-Em vantagem	😎 “Estou duas jogadas à frente.”
-Em desvantagem	😐 “Desvantagem detectada. Adaptando parâmetros.”
-Promoção	👑 “Transformação inevitável — o tabuleiro se expande.”
-Vitória	🏆 “Execução concluída. Tabuleiro dominado.”
-Derrota	🩹 “Erro detectado. Registrando aprendizado.”
-
-💬 Ela se comporta como um verdadeiro rival reflexivo — comenta, provoca e analisa.
-
-📊 Análise Pós-Jogo (Nova Função)
-
-Ao final da partida, a IA realiza uma análise técnica e emocional:
-
-Mede variações de vantagem;
-
-Detecta falhas estratégicas;
-
-Gera feedbacks personalizados baseados no histórico.
-
-Exemplo de Análise:
-
-• Muitas oscilações de vantagem — tente manter uma linha estratégica mais estável.
-• Partida longa — considere encurtar trocas e forçar o avanço das damas.
+• Boa vantagem material — controle sólido do tabuleiro.
 • Observe o controle de centro da IA — evitar recuar demais nas aberturas.
 
-Essa análise é gerada localmente, sem servidor, e armazenada junto ao histórico da IA.
+🧮 Heurística de Avaliação
+A função evalBoard() calcula a força do tabuleiro com base em:
 
-🖥️ Interface & Experiência
+Controle de centro
 
-Design responsivo com TailwindCSS
+Mobilidade das peças
 
-Rosto animado da IA reagindo às emoções
+Avanço e promoção
 
-Falas sincronizadas com contexto e tempo
+Proteção mútua
 
-Efeitos sonoros de movimento, captura e vitória
+Fase do jogo (abertura, meio, final)
 
-Transição de fim de jogo com análise reflexiva
+Agressividade adaptativa
 
-<p align="center"> <img src="assets/ui-preview.png" alt="Interface Preview" width="720"> </p>
+Essa combinação cria decisões inteligentes, realistas e imprevisíveis.
+
+🔁 Aprendizado entre Partidas
+A IA ajusta seu comportamento conforme ganha ou perde:
+
+js
+Copiar código
+if(result === 'win')  aiProfile.agg = Math.max(0.1, aiProfile.agg - 0.05);
+if(result === 'lose') aiProfile.agg = Math.min(0.9, aiProfile.agg + 0.1);
+Ela se torna mais calma quando vence e mais agressiva quando perde — simulando aprendizado real.
+
+🤖 Emoções e Reflexões
+Durante o jogo, a IA expressa “pensamentos” e reações contextuais:
+
+"Analisando o ritmo do jogo."
+"A vantagem posicional está se consolidando."
+"Derrota inesperada. Ajustando parâmetros."
+
+Essas falas tornam o desafio mais imersivo e humano.
+
 ⚙️ Tecnologias Utilizadas
 Tecnologia	Função
-HTML5 / TailwindCSS	Interface e layout responsivo
-JavaScript (ES6)	Motor principal e lógica da IA
-Web Worker API	Processamento paralelo da inteligência
-LocalStorage API	Memória e aprendizado persistente
-Audio API	Sons e feedback auditivo
-Análise Dinâmica Pós-Partida	Geração automática de relatórios de desempenho
-🧩 Recursos Avançados e Roadmap
+HTML5 / TailwindCSS	Interface moderna e responsiva
+JavaScript (ES6)	Motor principal e IA
+API Web Worker	Processamento paralelo
+Armazenamento local	Memória e aprendizagem adaptativa
+API de áudio	Sons de jogo
+Emoções Dinâmicas	Expressões e falas da IA
 
+🧩 Recursos Avançados da IA
 🧮 Zobrist Hashing (planejado) — cache rápido e sem colisões
 
 🧠 Self-Play Training (experimental) — IA treinando contra si mesma
 
-⏱️ Tempo de Pensamento Dinâmico — variação por jogada
+⏱️ Alocação Dinâmica de Tempo — tempo variável por jogada
 
-🧬 Avaliação Neural (futuro) — rede neural leve aplicada à heurística
+🧬 Avaliação Neural (futuro) — heurística via rede neural leve
 
-📈 Relatórios de Evolução do Jogador — histórico estatístico visual
+🏆 Destaques
+⚡ IA ultra-rápida e adaptável
+
+🎓 Aprendizado com base em resultados
+
+💬 Modo Reflexivo com falas inteligentes
+
+👑 Promoções animadas
+
+💥 Efeitos sonoros e visuais de impacto
 
 🧑‍💻 Autor
-
 Paulo Zaqueu
 Desenvolvedor independente apaixonado por IA e jogos estratégicos.
 
-“Cada jogo é um cálculo. Cada vitória, uma evolução.”
+"Cada jogo é um cálculo. Cada vitória, uma evolução."
 
 📧 paulozaqueu3@gmail.com
-
 🔗 GitHub
 
 🧬 Licença
-
 Este projeto é de código aberto sob a Licença MIT.
-Sinta-se à vontade para estudar, modificar e aprimorar — apenas mantenha os créditos.
+Sinta-se à vontade para estudá-lo, modificá-lo e aprimorá-lo — apenas mantenha os créditos.
 
 🇬🇧 English Version
 🧠 About the Project
+Welcome to Checkers vs AI, a project that merges adaptive intelligence, dynamic learning, and simulated emotions.
+Here, the AI thinks, reacts, and evolves after every match — reaching true Grandmaster level.
 
-Checkers vs AI is an adaptive artificial intelligence experiment —
-a self-learning opponent that thinks, reacts, and evolves after each match.
+Developed entirely in pure JavaScript, this engine:
 
-Developed entirely in pure JavaScript, featuring:
+Learns from wins and losses (adjusting aggressiveness);
 
-Minimax with Alpha-Beta pruning
+Thinks using Minimax + Alpha-Beta pruning;
 
-Iterative Deepening Search (IDS)
+Uses Iterative Deepening Search (IDS) to stay within time limits;
 
-Adaptive Heuristics
+Expresses emotions and reflections in real time;
 
-Persistent learning between matches
+Applies evolutionary heuristics focused on position, mobility, and board control.
 
-💬 AI reflections:
+💬 The AI explains its reasoning:
 
-“Promotion achieved. Range supremacy guaranteed.”
-“You fell into my trap... from the very start.”
-“Unexpected result. Adjusting strategy.”
+"Promotion achieved. Range supremacy guaranteed."
+"You fell into my trap... from the very start."
 
-⚙️ Core Intelligence Layers
-Layer	Purpose	Type
-Decision Core (Minimax + Alpha-Beta)	Calculates the optimal move	Strategic
-Depth Control (IDS)	Time-aware deep reasoning	Optimization
-Adaptive Heuristics	Adjusts style based on context	Behavioral
-Emotional Engine	Real-time reflections and speech	Expressive
+🧩 Adaptive Intelligence — Technical Overview
+The AI merges speed and strategy, balancing tactical reasoning and adaptive behavior.
+
+⚙️ Core Engine
+Minimax with Alpha-Beta pruning — ensures rational choices within the time limit.
+
+Iterative Deepening Search (IDS) — thinks as deeply as possible within 1 second, ensuring fluid play.
+
+Adaptive Heuristics — adjusts style based on game phase and player behavior.
+
 💡 Iterative Deepening
+js
+Copiar código
 for (let d = 2; d <= 22; d++) {
   if (performance.now() - startTime > 1000) break;
 }
+This allows the AI to think up to 1 second per move, exploring 2–22 layers ahead — balancing depth and real-time responsiveness.
 
+📊 Example of Post-Match Analysis
+After each match, the AI produces a technical feedback summary, evaluating performance, control, and rhythm.
 
-The AI thinks up to 1 second per move, analyzing 2–22 layers deep — balancing depth and responsiveness.
+<p align="center"> <img src="1.png" alt="Match Analysis Example" width="420"> </p>
+🧠 The analysis identifies:
+
+Advantage swings (strategic instability);
+
+Material control and promotions;
+
+Game pace and move length;
+
+Personalized improvement tips.
+
+💬 Example:
+
+• Strong material advantage — solid board control.
+• Watch AI’s center control — avoid retreating too early in openings.
 
 🧮 Board Evaluation
+The evalBoard() function scores the board by:
 
 Center control
 
@@ -210,62 +219,64 @@ Promotion potential
 
 Mutual protection
 
-Game phase awareness
+Game phase (opening, mid, end)
 
 Adaptive aggressiveness
 
 🔁 Learning Between Matches
+The AI dynamically adjusts its behavior:
+
+js
+Copiar código
 if(result === 'win')  aiProfile.agg = Math.max(0.1, aiProfile.agg - 0.05);
 if(result === 'lose') aiProfile.agg = Math.min(0.9, aiProfile.agg + 0.1);
+It becomes calmer when winning and bolder when losing — simulating symbolic learning.
 
+🤖 Reflections and Reactions
+During play, the AI displays contextual reflections:
 
-When the AI wins, it becomes calmer; when it loses, bolder.
-It remembers — adapting with every match.
+"Analyzing tempo..."
+"Positional advantage consolidating."
+"Unexpected result. Adjusting strategy."
 
-🧩 Post-Game Analysis
-
-After each match, the AI generates a contextual feedback report:
-
-“Many advantage swings — try to maintain positional stability.”
-“Your control of the center forced me into passive play.”
-“Excellent tempo — you dictated the rhythm.”
-
-🧠 Technologies Used
+⚙️ Technologies Used
 Technology	Purpose
-HTML5 / TailwindCSS	Responsive modern UI
+HTML5 / TailwindCSS	Modern and responsive UI
 JavaScript (ES6)	Core logic and AI engine
-Web Worker API	Parallel processing
-LocalStorage	Adaptive learning memory
-Audio API	Sound feedback
-Post-Game Analysis	Self-reflection and performance insights
-🏆 Highlights
+Web Worker API	Parallel computation
+Local Storage	Persistent adaptive learning
+Audio API	Game effects
+Dynamic Emotions	AI expressions and reflections
 
+🧩 Advanced AI Features
+🧮 Zobrist Hashing (planned) — collision-free caching
+
+🧠 Self-Play (experimental) — AI training against itself
+
+⏱️ Dynamic Time Allocation — variable thinking time
+
+🧬 Neural Evaluation (future) — lightweight neural heuristic
+
+🏆 Highlights
 ⚡ Ultra-fast and adaptive AI
 
-🧠 Self-evolving opponent
+🧠 Self-tuning difficulty
 
-💬 Reflective mode with contextual dialogue
+💬 Reflective mode with intelligent dialogue
 
-👑 Realistic animations and promotions
+👑 Animated promotions
 
-💥 Immersive visual and sound effects
+💥 Realistic sound and visual effects
 
 🧑‍💻 Author
-
 Paulo Zaqueu
 Independent developer passionate about AI and strategic gameplay.
 
 “Every move is a calculation. Every victory, an evolution.”
 
 📧 paulozaqueu3@gmail.com
-
 🔗 GitHub
 
 🧬 License
-
 This project is open source under the MIT License.
-Feel free to study, modify, and improve — just keep the credits.
-
-💎 Versão atual: IA Grão-Mestre Reflexiva v3.0
-📅 Última atualização: Outubro de 2025
-🧩 Status: Estável e otimizada
+Feel free to study, modify, and improve it — just keep the credits.
