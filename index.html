@@ -32,6 +32,7 @@
       transition: transform .18s ease;
       position: relative; /* Garante que fique sobre o glow */
       z-index: 10;
+      cursor: default; /* 👈 opcional */
     }
     
     /* O #face (antigo .face-container) agora é o card. 
@@ -74,11 +75,10 @@
       transition: opacity 300ms ease-out, transform 300ms ease-out;
     }
 
-    /* 🚫 Impede o scroll durante o jogo */
+    /* 🚫 Impede o scroll durante o jogo (Versão Otimizada) */
     html, body {
       overflow: hidden;
-      touch-action: none;
-      position: fixed;
+      touch-action: manipulation;
       width: 100%;
       height: 100%;
     }
@@ -591,17 +591,28 @@
       elOverlay.classList.add('show');
 
       // 🎬 Efeito de transição: Mostra overlay, DEPOIS mostra análise
-      setTimeout(() => {
-        elOverlay.style.transition = 'opacity 1s ease';
-        elOverlay.style.opacity = '0'; // Começa a desaparecer
-      }, 3000); // Mantém overlay por 3s
+      // 🔹 Evita atraso e falha em dispositivos móveis
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      if (isMobile) {
+        // exibe análise mais rápido, sem fade
+        setTimeout(() => {
+          elOverlay.classList.remove('show');
+          elOverlay.style.opacity = '';
+          openAnalysisModal(feedback);
+        }, 1200);
+      } else {
+        // mantém transição no desktop
+        setTimeout(() => {
+          elOverlay.style.transition = 'opacity 1s ease';
+          elOverlay.style.opacity = '0';
+        }, 3000);
 
-      setTimeout(() => {
-        elOverlay.classList.remove('show');
-        elOverlay.style.opacity = '';
-        // Em vez de reiniciar, MOSTRA O MODAL DE ANÁLISE
-        openAnalysisModal(feedback);
-      }, 4000); // Mostra modal 1s após fade começar
+        setTimeout(() => {
+          elOverlay.classList.remove('show');
+          elOverlay.style.opacity = '';
+          openAnalysisModal(feedback);
+        }, 4000);
+      }
     }
 
     
@@ -1289,6 +1300,10 @@
     const closeAnalysis = document.getElementById('closeAnalysis');
 
     function openAnalysisModal(feedback) {
+      // ⚙️ Extra opcional: segurança para o modal
+      if (!feedback || !feedback.length) {
+        feedback = ["Sem análise disponível — jogada final detectada sem histórico completo."];
+      }
       // Preenche o conteúdo do modal
       let msg = "";
       feedback.forEach((tip) => {
@@ -1326,5 +1341,4 @@
   </script>
 </body>
 </html>
-
 
