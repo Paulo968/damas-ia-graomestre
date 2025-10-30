@@ -22,10 +22,10 @@ Aqui, a IA **pensa, reage e evolui a cada partida** — alcançando o verdadeiro
 
 Este jogo de Damas foi desenvolvido em **JavaScript puro**, com um motor de IA que:
 
-- Aprende com vitórias e derrotas (ajustando agressividade);
-- Analisa jogadas com **Minimax + poda Alpha-Beta**;
-- Usa **Aprofundamento Iterativo (IDS)** para pensar dentro do tempo limite;
-- Expressa emoções e reflexões analíticas em tempo real;
+- Aprende com vitórias e derrotas (ajustando agressividade);  
+- Analisa jogadas com **Minimax + poda Alpha-Beta**;  
+- Usa **Aprofundamento Iterativo (IDS)** para pensar dentro do tempo limite;  
+- Expressa emoções e reflexões analíticas em tempo real;  
 - Aplica **heurísticas evolutivas** com foco em posição, mobilidade e controle do centro.
 
 💬 A IA comenta suas decisões:
@@ -35,12 +35,9 @@ Este jogo de Damas foi desenvolvido em **JavaScript puro**, com um motor de IA q
 ---
 
 ## 🧩 Inteligência Adaptativa — Estrutura Técnica
-
 A IA combina **velocidade e estratégia real**, unindo pensamento estratégico e comportamento dinâmico.
 
 ### ⚙️ Núcleo de Decisão
-A base do motor é composta por:
-
 1. **Minimax com poda Alpha-Beta** — garante decisões racionais dentro do limite de tempo.  
 2. **Aprofundamento Iterativo (IDS)** — a IA pensa o máximo possível dentro de 1 segundo, sem travar.  
 3. **Heurística Adaptativa** — muda o estilo de jogo conforme a fase da partida e os erros do jogador.
@@ -56,7 +53,7 @@ mantendo o raciocínio profundo e a resposta instantânea.
 📊 Exemplo de Análise Pós-Partida
 Após cada partida, a IA gera um feedback técnico automático, avaliando o desempenho com base em estratégia, controle e ritmo de jogo.
 
-<p align="center"> <img src="https://github.com/Paulo968/damas-ia-graomestre/blob/main/1.png?raw=true" alt="Análise da Partida — Exemplo" width="420"> </p>
+<p align="center"> <img src="https://raw.githubusercontent.com/Paulo968/damas-ia-graomestre/main/1.png" alt="Análise da Partida — Exemplo" width="420" style="border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.25);"> </p>
 🧠 A análise identifica:
 
 Oscilações de vantagem (instabilidade estratégica);
@@ -171,28 +168,10 @@ Applies evolutionary heuristics focused on position, mobility, and board control
 "Promotion achieved. Range supremacy guaranteed."
 "You fell into my trap... from the very start."
 
-🧩 Adaptive Intelligence — Technical Overview
-The AI merges speed and strategy, balancing tactical reasoning and adaptive behavior.
-
-⚙️ Core Engine
-Minimax with Alpha-Beta pruning — ensures rational choices within the time limit.
-
-Iterative Deepening Search (IDS) — thinks as deeply as possible within 1 second, ensuring fluid play.
-
-Adaptive Heuristics — adjusts style based on game phase and player behavior.
-
-💡 Iterative Deepening
-js
-Copiar código
-for (let d = 2; d <= 22; d++) {
-  if (performance.now() - startTime > 1000) break;
-}
-This allows the AI to think up to 1 second per move, exploring 2–22 layers ahead — balancing depth and real-time responsiveness.
-
 📊 Example of Post-Match Analysis
 After each match, the AI produces a technical feedback summary, evaluating performance, control, and rhythm.
 
-<p align="center"> <img src="https://github.com/Paulo968/damas-ia-graomestre/blob/main/1.png?raw=true" alt="Match Analysis Example" width="420"> </p>
+<p align="center"> <img src="https://raw.githubusercontent.com/Paulo968/damas-ia-graomestre/main/1.png" alt="Match Analysis Example" width="420" style="border-radius:12px; box-shadow:0 0 15px rgba(0,0,0,0.25);"> </p>
 🧠 The analysis identifies:
 
 Advantage swings (strategic instability);
