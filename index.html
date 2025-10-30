@@ -6,20 +6,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Damas vs IA — Grão-Mestre (IDS)</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- ⚙️ 3️⃣ (Opcional) — Blindar Tailwind CDN -->
-  <script>
-    tailwind.config = {
-      safelist: [
-        'ring-4',
-        'ring-yellow-400',
-        'ring-red-500',
-        'bg-slate-800',
-        'bg-slate-700',
-        'shadow-xl',
-        'border-slate-700'
-      ]
-    }
-  </script>
   <style>
     body { background:#0f172a; }
     .aspect-square{ aspect-ratio: 1/1; }
@@ -89,104 +75,49 @@
       transition: opacity 300ms ease-out, transform 300ms ease-out;
     }
 
-    /* 🚫 2️⃣ Solução de layout moderna (anti-scroll/bounce) - CONFORME SUGESTÃO */
+    /* 🚫 Impede o scroll durante o jogo (Versão Otimizada) */
     html, body {
-      margin: 0;
-      padding: 0;
+      overflow: hidden;
+      touch-action: manipulation;
       width: 100%;
       height: 100%;
-      overflow: hidden !important; /* 🚫 bloqueia qualquer rolagem */
-      touch-action: manipulation;  /* melhora resposta no toque */
-      overscroll-behavior: none;   /* evita bounce em iOS/Android */
-      -webkit-overflow-scrolling: auto;
-    }
-    
-    /* Container principal da aplicação - CONFORME SUGESTÃO */
-    #app {
-      width: 100vw;
-      height: 100svh; /* 🧠 usa a altura real visível da tela */
-      display: flex;
-      flex-direction: column;
-      background: #0f172a; 
-    }
-
-    /* 🎯 3️⃣ Ajuste do topo e tabuleiro - CONFORME SUGESTÃO */
-    #topCards {
-      height: clamp(96px, 18svh, 160px); /* altura adaptável */
-      flex-shrink: 0; /* Impede que o topo encolha */
-      /* As classes w-full, max-w-2xl, mx-auto, etc. são mantidas no HTML */
-    }
-    
-    #boardWrap {
-      flex: 1; /* ocupa tudo o que sobrar */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden; /* Garante que o conteúdo não vaze */
-      margin-top: 0.5rem; /* 🧠 Dica extra (pra visual mais limpo) */
-    }
-
-    /* 🔧 Ajuste responsivo para o topo - CONFORME SUGESTÃO */
-    @media (max-width: 640px) {
-      #topCards {
-        flex-direction: column;     /* Empilha os cards */
-        gap: 0.5rem;                /* Espaçamento entre eles */
-        height: auto;               /* Altura automática */
-        padding: 0.5rem 0.75rem;    /* Margem mais justa */
-      }
-      #face, #bubble {
-        min-height: 90px;           /* Evita que fiquem achatados */
-      }
-      #bubbleText {
-        font-size: 0.95rem;         /* Texto um pouco menor */
-      }
-      #bubblePlaceholder {
-        font-size: 0.85rem;
-      }
     }
   </style>
 </head>
-<body> <!-- Classes de layout removidas daqui -->
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
   <audio id="s-move" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
   <audio id="s-cap"  src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
   <audio id="s-win"  src="https://actions.google.com/sounds/v1/cartoon/congratulations.ogg" preload="auto"></audio>
   <audio id="s-lose" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto"></audio>
 
-  <!-- 2️⃣ Novo container principal #app - CONFORME SUGESTÃO -->
-  <div id="app">
-    <!-- 
-      *** ESTRUTURA DE HTML MODIFICADA ***
-      Este é o novo container dos "Cards" acima do tabuleiro.
-      Usa Flexbox (flex) para alinhar os dois cards lado a lado.
-    -->
-    <!-- 3️⃣ Container do topo com novo ID e classes h-40 e mb-4 removidas -->
-    <div id="topCards" class="w-full max-w-2xl mx-auto flex justify-between items-stretch gap-4 px-1">
+  <!-- 
+    *** ESTRUTURA DE HTML MODIFICADA ***
+    Este é o novo container dos "Cards" acima do tabuleiro.
+    Usa Flexbox (flex) para alinhar os dois cards lado a lado.
+  -->
+  <div class="w-full max-w-2xl mx-auto flex justify-between items-stretch gap-4 px-1 mb-4 h-40">
 
-      <!-- Card 1: Rosto da IA -->
-      <div id="face" class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl overflow-hidden relative">
-        <!-- O emoji vai aqui -->
-        <div id="faceEmoji" class="face-emoji">🤖</div>
-      </div>
-
-      <!-- Card 2: Falas da IA -->
-      <div id="bubble" class="flex-[2] flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl relative text-center">
-        <!-- Placeholder (o que aparece por padrão) -->
-        <span id="bubblePlaceholder" class="text-slate-500 font-medium italic transition-opacity duration-300 opacity-100">IA está analisando...</span>
-        <!-- Texto da IA (invisível por padrão, aparece com a classe .show) -->
-        <span id="bubbleText" class="absolute inset-4 flex items-center justify-center text-lg font-semibold text-slate-100 transition-opacity duration-300 opacity-0"></span>
-      </div>
-
+    <!-- Card 1: Rosto da IA -->
+    <div id="face" class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl overflow-hidden relative">
+      <!-- O emoji vai aqui -->
+      <div id="faceEmoji" class="face-emoji">🤖</div>
     </div>
-    <!-- Fim da estrutura modificada -->
 
-    <!-- 3️⃣ Novo #boardWrap envolvendo o container do tabuleiro - CONFORME SUGESTÃO -->
-    <div id="boardWrap">
-      <div class="relative w-full max-w-2xl"> <!-- Este é o 'outer' do JS -->
-        <div id="board" class="grid grid-cols-8 rounded-xl overflow-hidden border-4 border-slate-700 shadow-2xl"></div>
-      </div>
-    </div> <!-- Fim do #boardWrap -->
-  </div> <!-- Fim do #app -->
+    <!-- Card 2: Falas da IA -->
+    <div id="bubble" class="flex-[2] flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl relative text-center">
+      <!-- Placeholder (o que aparece por padrão) -->
+      <span id="bubblePlaceholder" class="text-slate-500 font-medium italic transition-opacity duration-300 opacity-100">IA está analisando...</span>
+      <!-- Texto da IA (invisível por padrão, aparece com a classe .show) -->
+      <span id="bubbleText" class="absolute inset-4 flex items-center justify-center text-lg font-semibold text-slate-100 transition-opacity duration-300 opacity-0"></span>
+    </div>
 
+  </div>
+  <!-- Fim da estrutura modificada -->
+
+
+  <div class="relative w-full max-w-2xl">
+    <div id="board" class="grid grid-cols-8 rounded-xl overflow-hidden border-4 border-slate-700 shadow-2xl"></div>
+  </div>
 
   <div id="overlay" class="overlay"></div>
 
@@ -1256,50 +1187,11 @@
     }
 
     /**********************
-     * 🧩 4️⃣ Layout adaptável (sugerido pelo usuário) - CONFORME SUGESTÃO
-     **********************/
-    function layoutBoard() {
-      try { // Adiciona try/catch para segurança
-        const boardWrap = document.getElementById('boardWrap');
-        const top = document.getElementById('topCards');
-        const app = document.getElementById('app');
-
-        // Garante que os elementos existem
-        if (!boardWrap || !top || !app) {
-          console.warn("Elementos de layout (#app, #topCards, #boardWrap) não encontrados.");
-          return;
-        }
-
-        const pad = 8; // espaçamento
-        const availW = app.clientWidth - pad * 2;
-        const availH = app.clientHeight - top.clientHeight - pad * 3;
-
-        // Garante que o tamanho não seja negativo ou muito pequeno
-        const size = Math.max(200, Math.floor(Math.min(availW, availH)));
-        
-        const outer = boardWrap.querySelector('.relative');
-        if (outer) {
-          outer.style.width = size + 'px';
-          outer.style.height = size + 'px';
-        } else {
-          console.warn("Elemento '.relative' dentro de #boardWrap não encontrado.");
-        }
-      } catch (e) {
-        console.error("Erro em layoutBoard:", e);
-      }
-    }
-
-    // Adiciona o listener de resize - CONFORME SUGESTÃO
-    window.addEventListener('resize', layoutBoard);
-
-
-    /**********************
      * Boot
      **********************/
     document.addEventListener('DOMContentLoaded', ()=>{
       initWorker();
       initBoard();
-      layoutBoard(); // 🧠 Chama a função de layout no início - CONFORME SUGESTÃO
     });
   </script>
 
@@ -1437,7 +1329,6 @@
         // REINICIA O JOGO
         document.body.style.background = '#0f172a';
         initBoard(); 
-        layoutBoard(); // 🧠 Garante que o layout seja recalculado no reinício
       }, 250);
     }
     
