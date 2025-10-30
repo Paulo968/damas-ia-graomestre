@@ -6,6 +6,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Damas vs IA — Grão-Mestre (IDS)</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- ⚙️ 3️⃣ (Opcional) — Blindar Tailwind CDN -->
+  <script>
+    tailwind.config = {
+      safelist: [
+        'ring-4',
+        'ring-yellow-400',
+        'ring-red-500',
+        'bg-slate-800',
+        'bg-slate-700',
+        'shadow-xl',
+        'border-slate-700'
+      ]
+    }
+  </script>
   <style>
     body { background:#0f172a; }
     .aspect-square{ aspect-ratio: 1/1; }
@@ -81,6 +95,21 @@
       touch-action: manipulation;
       width: 100%;
       height: 100%;
+    }
+
+    /* ✅ Fallback para dispositivos móveis que bugam com overflow:hidden */
+    @media (max-width: 768px) {
+      html, body {
+        overflow: auto !important;
+        height: auto !important;
+        touch-action: auto !important;
+      }
+
+      /* Ajuste opcional: centralizar o tabuleiro em telas menores */
+      #board {
+        max-width: 95vw;
+        margin: 0 auto;
+      }
     }
   </style>
 </head>
