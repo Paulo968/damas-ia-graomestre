@@ -1,7 +1,8 @@
 # 🤖♟️ Damas vs IA — Nível Grão-Mestre Reflexiva
 IA adaptativa com aprendizado, reflexões e emoções em tempo real.  
 
-🎮 **[Jogar Agora](https://paulo968.github.io/damas-ia-graomestre/)**
+🎮 **[Jogar Agora](https://paulo968.github.io/damas-ia-graomestre/)**  
+[![GitHub Pages](https://img.shields.io/badge/Online-Damas%20vs%20IA-brightgreen?style=for-the-badge&logo=github)](https://paulo968.github.io/damas-ia-graomestre/)
 
 ---
 
@@ -18,6 +19,7 @@ Bem-vindo(a) ao **Damas vs IA**, um projeto que combina **inteligência artifici
 Aqui, a IA **pensa, reage e evolui a cada partida** — alcançando o verdadeiro nível *Grão-Mestre*.
 
 Este jogo de Damas foi desenvolvido em **JavaScript puro**, com um motor de IA que:
+
 - Aprende com vitórias e derrotas (ajustando agressividade);
 - Analisa jogadas com **Minimax + poda Alpha-Beta**;
 - Usa **Aprofundamento Iterativo (IDS)** para pensar dentro do tempo limite;
@@ -32,10 +34,11 @@ Este jogo de Damas foi desenvolvido em **JavaScript puro**, com um motor de IA q
 
 ## 🧩 Inteligência Adaptativa — Estrutura Técnica
 
-A IA combina **velocidade e estratégia real**, unindo pensamento tático e comportamento dinâmico.
+A IA combina **velocidade e estratégia real**, unindo pensamento estratégico e comportamento dinâmico.
 
 ### ⚙️ Núcleo de Decisão
 A base do motor é composta por:
+
 1. **Minimax com poda Alpha-Beta** — garante decisões racionais dentro do limite de tempo.  
 2. **Aprofundamento Iterativo (IDS)** — a IA pensa o máximo possível dentro de 1 segundo, sem travar.  
 3. **Heurística Adaptativa** — muda o estilo de jogo conforme a fase da partida e os erros do jogador.
