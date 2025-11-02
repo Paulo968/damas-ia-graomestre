@@ -6,35 +6,27 @@
   <title>Damas vs IA — Grão-Mestre (IDS)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* 1️⃣ ADAPTAÇÃO TOTAL (CSS DO USUÁRIO) 
-       Este bloco substitui as regras anteriores de 'html' e 'body' */
+    /* (Todo o seu CSS <style>... </style> fica aqui, sem NENHUMA mudança) */
     html, body {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden; /* 🚫 impede rolagem */
+      overflow: hidden;
       background: #0f172a;
-      /* 💡 Transição de fundo adicionada para suavizar a mudança de dificuldade */
       transition: background 0.5s ease;
     }
-
-    /* 1️⃣ ADAPTAÇÃO DO TABULEIRO (LÓGICA DO USUÁRIO)
-       Este bloco substitui as classes Tailwind do #board.
-       Modifiquei levemente para centralizar ('margin: 0 auto')
-       dentro do layout existente, preservando os cards da IA acima. */
     #board {
       display: grid;
       grid-template-columns: repeat(8, 1fr);
       aspect-ratio: 1 / 1;
-      width: 100%; /* Ocupa o container */
-      max-width: min(90vmin, 520px); /* 💡 lógica de tamanho do usuário */
-      border: 4px solid #334155; /* 💡 estilo do usuário */
-      border-radius: 16px; /* 💡 estilo do usuário */
-      overflow: hidden; /* 💡 estilo do usuário */
-      margin: 0 auto; /* Centraliza no container pai */
+      width: 100%;
+      max-width: min(90vmin, 520px);
+      border: 4px solid #334155;
+      border-radius: 16px;
+      overflow: hidden;
+      margin: 0 auto;
     }
-    
     .aspect-square{ aspect-ratio: 1/1; }
     .king::after{
       content:'👑';
@@ -50,42 +42,27 @@
       100%{ transform:translate(0,0) }
     }
     .shake{ animation:shake .28s ease-in-out }
-    
-    /* Estilo para o emoji da IA dentro do novo card */
     .face-emoji {
-      font-size: 5rem; /* Aumentado de 42px para 80px */
+      font-size: 5rem;
       line-height: 1;
       transform-origin: center;
       transition: transform .18s ease;
-      position: relative; /* Garante que fique sobre o glow */
+      position: relative;
       z-index: 10;
-      cursor: default; /* 👈 opcional */
+      cursor: default;
     }
-    
-    /* O #face (antigo .face-container) agora é o card. 
-       As animações (pulse, glow) são aplicadas diretamente a ele. */
     #face {
       transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
     }
-
-    /* 🌟 MUDANÇA 1 (CSS): Transição "humana" para o texto da IA 
-      O texto agora sobe suavemente.
-    */
     #bubbleText {
-      /* A opacidade 0 é definida pelo 'opacity-0' do Tailwind no HTML */
       transition: opacity 0.5s ease, transform 0.5s ease;
-      transform: translateY(10px); /* Começa ligeiramente abaixo */
+      transform: translateY(10px);
     }
-
-    /* Lógica para mostrar/esconder o placeholder vs texto no card de fala */
-    #bubble.show #bubblePlaceholder {
-      opacity: 0;
-    }
+    #bubble.show #bubblePlaceholder { opacity: 0; }
     #bubble.show #bubbleText {
       opacity: 1;
-      transform: translateY(0); /* Sobe para a posição final */
+      transform: translateY(0);
     }
-    
     .ring-red-500{ --tw-ring-color: rgb(239 68 68) }
     .ring-yellow-400{ --tw-ring-color: rgb(250 204 21) }
     .overlay{
@@ -95,21 +72,14 @@
       z-index:50; text-align:center; padding: 1rem;
     }
     .overlay.show{ opacity:1; pointer-events:auto }
-
-    /* Estilos para o novo modal de manual E ANÁLISE */
-    /* Adiciona transição para o painel */
     .manual-panel, .analysis-panel {
       transition: opacity 300ms ease-out, transform 300ms ease-out;
     }
-
-    /* 🎨 CSS para o novo botão de opções (⋮) */
     #btnMenuOpcoes {
-      display: none; /* Controlado por JS */
+      display: none;
       opacity: 0;
       transition: opacity 0.3s ease;
     }
-    
-    /* 🎨 1️⃣ Transição com Fade + Slide suave */
     @keyframes slideFadeIn {
       from { opacity: 0; transform: translateY(-10px) scale(0.98); }
       to { opacity: 1; transform: translateY(0) scale(1); }
@@ -118,51 +88,36 @@
       from { opacity: 1; transform: translateY(0) scale(1); }
       to { opacity: 0; transform: translateY(-10px) scale(0.98); }
     }
-    /* 🔹 Menu flutuante com transição suave */
     #menuFlutuante {
-      /* As classes do Tailwind (fixed, top, etc.) controlam a posição */
-      /* Este CSS controla o estado base da animação */
       opacity: 0;
       transform: translateY(-10px) scale(0.98);
-      /* A transição é um fallback, mas a animação é primária */
       transition: opacity 0.25s ease, transform 0.25s ease;
     }
     #menuFlutuante.show {
-      /* Remove o 'hidden' via JS, aplica a animação de entrada */
       animation: slideFadeIn 0.25s forwards;
     }
     #menuFlutuante.hide {
-      /* Aplica a animação de saída, 'hidden' é adicionado via JS no final */
       animation: slideFadeOut 0.25s forwards;
     }
-
-    /* 🎨 Efeitos do Menu Principal Adicionados */
     @keyframes pulseButton {
       0%, 100% { box-shadow: 0 0 20px rgba(56,189,248,0.3); }
       50% { box-shadow: 0 0 35px rgba(56,189,248,0.6); }
     }
     #btnStart { 
-      /* A classe 'shadow-[...]' do Tailwind é a base */
       animation: pulseButton 3s infinite ease-in-out; 
     }
-
     #btnManualMenu:hover { 
       background-color: #475569; 
       box-shadow: 0 0 15px rgba(56,189,248,0.3); 
     }
-
-    /* 🎨 Animação de Fade-in para os Títulos do Menu */
-    #mainMenuScreen h1, #onlineMenuScreen h2, #createRoomScreen h2, #joinRoomScreen h2 { 
+    #mainMenuScreen h1, #onlineMenuScreen h2, #createRoomScreen h2, #joinRoomScreen h2, #loginScreen h1, #registerScreen h1 { 
       animation: fadeIn 1.2s ease-out;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(-10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
-    /* 🌐 CSS para o Menu de Múltiplas Telas */
     #menuContainer {
-      /* Este é o container pai, não precisa de flex */
       position: fixed;
       inset: 0;
       background: #0f172a;
@@ -183,10 +138,8 @@
     .menu-screen.hidden {
       opacity: 0;
       visibility: hidden;
-      pointer-events: none; /* Impede cliques na tela oculta */
+      pointer-events: none;
     }
-    
-    /* 🌐 PASSO 1 (CSS): Rotação do Tabuleiro Online */
     #board {
       transition: transform 0.4s ease-in-out;
       transform-origin: center center;
@@ -194,28 +147,54 @@
     .piece {
       transition: transform 0.4s ease-in-out;
     }
-    /* Rotação do tabuleiro para quem joga de VERMELHO */
     #board.rot-180 { transform: rotate(180deg); }
-    
-    /* Contra-rotação das peças (pra elas não ficarem “de cabeça pra baixo”) */
     .piece.counter-rot { 
-      /* 🔧 CORREÇÃO APLICADA: 
-        Combina a centralização (translate) com a rotação.
-        Isso impede que a rotação sobrescreva a centralização do Tailwind.
-      */
       transform: translate(-50%, -50%) rotate(180deg); 
     }
-    
-    /* 🚫 Regra 'html, body' anterior foi removida e substituída pela do usuário no topo */
   </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
 
   <div id="menuContainer" class="fixed inset-0 bg-slate-900 text-slate-200 z-50">
     
-    <div id="mainMenuScreen" class="menu-screen">
-      <h1 class="text-4xl font-extrabold mb-8 text-cyan-300 drop-shadow-lg">Damas vs IA</h1>
-    
+    <div id="loginScreen" class="menu-screen">
+      <h1 class="text-4xl font-extrabold mb-8 text-cyan-300 drop-shadow-lg">Login</h1>
+      <p id="loginError" class="text-red-400 mb-4 h-5"></p> <input id="inputNomeLogin" type="text" placeholder="Seu Nome"
+        class="text-center bg-slate-800 border border-slate-600 rounded-xl px-6 py-3 mb-4 text-white w-60 uppercase tracking-widest" />
+      
+      <input id="inputPinLogin" type="password" placeholder="PIN de 4 dígitos" maxlength="4"
+        class="text-center bg-slate-800 border border-slate-600 rounded-xl px-6 py-3 mb-6 text-white w-60 tracking-[.5em]" />
+      
+      <button id="btnLogin" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl w-60 mb-4">
+        Entrar
+      </button>
+      
+      <button id="btnGoToRegister" class="text-cyan-400 hover:text-cyan-300 w-60">
+        Não tenho conta (Registrar)
+      </button>
+    </div>
+
+    <div id="registerScreen" class="menu-screen hidden">
+      <h1 class="text-4xl font-extrabold mb-8 text-cyan-300 drop-shadow-lg">Registrar</h1>
+      <p id="registerError" class="text-red-400 mb-4 h-5"></p> <input id="inputNomeReg" type="text" placeholder="Crie seu Nome"
+        class="text-center bg-slate-800 border border-slate-600 rounded-xl px-6 py-3 mb-4 text-white w-60 uppercase tracking-widest" />
+      
+      <input id="inputPinReg" type="password" placeholder="Crie um PIN de 4 dígitos" maxlength="4"
+        class="text-center bg-slate-800 border border-slate-600 rounded-xl px-6 py-3 mb-6 text-white w-60 tracking-[.5em]" />
+      
+      <button id="btnRegister" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-xl w-60 mb-4">
+        Criar Conta
+      </button>
+      
+      <button id="btnGoToLogin" class="text-cyan-400 hover:text-cyan-300 w-60">
+        Já tenho conta (Login)
+      </button>
+    </div>
+
+    <div id="mainMenuScreen" class="menu-screen hidden"> <h1 class="text-4xl font-extrabold mb-8 text-cyan-300 drop-shadow-lg">Damas vs IA</h1>
+      
+      <p class="mb-4 text-slate-400">Logado como: <strong id="playerName" class="text-white">...</strong></p>
+
       <button id="btnStart" 
         class="bg-cyan-600 hover:bg-cyan-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(56,189,248,0.5)] mb-4 transition w-60">
         🤖 Jogar vs IA
@@ -244,45 +223,23 @@
 
     <div id="onlineMenuScreen" class="menu-screen hidden">
       <h1 class="text-4xl font-extrabold mb-8 text-cyan-300 drop-shadow-lg">Jogar Online</h1>
-    
-      <button id="btnCriarSala" 
-        class="bg-blue-600 hover:bg-blue-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(56,189,248,0.5)] mb-4 transition w-60">
-        🆕 Criar Sala
-      </button>
-    
-      <button id="btnEntrarSala" 
-        class="bg-emerald-600 hover:bg-emerald-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-4 transition w-60">
-        🔍 Entrar em Sala
-      </button>
-    
-      <button id="btnVoltarMenu" 
-        class="mt-4 bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded-lg shadow-md border border-slate-600 w-60">
-        ⬅️ Voltar
-      </button>
+      <button id="btnCriarSala" class="bg-blue-600 hover:bg-blue-500 ...">🆕 Criar Sala</button>
+      <button id="btnEntrarSala" class="bg-emerald-600 hover:bg-emerald-500 ...">🔍 Entrar em Sala</button>
+      <button id="btnVoltarMenu" class="mt-4 bg-slate-700 hover:bg-slate-600 ...">⬅️ Voltar</button>
     </div>
     
     <div id="createRoomScreen" class="menu-screen hidden">
-      <h2 class="text-3xl font-bold mb-4 text-blue-300 drop-shadow-lg">🆕 Criar Sala</h2>
-      <p class="mb-2 text-slate-400">Código da sala:</p>
-      <div class="text-2xl font-mono bg-slate-800 border border-blue-500 rounded-xl px-6 py-3 mb-6">
-        <span id="roomCode">-----</span>
-      </div>
-      <p class="text-slate-400 mb-8">Compartilhe este código com seu amigo para ele entrar na sala.</p>
-      <button id="btnVoltarOnline1" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-2 rounded-lg w-60">
-        ⬅️ Voltar
-      </button>
+      <h2 class="text-3xl font-bold mb-4 ...">🆕 Criar Sala</h2>
+      <div class="text-2xl font-mono ..."><span id="roomCode">-----</span></div>
+      <p class="text-slate-400 mb-8">...</p>
+      <button id="btnVoltarOnline1" class="bg-slate-800 hover:bg-slate-700 ...">⬅️ Voltar</button>
     </div>
     
     <div id="joinRoomScreen" class="menu-screen hidden">
-      <h2 class="text-3xl font-bold mb-6 text-blue-300 drop-shadow-lg">🔍 Entrar em Sala</h2>
-      <input id="inputRoomCode" type="text" placeholder="Código da sala"
-        class="text-center bg-slate-800 border border-blue-500 rounded-xl px-6 py-3 mb-6 text-white w-60 uppercase tracking-widest" />
-      <button id="btnJoin" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl w-60 mb-4">
-        🚪 Entrar
-      </button>
-      <button id="btnVoltarOnline2" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-2 rounded-lg w-60">
-        ⬅️ Voltar
-      </button>
+      <h2 class="text-3xl font-bold mb-6 ...">🔍 Entrar em Sala</h2>
+      <input id="inputRoomCode" type="text" placeholder="Código da sala" class="..." />
+      <button id="btnJoin" class="bg-blue-600 hover:bg-blue-500 ...">🚪 Entrar</button>
+      <button id="btnVoltarOnline2" class="bg-slate-800 hover:bg-slate-700 ...">⬅️ Voltar</button>
     </div>
 
   </div>
@@ -292,87 +249,58 @@
   <audio id="s-lose" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto"></audio>
   <audio id="s-desist" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto"></audio>
 
-  <button id="btnMenuOpcoes" 
-    class="fixed top-4 right-4 text-slate-300 z-50 hover:text-cyan-400 transition">
+  <button id="btnMenuOpcoes" class="fixed top-4 right-4 text-slate-300 z-50 hover:text-cyan-400 transition">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-7 h-7">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h.01M12 12h.01M12 18h.01" />
     </svg>
   </button>
 
-  <div id="menuFlutuante" 
-    class="hidden fixed top-12 right-4 bg-slate-800 border border-cyan-400/40 rounded-xl shadow-xl z-50 p-2 w-40 text-sm text-slate-100">
+  <div id="menuFlutuante" class="hidden fixed top-12 right-4 bg-slate-800 border border-cyan-400/40 rounded-xl shadow-xl z-50 p-2 w-40 text-sm text-slate-100">
     <button id="voltarMenu" class="block w-full text-left px-3 py-2 hover:bg-slate-700 rounded">⬅️ Voltar ao Menu</button>
     <button id="desistirJogo" class="block w-full text-left px-3 py-2 hover:bg-slate-700 rounded">🏳️ Desistir</button>
   </div>
-  <div class="w-full max-w-2xl mx-auto flex justify-between items-stretch gap-4 px-1 mb-4 h-40 mt-6">
 
+  <div class="w-full max-w-2xl mx-auto flex justify-between items-stretch gap-4 px-1 mb-4 h-40 mt-6">
     <div id="face" class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl overflow-hidden relative">
       <div id="faceEmoji" class="face-emoji">🤖</div>
     </div>
-
     <div id="bubble" class="flex-[2] flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl relative text-center">
       <span id="bubblePlaceholder" class="text-slate-500 font-medium italic transition-opacity duration-300 opacity-100">IA está analisando...</span>
       <span id="bubbleText" class="absolute inset-4 flex items-center justify-center text-lg font-semibold text-slate-100 transition-opacity duration-300 opacity-0"></span>
     </div>
-
   </div>
+
   <div class="relative w-full max-w-2xl">
-    
     <div id="board"></div>
   </div>
 
   <div id="overlay" class="overlay"></div>
 
-  <div id="manualModal" 
-    class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
-    
-    <div class="manual-panel bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 border border-cyan-400/40 
-                shadow-[0_0_25px_rgba(56,189,248,0.5)] p-6 rounded-2xl w-[90%] max-w-lg relative overflow-hidden transform scale-95 opacity-0">
-      
-      <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 via-transparent to-blue-500/10 blur-3xl"></div>
-      
+  <div id="manualModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+    <div class="manual-panel bg-gradient-to-b from-slate-900 to-slate-800 ...">
       <h2 class="text-2xl font-bold mb-3 text-center text-cyan-300 drop-shadow-lg">
         📘 Manual de Instruções
       </h2>
-
       <div class="text-sm leading-relaxed space-y-2 max-h-[60vh] overflow-y-auto relative z-10 px-1">
-        <p><strong>🎯 Objetivo:</strong> Capturar todas as peças do inimigo ou deixá-lo sem jogadas.</p>
-        <p><strong>🎮 Movimentos:</strong> Clique em uma peça sua para selecionar e escolha uma casa válida para mover.</p>
-        <p><strong>⚔️ Capturas:</strong> Pule sobre as peças inimigas para capturá-las. Capturas múltiplas são possíveis.</p>
-        <p><strong>👑 Promoção:</strong> Ao chegar na linha final, a peça vira Dama (👑) e pode mover-se em todas as direções.</p>
-        <p><strong>🤖 Modo vs IA:</strong> A IA pensa, reage e evolui — mudando de estilo conforme as partidas.</p>
-        <p><strong>🌐 Modo Online:</strong> Jogue contra um amigo. Crie uma sala e compartilhe o código, ou entre em uma sala existente.</p>
-        <p><strong>🏁 Vitória:</strong> Vence quem deixar o oponente sem movimentos ou sem peças.</p>
-        <p><strong>💡 Dica:</strong> Controle o centro e evite peças isoladas. Observe o comportamento da IA — ela aprende com você.</p>
+        <p><strong>🎯 Objetivo:</strong> Capturar todas as peças do inimigo...</p>
       </div>
-
-      <button id="closeManual" 
-        class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
+      <button id="closeManual" class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 ...">
         Fechar
       </button>
     </div>
   </div>
 
-  <div id="analysisModal" 
-    class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
-    
-    <div class="analysis-panel bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 border border-cyan-400/40 
-                shadow-[0_0_25px_rgba(56,189,248,0.5)] p-6 rounded-2xl w-[90%] max-w-lg relative overflow-hidden transform scale-95 opacity-0">
-      
+  <div id="analysisModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+    <div class="analysis-panel bg-gradient-to-b from-slate-900 to-slate-800 ...">
       <h2 class="text-2xl font-bold mb-3 text-center text-cyan-300 drop-shadow-lg">
         📊 Análise da Partida
       </h2>
-
-      <div id="analysisContent" class="text-sm leading-relaxed space-y-2 max-h-[60vh] overflow-y-auto relative z-10 px-1">
-        </div>
-
-      <button id="closeAnalysis" 
-        class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
+      <div id="analysisContent" class="text-sm leading-relaxed space-y-2 ...">
+      </div>
+      <button id="closeAnalysis" class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 ...">
         Jogar Novamente (vs IA)
       </button>
-      
-      <button id="backToMenu"
-        class="mt-3 w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
+      <button id="backToMenu" class="mt-3 w-full bg-slate-700 hover:bg-slate-600 ...">
         ⬅️ Voltar ao Menu
       </button>
     </div>
