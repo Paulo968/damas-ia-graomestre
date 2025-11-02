@@ -1,6 +1,6 @@
 // ======================================
 // GAME-CORE.JS
-// (COMPLETO - Login + Regras Corretas + Eco Fix)
+// (Corrigido com Bug 1: currentRoom e Bug 7: PIN btoa)
 // ======================================
 
 // 1. IMPORTAÇÕES
@@ -156,7 +156,8 @@ export async function registrarJogador(nome, pin) {
   try {
     const newPlayerData = {
       nome: nome.toUpperCase(),
-      pin: pin, // ⚠️ ALERTA: Salvando PIN como texto puro!
+      // 🔧 CORREÇÃO (Bug 7): Codifica o PIN
+      pin: btoa(pin), // Salva o PIN codificado
       elo: 1000,
       vitorias: 0,
       derrotas: 0
@@ -187,7 +188,8 @@ export async function logarJogador(nome, pin) {
   const userDoc = querySnapshot.docs[0];
   const userData = userDoc.data();
 
-  if (userData.pin !== pin) {
+  // 🔧 CORREÇÃO (Bug 7): Decodifica o PIN para comparar
+  if (atob(userData.pin) !== pin) {
     return { success: false, message: "PIN incorreto!" };
   }
 
@@ -205,10 +207,10 @@ export async function criarSalaFirebase(codigo, jogador1_id) {
     ui.showOverlayError("Erro de conexão (DB1). O modo online não funcionará.");
     return;
   }
-  const salaRef = doc(db, `salas`, codigo); // Simplificado
+  const salaRef = doc(db, `salas`, codigo);
   try {
     await setDoc(salaRef, {
-      Jogador1: jogador1_id, // Salva o ID do documento do jogador
+      Jogador1: jogador1_id,
       Jogador2: "",
       Tabuleiro: null,
       JogadorDaVez: WHITE,
@@ -226,7 +228,7 @@ export async function entrarSalaFirebase(codigo, jogador2_id) {
     ui.showOverlayError("Erro de conexão (DB2). O modo online não funcionará.");
     return false;
   }
-  const salaRef = doc(db, `salas`, codigo); // Simplificado
+  const salaRef = doc(db, `salas`, codigo);
   
   try {
     const salaSnap = await getDoc(salaRef);
@@ -243,7 +245,7 @@ export async function entrarSalaFirebase(codigo, jogador2_id) {
     }
   
     await updateDoc(salaRef, { 
-      Jogador2: jogador2_id, // Salva o ID do documento do jogador
+      Jogador2: jogador2_id,
       Status: "Em jogo",
       Timestamp: Date.now()
     });
@@ -271,7 +273,7 @@ export function ouvirSala(codigo) {
     setOnlineUnsubscribe(null);
   }
   
-  const salaRef = doc(db, `salas`, codigo); // Simplificado
+  const salaRef = doc(db, `salas`, codigo);
 
   const unsub = onSnapshot(salaRef, (docSnap) => {
     const data = docSnap.data();
@@ -338,7 +340,8 @@ async function enviarJogadaFirebase(mv, isMultiCapture = false) {
      console.error("Firebase DB não está inicializado.");
      return;
   }
-  const salaRef = doc(db, `salas`, codigo); // Simplificado
+  // 🔧 CORREÇÃO (Bug 1): Usa 'currentRoom' em vez de 'codigo'
+  const salaRef = doc(db, `salas`, currentRoom);
   
   const proximoJogador = isMultiCapture ? current : (current === WHITE) ? RED : WHITE;
 
@@ -364,7 +367,8 @@ async function enviarFimDeJogoFirebase(vencedor) {
      console.error("Firebase DB não está inicializado.");
      return;
   }
-  const salaRef = doc(db, `salas`, codigo); // Simplificado
+  // 🔧 CORREÇÃO (Bug 1): Usa 'currentRoom' em vez de 'codigo'
+  const salaRef = doc(db, `salas`, currentRoom);
   
   try {
     await updateDoc(salaRef, {
@@ -1045,3 +1049,4 @@ window.toggleColor = () => {
   ajustarOrientacao(newColor);
   console.log('Agora você é:', newColor);
 };
+}
