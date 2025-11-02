@@ -6,7 +6,7 @@
   <title>Damas vs IA — Grão-Mestre (IDS)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* (Todo o seu CSS <style>... </style> fica aqui, sem NENHUMA mudança) */
+    /* 🔧 LINHA REMOVIDA: O comentário que quebrava o CSS foi apagado daqui */
     html, body {
       margin: 0;
       padding: 0;
@@ -76,10 +76,7 @@
       transition: opacity 300ms ease-out, transform 300ms ease-out;
     }
     
-    /* 🔧 BUG DOS 3 PONTINHOS:
-       Este 'display: none' ESCONDE o botão por padrão.
-       Ele só aparece quando o JS (initBoard) mandar.
-    */
+    /* Esta regra esconde o botão "..." por padrão */
     #btnMenuOpcoes {
       display: none; 
       opacity: 0;
@@ -131,10 +128,7 @@
       z-index: 50;
     }
 
-    /* 🔧 BUG DA CENTRALIZAÇÃO:
-       'justify-content: center' FORÇA a centralização vertical.
-       'align-items: center' FORÇA a centralização horizontal.
-    */
+    /* Esta regra centraliza as telas de Login/Registro */
     .menu-screen {
       position: absolute;
       inset: 0;
