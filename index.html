@@ -6,7 +6,7 @@
   <title>Damas vs IA — Grão-Mestre (IDS)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* 🔧 LINHA REMOVIDA: O comentário que quebrava o CSS foi apagado daqui */
+    /* 🔧 Bug do </style> corrigido: comentário problemático removido */
     html, body {
       margin: 0;
       padding: 0;
@@ -76,7 +76,6 @@
       transition: opacity 300ms ease-out, transform 300ms ease-out;
     }
     
-    /* Esta regra esconde o botão "..." por padrão */
     #btnMenuOpcoes {
       display: none; 
       opacity: 0;
@@ -128,7 +127,6 @@
       z-index: 50;
     }
 
-    /* Esta regra centraliza as telas de Login/Registro */
     .menu-screen {
       position: absolute;
       inset: 0;
