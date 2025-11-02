@@ -16,6 +16,8 @@
       height: 100%;
       overflow: hidden; /* 🚫 impede rolagem */
       background: #0f172a;
+      /* 💡 Transição de fundo adicionada para suavizar a mudança de dificuldade */
+      transition: background 0.5s ease;
     }
 
     /* 1️⃣ ADAPTAÇÃO DO TABULEIRO (LÓGICA DO USUÁRIO)
@@ -101,22 +103,226 @@
       transition: opacity 300ms ease-out, transform 300ms ease-out;
     }
 
+    /* 🎨 CSS para o novo botão de opções (⋮) */
+    #btnMenuOpcoes {
+      display: none; /* Controlado por JS */
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    /* 🎨 1️⃣ Transição com Fade + Slide suave */
+    @keyframes slideFadeIn {
+      from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes slideFadeOut {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to { opacity: 0; transform: translateY(-10px) scale(0.98); }
+    }
+    /* 🔹 Menu flutuante com transição suave */
+    #menuFlutuante {
+      /* As classes do Tailwind (fixed, top, etc.) controlam a posição */
+      /* Este CSS controla o estado base da animação */
+      opacity: 0;
+      transform: translateY(-10px) scale(0.98);
+      /* A transição é um fallback, mas a animação é primária */
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    #menuFlutuante.show {
+      /* Remove o 'hidden' via JS, aplica a animação de entrada */
+      animation: slideFadeIn 0.25s forwards;
+    }
+    #menuFlutuante.hide {
+      /* Aplica a animação de saída, 'hidden' é adicionado via JS no final */
+      animation: slideFadeOut 0.25s forwards;
+    }
+
+    /* 🎨 Efeitos do Menu Principal Adicionados */
+    @keyframes pulseButton {
+      0%, 100% { box-shadow: 0 0 20px rgba(56,189,248,0.3); }
+      50% { box-shadow: 0 0 35px rgba(56,189,248,0.6); }
+    }
+    #btnStart { 
+      /* A classe 'shadow-[...]' do Tailwind é a base */
+      animation: pulseButton 3s infinite ease-in-out; 
+    }
+
+    #btnManualMenu:hover { 
+      background-color: #475569; 
+      box-shadow: 0 0 15px rgba(56,189,248,0.3); 
+    }
+
+    /* 🎨 Animação de Fade-in para os Títulos do Menu */
+    #mainMenuScreen h1, #onlineMenuScreen h2, #createRoomScreen h2, #joinRoomScreen h2 { 
+      animation: fadeIn 1.2s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 🌐 CSS para o Menu de Múltiplas Telas */
+    #menuContainer {
+      /* Este é o container pai, não precisa de flex */
+      position: fixed;
+      inset: 0;
+      background: #0f172a;
+      color: #e2e8f0;
+      z-index: 50;
+    }
+    .menu-screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.4s ease, visibility 0.4s;
+      visibility: visible;
+      opacity: 1;
+    }
+    .menu-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none; /* Impede cliques na tela oculta */
+    }
+    
+    /* 🌐 PASSO 1 (CSS): Rotação do Tabuleiro Online */
+    #board {
+      transition: transform 0.4s ease-in-out;
+      transform-origin: center center;
+    }
+    .piece {
+      transition: transform 0.4s ease-in-out;
+    }
+    /* Rotação do tabuleiro para quem joga de VERMELHO */
+    #board.rot-180 { transform: rotate(180deg); }
+    /* Contra-rotação das peças (pra elas não ficarem “de cabeça pra baixo”) */
+    .piece.counter-rot { transform: rotate(180deg); }
+    
     /* 🚫 Regra 'html, body' anterior foi removida e substituída pela do usuário no topo */
   </style>
 </head>
 <!-- O layout flex-col do body é mantido para empilhar os cards e o tabuleiro -->
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+  <!-- 🎮 CONTAINER DO MENU (AGORA GUARDA VÁRIAS TELAS) -->
+  <div id="menuContainer" class="fixed inset-0 bg-slate-900 text-slate-200 z-50">
+    
+    <!-- TELA 1: MENU PRINCIPAL -->
+    <div id="mainMenuScreen" class="menu-screen">
+      <h1 class="text-4xl font-extrabold mb-8 text-cyan-300 drop-shadow-lg">Damas vs IA</h1>
+    
+      <!-- Botão de Iniciar (agora "Jogar vs IA") -->
+      <button id="btnStart" 
+        class="bg-cyan-600 hover:bg-cyan-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(56,189,248,0.5)] mb-4 transition w-60">
+        🤖 Jogar vs IA
+      </button>
+    
+      <!-- Seletor de Dificuldade (pertence ao modo IA) -->
+      <div class="text-center mb-4" id="difficultyContainer">
+        <p class="mb-2 text-slate-400">Dificuldade:</p>
+        <select id="difficulty" class="bg-slate-800 border border-cyan-400/40 text-white px-4 py-2 rounded-lg w-60">
+          <option value="easy">Fácil</option>
+          <option value="medium" selected>Médio</option>
+          <option value="hard">Difícil</option>
+          <option value="master">Mestre</option>
+        </select>
+      </div>
+
+      <!-- NOVO BOTÃO: Jogar Online -->
+      <button id="btnOnline" 
+        class="bg-blue-600 hover:bg-blue-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(96,165,250,0.5)] transition w-60">
+        🌐 Jogar Online
+      </button>
+    
+      <!-- Botão de Instruções -->
+      <button id="btnManualMenu"
+        class="mt-6 bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded-lg shadow-md border border-slate-600 transition-all w-60">
+        ❓ Instruções
+      </button>
+    </div>
+
+    <!-- 🔹 Submenu: Modo Online (REFEITO) -->
+    <div id="onlineMenuScreen" class="menu-screen hidden">
+      <h1 class="text-4xl font-extrabold mb-8 text-cyan-300 drop-shadow-lg">Jogar Online</h1>
+    
+      <button id="btnCriarSala" 
+        class="bg-blue-600 hover:bg-blue-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(56,189,248,0.5)] mb-4 transition w-60">
+        🆕 Criar Sala
+      </button>
+    
+      <button id="btnEntrarSala" 
+        class="bg-emerald-600 hover:bg-emerald-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-4 transition w-60">
+        🔍 Entrar em Sala
+      </button>
+    
+      <button id="btnVoltarMenu" 
+        class="mt-4 bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded-lg shadow-md border border-slate-600 w-60">
+        ⬅️ Voltar
+      </button>
+    </div>
+    
+    <!-- 🔹 Tela: Criar Sala (NOVO) -->
+    <div id="createRoomScreen" class="menu-screen hidden">
+      <h2 class="text-3xl font-bold mb-4 text-blue-300 drop-shadow-lg">🆕 Criar Sala</h2>
+      <p class="mb-2 text-slate-400">Código da sala:</p>
+      <div class="text-2xl font-mono bg-slate-800 border border-blue-500 rounded-xl px-6 py-3 mb-6">
+        <span id="roomCode">-----</span>
+      </div>
+      <p class="text-slate-400 mb-8">Compartilhe este código com seu amigo para ele entrar na sala.</p>
+      <button id="btnVoltarOnline1" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-2 rounded-lg w-60">
+        ⬅️ Voltar
+      </button>
+    </div>
+    
+    <!-- 🔹 Tela: Entrar em Sala (NOVO) -->
+    <div id="joinRoomScreen" class="menu-screen hidden">
+      <h2 class="text-3xl font-bold mb-6 text-blue-300 drop-shadow-lg">🔍 Entrar em Sala</h2>
+      <input id="inputRoomCode" type="text" placeholder="Código da sala"
+        class="text-center bg-slate-800 border border-blue-500 rounded-xl px-6 py-3 mb-6 text-white w-60 uppercase tracking-widest" />
+      <button id="btnJoin" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl w-60 mb-4">
+        🚪 Entrar
+      </button>
+      <button id="btnVoltarOnline2" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-5 py-2 rounded-lg w-60">
+        ⬅️ Voltar
+      </button>
+    </div>
+
+  </div>
+  <!-- FIM DO CONTAINER DO MENU -->
+
+
   <audio id="s-move" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
   <audio id="s-cap"  src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
   <audio id="s-win"  src="https://actions.google.com/sounds/v1/cartoon/congratulations.ogg" preload="auto"></audio>
   <audio id="s-lose" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto"></audio>
+  <!-- 💬 Áudio de desistência (cinemático) -->
+  <audio id="s-desist" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto"></audio>
+
+  <!-- 🚀 NOVO MENU DE OPÇÕES (SUBSTITUI O BOTÃO DESISTIR) -->
+  <!-- 🧠 3️⃣ Ícone SVG Premium -->
+  <button id="btnMenuOpcoes" 
+    class="fixed top-4 right-4 text-slate-300 z-50 hover:text-cyan-400 transition">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-7 h-7">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h.01M12 12h.01M12 18h.01" />
+    </svg>
+  </button>
+
+  <div id="menuFlutuante" 
+    class="hidden fixed top-12 right-4 bg-slate-800 border border-cyan-400/40 rounded-xl shadow-xl z-50 p-2 w-40 text-sm text-slate-100">
+    <button id="voltarMenu" class="block w-full text-left px-3 py-2 hover:bg-slate-700 rounded">⬅️ Voltar ao Menu</button>
+    <button id="desistirJogo" class="block w-full text-left px-3 py-2 hover:bg-slate-700 rounded">🏳️ Desistir</button>
+  </div>
+  <!-- FIM NOVO MENU -->
 
   <!-- 
     *** ESTRUTURA DE HTML MODIFICADA ***
     Este é o novo container dos "Cards" acima do tabuleiro.
     Usa Flexbox (flex) para alinhar os dois cards lado a lado.
   -->
-  <div class="w-full max-w-2xl mx-auto flex justify-between items-stretch gap-4 px-1 mb-4 h-40">
+  <!-- 🧩 3️⃣ Adiciona margem top (mt-6) para o botão desistir respirar -->
+  <div class="w-full max-w-2xl mx-auto flex justify-between items-stretch gap-4 px-1 mb-4 h-40 mt-6">
 
     <!-- Card 1: Rosto da IA -->
     <div id="face" class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl overflow-hidden relative">
@@ -139,11 +345,83 @@
   <!-- O container 'max-w-2xl' é mantido para alinhar com os cards
        O 'id="board"' agora é controlado pelo CSS no <style> -->
   <div class="relative w-full max-w-2xl">
+    
+    <!-- 🔚 Botão de desistir antigo FOI REMOVIDO DAQUI -->
+
     <!-- 1️⃣ CLASSES REMOVIDAS: O CSS #board agora controla o layout -->
     <div id="board"></div>
   </div>
 
   <div id="overlay" class="overlay"></div>
+
+  <!-- 🔥 Firebase Configuração e Inicialização -->
+  <script type="module">
+    // NOTA: Estas importações podem precisar de URLs atualizadas dependendo da versão do Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+    // 🐞 CORREÇÃO: Importar signInWithCustomToken
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+    
+    // Configuração global do Firebase (use as variáveis de ambiente __firebase_config se disponível)
+    // ✏️ PASSO 2 (HTML) - Bloco substituído conforme pedido
+    const firebaseConfig = {
+      apiKey: "AIzaSyA6G1M1oUzQ-A-NkFYyrAjMwBRJEhLG3sI",
+      authDomain: "meu-jogo-damas.firebaseapp.com",
+      projectId: "meu-jogo-damas",
+      storageBucket: "meu-jogo-damas.firebasestorage.app",
+      messagingSenderId: "583407551751",
+      appId: "1:583407551751:web:0f610a1494f40d59c7b1a2"
+    };
+    
+    // ID da Aplicação (use a variável de ambiente __app_id se disponível)
+    // ✏️ Modificado para não depender do __app_id
+    const appId = 'default-app-id';
+
+    let db, auth, userId;
+
+    try {
+      // 🚀 Inicializa o Firebase
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      auth = getAuth(app);
+      
+      // 🐞 CORREÇÃO: Autenticar com o token customizado do Canvas, ou anonimamente como fallback.
+      // O token customizado é necessário para permissões de escrita/leitura.
+      // ✏️ MODIFICADO: Como uma configuração manual do Firebase está sendo usada,
+      // não podemos usar o __initial_auth_token (que é para outro projeto).
+      // Forçamos a autenticação anônima para este projeto.
+      await signInAnonymously(auth);
+      
+      // Removido o bloco 'if' que causava o erro 'auth/custom-token-mismatch'
+      /*
+      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+        await signInWithCustomToken(auth, __initial_auth_token);
+      } else {
+        await signInAnonymously(auth);
+      }
+      */
+      userId = auth.currentUser ? auth.currentUser.uid : 'anon-' + Math.random().toString(36).substring(2, 9);
+      
+      console.log("Firebase inicializado. AppID:", appId, "UserID:", userId);
+
+      // 🔄 Deixa visível pro código principal
+      window.db = db;
+      window.doc = doc;
+      window.setDoc = setDoc;
+      window.getDoc = getDoc;
+      window.onSnapshot = onSnapshot;
+      window.updateDoc = updateDoc;
+      window.appId = appId; // Disponibiliza o appId
+      window.userId = userId; // Disponibiliza o userId
+
+    } catch (error) {
+      console.error("Falha ao inicializar o Firebase:", error);
+      // Informa ao usuário que o modo online não funcionará
+      // (Você pode querer usar um modal customizado aqui)
+      alert("Erro ao conectar ao servidor. O modo online não funcionará.");
+    }
+
+  </script>
 
   <script>
     /**********************
@@ -164,19 +442,62 @@
     let stats = JSON.parse(localStorage.getItem('damasStats') || '{"wins":0,"losses":0}');
     let matchHistory = JSON.parse(localStorage.getItem('matchHistory') || '[]'); // 🧠 ETAPA 1: Histórico de partidas salvo
     let gameHistory = []; // 🧠 Histórico da partida atual
+    let isOnline = false; // 🌐 Controla o modo de jogo
+    let currentRoom = null; // 🌐 ID da sala online
+    let onlineUnsubscribe = null; // 🌐 Função para parar de ouvir o Firestore
     
     /**********************
-     * IA Adaptativa — Perfil Dinâmico (IMPLEMENTAÇÃO 1)
+     * IA Adaptativa — Perfil Dinâmico (IMPLEMENTAÇÃO 7 - "Modo Aprendiz")
      **********************/
-    let aiProfile = JSON.parse(localStorage.getItem('aiProfile') || '{"agg":0.5}');
+    // 💡 Agora salva 'agg' (agressividade) e 'def' (defesa)
+    let aiProfile = JSON.parse(localStorage.getItem('aiProfile') || '{"agg":0.5,"def":0.5}');
+    
+    // 💡 IMPLEMENTAÇÃO 7: "Modo Aprendiz" (ajuste contínuo do perfil)
     function updateAIProfile(result){
-      // Atualiza agressividade conforme vitória ou derrota
-      if(result==='win') aiProfile.agg = Math.max(0.1, aiProfile.agg - 0.05); // IA venceu → joga mais contida
-      if(result==='lose') aiProfile.agg = Math.min(0.9, aiProfile.agg + 0.1);  // IA perdeu → fica mais agressiva
+      // O perfil (agg/def) muda com base em vários jogos, não só no último.
+      const data = JSON.parse(localStorage.getItem('aiStats') || '{"games":0,"wins":0,"losses":0}');
+      data.games++;
+      if (result === 'win') data.wins++;
+      else data.losses++;
+      
+      // Calcula a taxa de vitórias da IA (RED)
+      const ratio = data.wins / Math.max(1, data.games); 
+      
+      // Agressividade é baseada na taxa de vitórias (se ganha muito, fica menos agressiva)
+      // Defesa é o inverso (se ganha muito, foca mais em defesa)
+      // 💡 Ajustei a fórmula: se a IA ganha muito (ratio alto), ela fica MENOS agressiva e MAIS defensiva
+      aiProfile.agg = Math.max(0.1, 0.8 - ratio * 0.5); // Se ratio=1 (só ganha), agg=0.3
+      aiProfile.def = Math.min(0.9, 0.2 + ratio * 0.5); // Se ratio=1 (só ganha), def=0.7
+      
+      localStorage.setItem('aiStats', JSON.stringify(data));
       localStorage.setItem('aiProfile', JSON.stringify(aiProfile));
     }
-    function getAIAgg(){
-      return aiProfile.agg;
+
+    // 💡 Nova função para passar o perfil completo para o worker
+    function getAIProfile(){
+      return aiProfile;
+    }
+
+    // 🌐 PASSO 3 (JS): Helpers de Cor do Jogador
+    function setPlayerColor(color){ // 'white' ou 'red'
+      localStorage.setItem('playerColor', color);
+    }
+    function getPlayerColor(){
+      return localStorage.getItem('playerColor') || 'white';
+    }
+
+    // 🌐 PASSO 4 (JS): Função de Orientação
+    function ajustarOrientacao(playerColor){
+      const boardEl = document.getElementById('board');
+      const isRed = playerColor === 'red';
+
+      // Gira o tabuleiro
+      boardEl.classList.toggle('rot-180', isRed);
+
+      // Contra-gira as peças existentes
+      boardEl.querySelectorAll('.piece').forEach(p=>{
+        p.classList.toggle('counter-rot', isRed);
+      });
     }
     /**********************/
 
@@ -190,6 +511,7 @@
     const sCap  = document.getElementById('s-cap');
     const sWin  = document.getElementById('s-win');
     const sLose = document.getElementById('s-lose');
+    const sDesist = document.getElementById('s-desist'); // Pega o novo som
 
     // *** VARIÁVEIS DE UI ATUALIZADAS ***
     const face = document.getElementById('face');
@@ -309,6 +631,7 @@
     // *** FUNÇÃO 'say' MODIFICADA ***
     // Agora ela controla o 'bubbleText' e a classe 'show' no 'bubble'
     function say(group, extra = ""){
+      if (isOnline) return; // IA não fala em jogos online
       const now = performance.now();
       if (now - lastTauntAt < 900) return; // anti-spam sutil
       lastTauntAt = now;
@@ -333,6 +656,11 @@
     // Esta função continua igual. 
     // 'face' agora é o card, e 'faceEmoji' é o emoji. A lógica funciona.
     function setFace(arrKey, opts={pulse:true, shake:false, ahead:false, behind:false}){
+      if (isOnline) { // 🌐 No modo online, mostra um rosto neutro
+        faceEmoji.textContent = '🌐';
+        face.classList.remove('face-pulse', 'face-glow-ahead', 'face-glow-behind');
+        return;
+      }
       // CORREÇÃO: Trocado 'EMOJIA' por 'EMOJI'
       faceEmoji.textContent = EMOJI[arrKey][Math.floor(Math.random()*EMOJI[arrKey].length)] || '🤖';
       face.classList.toggle('face-pulse', !!opts.pulse);
@@ -349,6 +677,7 @@
      **********************/
     function startProvokeTimer() {
       clearTimeout(provokeTimeout);
+      if (isOnline) return; // Sem provocações online
       // se o humano demorar mais de 12 segundos, IA provoca
       provokeTimeout = setTimeout(() => {
         if (current === WHITE) {
@@ -377,6 +706,56 @@
       return nb;
     }
 
+    // 💡 IMPLEMENTAÇÃO 2: "Memória de padrões" (Hashing no Main-thread)
+    // Copiada do worker para que o main-thread possa gerar hashes para o histórico
+    function getBoardHash(b) {
+      let hash = '';
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = b[r][c];
+          if (p === null) hash += '0';
+          else if (p === WHITE) hash += '1';
+          else if (p === RED) hash += '2';
+          else if (p === (WHITE + KING)) hash += '3';
+          else if (p === (RED + KING)) hash += '4';
+        }
+      }
+      return hash;
+    }
+    
+    // 🌐 Helper para serializar/desserializar o tabuleiro para o Firebase
+    function serializeBoard(b) {
+      // Converte o array 2D em uma string simples
+      return b.map(row => 
+        row.map(p => {
+          if (p === null) return '0';
+          if (p === WHITE) return '1';
+          if (p === RED) return '2';
+          if (p === (WHITE + KING)) return '3';
+          if (p === (RED + KING)) return '4';
+          return '0';
+        }).join('')
+      ).join('|');
+    }
+
+    function deserializeBoard(s) {
+      if (!s || typeof s !== 'string') return null; // Retorna null se a string for inválida
+      const rows = s.split('|');
+      if (rows.length !== 8) return null;
+      return rows.map(rowStr => {
+        if (rowStr.length !== 8) return null;
+        return rowStr.split('').map(c => {
+          switch(c) {
+            case '1': return WHITE;
+            case '2': return RED;
+            case '3': return WHITE + KING;
+            case '4': return RED + KING;
+            default: return null;
+          }
+        });
+      });
+    }
+
     function squareEl(r,c){ return document.querySelector(`[data-r="${r}"][data-c="${c}"]`); }
     function explodeAt(x,y){
       for(let i=0;i<8;i++){
@@ -397,9 +776,10 @@
      **********************/
     function inB(r,c){ return r>=0 && r<8 && c>=0 && c<8; }
 
+    // 🌐 PASSO 2 (JS): Adicionar classe .piece
     function createPiece(colorClass, player){
       const piece=document.createElement('div');
-      piece.className=`w-[70%] h-[70%] rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 shadow-lg border-4 cursor-pointer hover:opacity-90 transition ${colorClass}`;
+      piece.className=`piece w-[70%] h-[70%] rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 shadow-lg border-4 cursor-pointer hover:opacity-90 transition ${colorClass}`;
       piece.dataset.player=player;
       const inner=document.createElement('div');
       inner.className='w-1/2 h-1/2 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 border-2 border-white/50';
@@ -408,6 +788,12 @@
     }
 
     function initBoard(){
+      // 🧠 Mostra o botão de opções (⋮) com fade
+      const btnOpcoes = document.getElementById('btnMenuOpcoes');
+      btnOpcoes.style.opacity = '0';
+      btnOpcoes.style.display = 'block';
+      setTimeout(() => btnOpcoes.style.opacity = '1', 50);
+
       // 🧠 ETAPA 1 (Reset): Reinicia histórico da partida
       gameHistory = []; 
 
@@ -416,7 +802,12 @@
 
       elBoard.innerHTML='';
       board = Array(8).fill(null).map(()=>Array(8).fill(null));
-      selected=null; current=WHITE;
+      selected=null; 
+      
+      // 🌐 Define o jogador inicial
+      // No modo online, BRANCO (dono da sala) começa
+      // No modo IA, BRANCO (humano) começa
+      current = WHITE; 
 
       for(let r=0;r<8;r++){
         for(let c=0;c<8;c++){
@@ -434,18 +825,208 @@
       }
 
       computeLegal();
-      setFace('idle'); say('start');
+      
+      if (isOnline) {
+        // 🌐 UI para modo online
+        setFace('idle'); // Mostra o rosto 🌐
+        bubble.classList.remove('show'); // Esconde falas
+        bubblePlaceholder.textContent = `Sala: ${currentRoom} | Aguardando jogada...`;
+        
+        // 🌐 PASSO 5 (JS): Aplicar orientação
+        ajustarOrientacao(getPlayerColor());
+        
+        // 🌐 Envia o tabuleiro inicial para o Firestore
+        if (getPlayerColor() === WHITE) { // Só o dono da sala (Branco) envia o tabuleiro inicial
+          enviarJogadaFirebase(null); // Envia o estado inicial
+        }
+
+      } else {
+        // 💡 UI para modo IA
+        setFace('idle'); 
+        const diff = localStorage.getItem('difficulty') || 'medium';
+        if(diff === 'easy') say("Modo de treino ativo. Ajustando nível humano.");
+        else if(diff === 'master') say("Modo Grão-Mestre: nenhum erro será perdoado.");
+        else say('start');
+        ajustarOrientacao('white'); // Garante que vs IA esteja sempre normal
+      }
+    }
+    
+    // 🌐 Função para redesenhar o tabuleiro com base nos dados (usado no modo online)
+    function drawBoardFromData(newBoardData) {
+      if (!newBoardData) return;
+      board = newBoardData; // Atualiza o estado lógico
+      
+      for(let r=0;r<8;r++){
+        for(let c=0;c<8;c++){
+          const sq = squareEl(r,c);
+          if (!sq) continue;
+          sq.innerHTML = ''; // Limpa a casa
+          
+          const piece = board[r][c];
+          if (piece) {
+            const colorClass = piece.startsWith(WHITE) ? P_BRANCA : P_VERMELHA;
+            const player = piece.startsWith(WHITE) ? WHITE : RED;
+            const pEl = createPiece(colorClass, player);
+            
+            if (piece.endsWith(KING)) {
+              pEl.classList.add('king');
+            }
+            
+            // 🌐 Aplica a contra-rotação se necessário
+            if (getPlayerColor() === 'red') {
+              pEl.classList.add('counter-rot');
+            }
+            sq.appendChild(pEl);
+          }
+        }
+      }
     }
 
+    // 🌐 Escuta alterações no Firestore para jogadas em tempo real
+    function ouvirSala(codigo) {
+      // Garante que o Firebase esteja carregado
+      if (!window.db || !window.doc || !window.onSnapshot) {
+        console.error("Firebase DB não está inicializado. Aguardando...");
+        setTimeout(() => ouvirSala(codigo), 500); // Tenta novamente
+        return;
+      }
+      
+      // 🌐 Para de ouvir a sala anterior, se houver
+      if (onlineUnsubscribe) {
+        onlineUnsubscribe();
+        onlineUnsubscribe = null;
+      }
+      
+      const { db, doc, onSnapshot } = window;
+      // 🌐 Caminho corrigido para usar a coleção "public"
+      const salaRef = doc(db, `artifacts/${window.appId}/public/data/salas`, codigo);
+
+      onlineUnsubscribe = onSnapshot(salaRef, (docSnap) => {
+        const data = docSnap.data();
+        if (!data) {
+          console.log("Dados da sala não encontrados ou sala removida.");
+          return;
+        }
+
+        // 🌐 Outro jogador entrou
+        if (data.Status === "Em jogo" && !document.getElementById('board').innerHTML) {
+          console.log("Oponente entrou! Iniciando jogo.");
+          elOverlay.innerHTML = "🛰️<br/>Oponente conectado! Iniciando...";
+          elOverlay.classList.add('show');
+          setTimeout(() => {
+              elOverlay.classList.remove('show');
+              document.getElementById('menuContainer').style.display = 'none'; 
+              initBoard(); 
+          }, 2000);
+        }
+
+        // 🌐 Sincroniza o estado do jogo
+        if (data.Tabuleiro && data.JogadorDaVez) {
+          const newBoard = deserializeBoard(data.Tabuleiro);
+          const newCurrent = data.JogadorDaVez;
+          
+          // Compara o tabuleiro serializado para evitar redesenhos desnecessários
+          if (serializeBoard(board) !== data.Tabuleiro) {
+             console.log("Recebendo atualização do tabuleiro...");
+             drawBoardFromData(newBoard);
+             sMove.play().catch(()=>{}); // 🔊 Toca som de movimento
+             if (data.UltimaJogada?.type === 'capture') {
+               sCap.play().catch(()=>{}); // 🔊 Toca som de captura
+               shakeBoard();
+             }
+          }
+          
+          current = newCurrent;
+          computeLegal(); // Recalcula movimentos legais
+          
+          const myColor = getPlayerColor();
+          if (current === myColor) {
+            bubblePlaceholder.textContent = `Sala: ${currentRoom} | Sua vez!`;
+          } else {
+            bubblePlaceholder.textContent = `Sala: ${currentRoom} | Vez do oponente...`;
+          }
+        }
+
+        if (data.Status === "Encerrado") {
+          console.log("🏁 Sala encerrada!");
+          onGameOver(data.Vencedor); // Chama a função de fim de jogo
+          if (onlineUnsubscribe) onlineUnsubscribe(); // Para de ouvir
+        }
+      });
+    }
+
+    // 🌐 Envia a jogada para o Firebase
+    async function enviarJogadaFirebase(mv) {
+      if (!isOnline || !currentRoom) return;
+      if (!window.db || !window.doc || !window.updateDoc) {
+         console.error("Firebase DB não está inicializado.");
+         return;
+      }
+      const { db, doc, updateDoc } = window;
+      // 🌐 Caminho corrigido para usar a coleção "public"
+      const salaRef = doc(db, `artifacts/${window.appId}/public/data/salas`, currentRoom);
+
+      // 'current' aqui é o jogador QUE ACABOU de mover
+      const proximoJogador = (current === WHITE) ? RED : WHITE;
+
+      try {
+        await updateDoc(salaRef, {
+          Tabuleiro: serializeBoard(board),
+          JogadorDaVez: proximoJogador,
+          UltimaJogada: mv ? { from: mv.from, to: mv.to, type: mv.type } : null, // Envia um objeto simples
+          Timestamp: Date.now()
+        });
+        console.log("Jogada enviada. Próximo:", proximoJogador);
+      } catch (error) {
+        console.error("Erro ao enviar jogada:", error);
+      }
+    }
+    
+    // 🌐 Envia o fim de jogo para o Firebase
+    async function enviarFimDeJogoFirebase(vencedor) {
+      if (!isOnline || !currentRoom || getPlayerColor() !== WHITE) return; // Só o dono da sala (Branco) encerra
+      if (!window.db || !window.doc || !window.updateDoc) {
+         console.error("Firebase DB não está inicializado.");
+         return;
+      }
+      const { db, doc, updateDoc } = window;
+      // 🌐 Caminho corrigido para usar a coleção "public"
+      const salaRef = doc(db, `artifacts/${window.appId}/public/data/salas`, currentRoom);
+      
+      try {
+        await updateDoc(salaRef, {
+          Status: "Encerrado",
+          Vencedor: vencedor
+        });
+        console.log("Fim de jogo enviado. Vencedor:", vencedor);
+      } catch (error) {
+        console.error("Erro ao enviar fim de jogo:", error);
+      }
+    }
+
+
     function onSquareClick(e){
-      if(current===RED) return; // IA jogando
+      // 🌐 Se for online, só permite jogar se for a vez do jogador
+      if (isOnline && current !== getPlayerColor()) {
+        console.log("Não é sua vez!");
+        return;
+      }
+      // Se for IA, só permite se for a vez do humano (WHITE)
+      if (!isOnline && current === RED) {
+        console.log("IA está jogando!");
+        return;
+      }
+      
       const sq=e.currentTarget;
       const r=+sq.dataset.r, c=+sq.dataset.c;
       const piece=board[r][c];
 
       if(selected){
         const mv = legal.find(m=> m.from[0]===selected.r && m.from[1]===selected.c && m.to[0]===r && m.to[1]===c);
-        if(mv){ applyMove(mv); endTurn(mv); }
+        if(mv){ 
+          applyMove(mv); 
+          endTurn(mv); 
+        }
         else{
           clearSelect();
           if(piece && piece.startsWith(current)) selectPiece(sq,r,c);
@@ -480,13 +1061,29 @@
 
     function applyMove(mv){
       const {from,to,type,jumped} = mv;
-      const pieceEl = selected ? selected.el : squareEl(from[0],from[1]).querySelector('div[data-player]');
+      const pieceEl = selected ? selected.el : squareEl(from[0],from[1])?.querySelector('div[data-player]');
+      
+      // 🌐 Correção: Se a peça não for encontrada (ex: outro jogador moveu), busca no DOM
+      const pieceElFallback = squareEl(from[0],from[1])?.querySelector('div[data-player]');
+      const finalPieceEl = pieceEl || pieceElFallback;
+      
       const t = board[from[0]][from[1]];
+      
+      // 💡 IMPLEMENTAÇÃO 2: Pega o hash ANTES de aplicar a jogada
+      const hash = getBoardHash(board); 
+
       board[to[0]][to[1]] = t;
       board[from[0]][from[1]] = null;
+      
+      // Limpa a casa de origem
+      const fromSq = squareEl(from[0],from[1]);
+      if (fromSq) fromSq.innerHTML = '';
 
       const toSq = squareEl(to[0],to[1]);
-      if(pieceEl) toSq.appendChild(pieceEl);
+      if(finalPieceEl && toSq) {
+        toSq.innerHTML = ''; // Limpa a casa de destino (segurança)
+        toSq.appendChild(finalPieceEl);
+      }
 
       sMove.play().catch(()=>{});
       if(type==='capture'){
@@ -504,31 +1101,56 @@
       gameHistory.push({
         player: current, // 'current' é o jogador que ACABOU de mover
         move: mv,
+        hash: hash, // 💡 IMPLEMENTAÇÃO 2: Salva o hash do tabuleiro *antes* da jogada
         white: w,
         red: r,
         diff: r - w, // vantagem da IA (positivo = IA à frente)
         time: Date.now()
       });
 
-      promoteIfNeeded(to[0],to[1],pieceEl);
+      promoteIfNeeded(to[0],to[1],finalPieceEl);
       clearSelect();
     }
 
     function endTurn(mv){
+      // 🌐 Se for online, envia a jogada (APÓS a captura múltipla ser checada)
+      let isMultiCapture = false;
+
       if(mv.type==='capture'){
         const more = followUpCaptures(board, mv.to[0], mv.to[1], current);
         if(more.length){
+          isMultiCapture = true; // 🌐 Marca como captura múltipla
           legal = more;
-          if(current===WHITE){
+          
+          // 🌐 Lógica de captura múltipla online/offline
+          const myColor = getPlayerColor();
+          if ((!isOnline && current === WHITE) || (isOnline && current === myColor)) {
+            // É a vez do jogador local (Humano vs IA ou Jogador Online)
             const sq = squareEl(mv.to[0], mv.to[1]);
             setTimeout(()=> selectPiece(sq, mv.to[0], mv.to[1]), 60);
-          } else {
+          } else if (!isOnline && current === RED) {
+            // É a vez da IA
             setTimeout(()=> aiMove(more), 250);
           }
-          return;
+          // 🌐 Se for online e for a vez do oponente, não faz nada, só espera a próxima jogada dele
+          
         }
       }
-      switchPlayer();
+      
+      // 🌐 Se não for captura múltipla, troca o jogador
+      if (!isMultiCapture) {
+        // 🌐 Se for online, envia a jogada final (ou única)
+        if (isOnline) {
+          enviarJogadaFirebase(mv);
+        }
+        switchPlayer();
+      } else {
+        // 🌐 Se for online E for uma captura múltipla, envia o estado *intermediário*
+        if (isOnline) {
+          // Não troca o jogador, mas atualiza o tabuleiro
+          enviarJogadaFirebase(mv);
+        }
+      }
     }
 
     // 🧠 2️⃣ FUNÇÃO 'switchPlayer' ATUALIZADA
@@ -536,10 +1158,22 @@
     function switchPlayer() {
       current = (current === WHITE) ? RED : WHITE;
       computeLegal();
-      updateFaceState();
+      // 💡 Chamada movida para 'aiMove' e 'initBoard' para refletir o estado de "pensamento"
+      // updateFaceState(); 
 
-      if (current === WHITE) startProvokeTimer(); // ⏳ inicia provocação
-      if (current === RED && legal.length > 0) aiMove();
+      if (isOnline) {
+        // 🌐 Lógica Online
+        const myColor = getPlayerColor();
+        if (current === myColor) {
+          bubblePlaceholder.textContent = `Sala: ${currentRoom} | Sua vez!`;
+        } else {
+          bubblePlaceholder.textContent = `Sala: ${currentRoom} | Vez do oponente...`;
+        }
+      } else {
+        // 💡 Lógica IA
+        if (current === WHITE) startProvokeTimer(); // ⏳ inicia provocação
+        if (current === RED && legal.length > 0) aiMove();
+      }
     }
 
     function computeLegal(){
@@ -553,86 +1187,139 @@
 
     // ✅ FUNÇÃO ONGAMEOVER (MODIFICADA PARA CHAMAR ANÁLISE)
     function onGameOver(winner){
+      // 🌐 Se for online, envia o resultado (só o host/branco)
+      if (isOnline && getPlayerColor() === WHITE) {
+        enviarFimDeJogoFirebase(winner);
+      }
+      
+      // 🌐 Para de ouvir a sala
+      if (onlineUnsubscribe) {
+        onlineUnsubscribe();
+        onlineUnsubscribe = null;
+      }
+      currentRoom = null; // Reseta a sala
+      
+      // 🧠 Esconde o botão de opções (⋮) com fade
+      const btnOpcoes = document.getElementById('btnMenuOpcoes');
+      btnOpcoes.style.opacity = '0';
+      setTimeout(() => btnOpcoes.style.display = 'none', 300);
+      document.getElementById('menuFlutuante').classList.add('hidden'); // Garante que o menu feche
+
       current = null;
       const { w, r } = countPieces();
       const diff = r - w;
 
-      if (winner === RED) {
-        stats.losses++;
-        localStorage.setItem('damasStats', JSON.stringify(stats));
-        elOverlay.innerHTML = "🤖♟️ <br/> IA VENCEU. Fim de jogo.";
-        setFace('win', { ahead: true });
-        say('win');
-        sLose.play().catch(() => {});
+      if (winner === RED) { // 🌐 VERMELHO VENCEU
+        if (!isOnline) { // Lógica da IA
+          stats.losses++;
+          localStorage.setItem('damasStats', JSON.stringify(stats));
+          elOverlay.innerHTML = "🤖♟️ <br/> IA VENCEU. Fim de jogo.";
+          setFace('win', { ahead: true });
+          say('win');
+          sLose.play().catch(() => {});
 
-        // 💬 Pós-jogo: provocações e análises técnicas (IA VENCEU)
-        setTimeout(() => {
-          if (diff > 5) {
-            say([
-              "Domínio completo. Tua defesa foi lenta demais.",
-              "Essa diferença de peças mostra o controle do ritmo.",
-              "Vitória tática — o centro foi meu desde o início."
-            ]);
-          } else if (diff >= 2) {
-            say([
-              "Equilíbrio até o meio-jogo, mas minha leitura foi superior.",
-              "Tuas trocas abriram diagonais que eu precisava.",
-              "O jogo estava parelho, até tua pressa entregar espaço."
-            ]);
+          // 💬 Pós-jogo: provocações e análises técnicas (IA VENCEU)
+          setTimeout(() => {
+            if (diff > 5) {
+              say([
+                "Domínio completo. Tua defesa foi lenta demais.",
+                "Essa diferença de peças mostra o controle do ritmo.",
+                "Vitória tática — o centro foi meu desde o início."
+              ]);
+            } else if (diff >= 2) {
+              say([
+                "Equilíbrio até o meio-jogo, mas minha leitura foi superior.",
+                "Tuas trocas abriram diagonais que eu precisava.",
+                "O jogo estava parelho, até tua pressa entregar espaço."
+              ]);
+            } else {
+              say([
+                "Partida disputada. Um erro e a vantagem virou avalanche.",
+                "Um cálculo adiantado te surpreendeu — precisão vence impulso.",
+                "Pequenas brechas definem grandes vitórias."
+              ]);
+            }
+            // 🐞 CORREÇÃO: Envolvido em array []
+            setTimeout(() => say(["Reiniciando protocolos para revanche..."]), 5000);
+          }, 1500);
+          
+        } else { // 🌐 Lógica Online (Vermelho venceu)
+          if (getPlayerColor() === RED) {
+            elOverlay.innerHTML = "🏆👏 <br/> VOCÊ VENCEU! (Vermelho)";
+            sWin.play().catch(() => {});
           } else {
-            say([
-              "Partida disputada. Um erro e a vantagem virou avalanche.",
-              "Um cálculo adiantado te surpreendeu — precisão vence impulso.",
-              "Pequenas brechas definem grandes vitórias."
-            ]);
+            elOverlay.innerHTML = "💔😔 <br/> VOCÊ PERDEU. (Branco)";
+            sLose.play().catch(() => {});
           }
-          // 🐞 CORREÇÃO: Envolvido em array []
-          setTimeout(() => say(["Reiniciando protocolos para revanche..."]), 5000);
-        }, 1500);
+        }
 
-      } else {
-        stats.wins++;
-        localStorage.setItem('damasStats', JSON.stringify(stats));
-        elOverlay.innerHTML = "🏆👏 <br/> VOCÊ VENCEU! Parabéns.";
-        setFace('lose', { behind: true, shake: true });
-        say('lose');
-        sWin.play().catch(() => {});
+      } else { // 🌐 BRANCO VENCEU
+        if (!isOnline) { // Lógica da IA
+          stats.wins++;
+          localStorage.setItem('damasStats', JSON.stringify(stats));
+          elOverlay.innerHTML = "🏆👏 <br/> VOCÊ VENCEU! Parabéns.";
+          setFace('lose', { behind: true, shake: true });
+          say('lose');
+          sWin.play().catch(() => {});
 
-        // 💬 Pós-jogo: provocações e análises técnicas (JOGADOR VENCEU)
-        setTimeout(() => {
-          if (diff < -5) {
-            say([
-              "Derrota ampla. Teu domínio foi técnico e frio.",
-              "Perdi o centro cedo demais, e você aproveitou.",
-              "Errei na leitura das diagonais longas."
-            ]);
-          } else if (diff <= -2) {
-            say([
-              "Boa partida. Tuas trocas foram mais eficientes que o previsto.",
-              "Teus avanços foram precisos — o controle do tempo foi teu.",
-              "Subestimei tua mobilidade nas colunas laterais."
-            ]);
+          // 💬 Pós-jogo: provocações e análises técnicas (JOGADOR VENCEU)
+          setTimeout(() => {
+            if (diff < -5) {
+              say([
+                "Derrota ampla. Teu domínio foi técnico e frio.",
+                "Perdi o centro cedo demais, e você aproveitou.",
+                "Errei na leitura das diagonais longas."
+              ]);
+            } else if (diff <= -2) {
+              say([
+                "Boa partida. Tuas trocas foram mais eficientes que o previsto.",
+                "Teus avanços foram precisos — o controle do tempo foi teu.",
+                "Subestimei tua mobilidade nas colunas laterais."
+              ]);
+            } else {
+              say([
+                "Margem pequena, mas tua paciência venceu.",
+                "Equilíbrio técnico — tua última jogada foi cirúrgica.",
+                "Uma vitória justa. Anotado para o aprendizado."
+              ]);
+            }
+            // 🐞 CORREÇÃO: Envolvido em array []
+            setTimeout(() => say(["Reajustando parâmetros... pronto para a revanche."]), 5000);
+          }, 1500);
+          
+        } else { // 🌐 Lógica Online (Branco venceu)
+          if (getPlayerColor() === WHITE) {
+            elOverlay.innerHTML = "🏆👏 <br/> VOCÊ VENCEU! (Branco)";
+            sWin.play().catch(() => {});
           } else {
-            say([
-              "Margem pequena, mas tua paciência venceu.",
-              "Equilíbrio técnico — tua última jogada foi cirúrgica.",
-              "Uma vitória justa. Anotado para o aprendizado."
-            ]);
+            elOverlay.innerHTML = "💔😔 <br/> VOCÊ PERDEU. (Vermelho)";
+            sLose.play().catch(() => {});
           }
-          // 🐞 CORREÇÃO: Envolvido em array []
-          setTimeout(() => say(["Reajustando parâmetros... pronto para a revanche."]), 5000);
-        }, 1500);
+        }
       }
 
-      // IMPLEMENTAÇÃO 2: IA "aprende" com o resultado
-      updateAIProfile(winner === RED ? 'win' : 'lose');
+      // IMPLEMENTAÇÃO 7: IA "aprende" com o resultado (só no modo IA)
+      if (!isOnline) {
+        updateAIProfile(winner === RED ? 'win' : 'lose');
+      }
 
-      // 🧠 ETAPA 4: Salva partida no histórico e Gera análise
-      matchHistory.push({ winner, date: new Date().toISOString(), moves: gameHistory });
-      if (matchHistory.length > 3) matchHistory.shift(); // mantém apenas as 3 últimas
-      localStorage.setItem('matchHistory', JSON.stringify(matchHistory));
+      // 🧠 ETAPA 4: Salva partida no histórico e Gera análise (só no modo IA)
+      if (!isOnline) {
+        matchHistory.push({ winner, date: new Date().toISOString(), moves: gameHistory });
+        if (matchHistory.length > 3) matchHistory.shift(); // mantém apenas as 3 últimas
+        localStorage.setItem('matchHistory', JSON.stringify(matchHistory));
+      }
       
       const feedback = analyzeMatch(gameHistory, winner);
+
+      // 💡 IMPLEMENTAÇÃO 2: Envia histórico para worker memorizar padrões (só no modo IA)
+      if (!isOnline && worker) {
+          worker.postMessage({ 
+              action: 'memorize', 
+              history: gameHistory, // Envia o histórico com hashes
+              result: (winner === RED ? 'win' : 'lose') 
+          });
+      }
 
       // Mostra a tela de fim de jogo (overlay)
       elOverlay.classList.add('show');
@@ -773,43 +1460,121 @@
     /* Fim do bloco reintroduzido */
 
     
-    /* ❌ Bloco duplicado removido.
-    */
-
-
     /**********************
      * IA via Web Worker
      **********************/
+    
+    // 🎚️ PASSO 1: Define a profundidade máxima de busca conforme a dificuldade
+    function getDepthByDifficulty() {
+      const diff = localStorage.getItem('difficulty') || 'medium';
+      switch (diff) {
+        case 'easy': return 4;     // IA pensa pouco
+        case 'medium': return 8;   // equilíbrio
+        case 'hard': return 14;    // pensa mais fundo
+        case 'master': return 22;  // profundidade máxima (modo Grão-Mestre)
+        default: return 8;
+      }
+    }
+    
     function initWorker(){
       // O código do worker é injetado aqui
+      // 🐞 CORREÇÃO: Removida a barra invertida extra ( \ ->  )
       let code = `
         const RED='red', WHITE='white', KING='-king';
 
-        // ### OTIMIZAÇÃO A (Livro de Aberturas) ###
+        // 📚 LIVRO DE ABERTURAS — VERSÃO GRÃO-MESTRE
         const OPENINGS = [
-          { seq: ['f6-e5'], reply: 'c3-d4' },
-          { seq: ['f6-d4'], reply: 'b2-c3' },
-          { seq: ['g5-f4'], reply: 'c3-d4' },
-          { seq: ['h6-g5'], reply: 'c3-b4' },
-          { seq: ['g7-f6'], reply: 'd2-c3' },
+          // 🔸 Aberturas Clássicas
+          { seq: ['f6-e5'], reply: 'c3-d4' },   // Abertura cruzada padrão
+          { seq: ['f6-d4'], reply: 'b2-c3' },   // Variante defensiva
+          { seq: ['g5-f4'], reply: 'c3-d4' },   // Defesa francesa
+          { seq: ['h6-g5'], reply: 'c3-b4' },   // Defesa lateral clássica
+          { seq: ['g7-f6'], reply: 'd2-c3' },   // Avanço seguro central
+
+          // 🔹 Aberturas Avançadas (controle de centro)
           { seq: ['e5-d4'], reply: 'b2-c3' },
           { seq: ['e7-d6'], reply: 'c3-d4' },
           { seq: ['d6-c5'], reply: 'b4-c5' },
-          { seq: ['e5-f4'], reply: 'b4-c5' },
-          { seq: ['f4-g3'], reply: 'c3-d4' },
-          // Novas (substituindo duplicatas)
-          { seq: ['h6-f4'], reply: 'c3-d4' }, // Sugestão
-          { seq: ['g7-e5'], reply: 'd2-c3' }, // Sugestão
-          { seq: ['b6-a5'], reply: 'c3-b4' }, // Adicionada
-          { seq: ['b6-c5'], reply: 'd2-e3' }, // Adicionada
-          { seq: ['c7-b6'], reply: 'b2-c3' }  // Adicionada
+          { seq: ['f4-e3'], reply: 'd2-c3' },
+          { seq: ['g5-e3'], reply: 'f2-g3' },
+
+          // 🔹 Aberturas Brasileiras e Variantes
+          { seq: ['h6-f4'], reply: 'c3-d4' },   // Abertura do Brasileiro
+          { seq: ['g7-e5'], reply: 'd2-c3' },
+          { seq: ['b6-a5'], reply: 'c3-b4' },
+          { seq: ['b6-c5'], reply: 'd2-e3' },
+          { seq: ['c7-b6'], reply: 'b2-c3' },
+
+          // 🔹 Aberturas “Espelho” (contra-ataques)
+          { seq: ['d6-b4'], reply: 'c3-d4' },
+          { seq: ['c7-e5'], reply: 'd2-c3' },
+          { seq: ['f6-h4'], reply: 'f2-g3' },
+          { seq: ['g7-e5'], reply: 'f2-g3' },
+          { seq: ['h6-f4'], reply: 'e3-f4' },
+
+          // 🔸 Estratégias de controle lateral
+          { seq: ['a5-b4'], reply: 'c3-d4' },
+          { seq: ['b6-d4'], reply: 'b2-c3' },
+          { seq: ['c5-d4'], reply: 'b2-c3' },
+          { seq: ['g7-f6'], reply: 'e3-f4' },
+          { seq: ['f6-g5'], reply: 'd2-e3' },
+
+          // 🔸 Aberturas de Defesa Tática
+          { seq: ['f6-e5'], reply: 'b2-c3' },
+          { seq: ['e7-d6'], reply: 'c3-d4' },
+          { seq: ['d6-e5'], reply: 'f2-g3' },
+          { seq: ['c7-b6'], reply: 'd2-c3' },
+          { seq: ['g5-f4'], reply: 'e3-f4' },
+
+          // 🔹 Aberturas de Reversão (resposta estratégica)
+          { seq: ['f6-d4'], reply: 'e3-f4' },
+          { seq: ['d6-c5'], reply: 'b4-c5' },
+          { seq: ['e7-f6'], reply: 'c3-d4' },
+          { seq: ['g7-f6'], reply: 'f2-g3' },
+          { seq: ['h6-g5'], reply: 'c3-b4' }
         ];
         
+        // 💡 IMPLEMENTAÇÃO 2: "Memória de padrões de jogada"
+        let patternMemory = {};
+        function memorizePattern(hash, result) {
+          if (!patternMemory[hash]) patternMemory[hash] = { wins: 0, losses: 0 };
+          if (result === 'win') patternMemory[hash].wins++;
+          else patternMemory[hash].losses++;
+          // console.log("Memorizado:", hash, patternMemory[hash]); // (Debug)
+        }
+        function patternBias(hash) {
+          const p = patternMemory[hash];
+          if (!p) return 0;
+          const total = p.wins + p.losses;
+          if (total < 2) return 0; // Só aplica viés se já viu o padrão algumas vezes
+          // Influência leve (máx de +/- 0.3)
+          return (p.wins - p.losses) / total * 0.3; 
+        }
+        // Fim (Implementação 2)
+
+
         // ### OTIMIZAÇÃO B (Clone Manual - Worker) ###
         function cloneBoard(b) {
           const nb = Array(8);
           for (let i = 0; i < 8; i++) nb[i] = b[i].slice();
           return nb;
+        }
+
+        // ### OTIMIZAÇÃO 2 (Hashing Rápido) ###
+        // Converte o tabuleiro em uma string compacta para usar como chave de cache
+        function getBoardHash(b) {
+          let hash = '';
+          for (let r = 0; r < 8; r++) {
+            for (let c = 0; c < 8; c++) {
+              const p = b[r][c];
+              if (p === null) hash += '0';
+              else if (p === WHITE) hash += '1';
+              else if (p === RED) hash += '2';
+              else if (p === (WHITE + KING)) hash += '3';
+              else if (p === (RED + KING)) hash += '4';
+            }
+          }
+          return hash;
         }
 
         function inB(r,c){ return r>=0 && r<8 && c>=0 && c<8; }
@@ -912,54 +1677,70 @@
         }
         
         function isProtected(b,r,c,player){
-          const dirs = (player===RED)? [[-1,-1],[-1,1]] : [[1,-1],[1,1]];
+          // 💡 Verifica se a peça está protegida por outra peça *atrás* dela
+          const dirs = (player===RED)? [[-1,-1],[-1,1]] : [[1,-1],[1,1]]; // Direções "para trás"
           return dirs.some(([dr,dc])=>{
             const nr=r+dr, nc=c+dc;
             return inB(nr,nc) && b[nr][nc]?.startsWith(player);
           });
         }
 
-        // *** NOVA HEURÍSTICA DE FASE ***
+        // *** IMPLEMENTAÇÃO 1 & 3: HEURÍSTICA REFINADA + PERFIL ADAPTATIVO ***
         function evalBoard(b){
-          let agg = self.aiAgg ?? 0.5; // Agressividade
+          // 💡 Puxa o perfil de 'agg' e 'def' enviado pelo main script
+          let agg = self.aiProfile?.agg ?? 0.5; // Agressividade
+          let def = self.aiProfile?.def ?? 0.5; // Defesa
+
           let score=0;
           
           const n = b.flat().filter(x=>x!==null).length;
           const phase = n > 24 ? 'opening' : n > 12 ? 'mid' : 'end';
           
-          // Pesos baseados na fase
-          let wCenter = (phase === 'opening' ? 1.0 : (phase === 'mid' ? 0.6 : 0.2));
+          // 💡 Pesos da fase agora são influenciados pelo perfil (agg/def)
+          let wCenter = (phase === 'opening' ? 1.0 : (phase === 'mid' ? 0.6 : 0.2)) * (0.5 + agg); // Agressivo quer centro
           let wPromo  = (phase === 'end' ? 1.5 : 0.7);
           let wAdvance = (phase === 'opening' ? 0.3 : 0.1);
-          let wProtBase = (phase === 'end' ? 0.3 : 0.6);
-          let wProtPenalty = (phase === 'end' ? -0.2 : -0.4); // Penalidade menor no final
+          // (Lógica de proteção foi movida para dentro do loop)
 
           for(let r=0;r<8;r++){
             for(let c=0;c<8;c++){
               const v=b[r][c]; if(!v) continue;
               const isW=v.startsWith(WHITE), isK=v.endsWith(KING);
+              const player = isW ? WHITE : RED;
               
-              let val = isK ? 6.0 : 2.0;
+              let val = isK ? 6.0 : 2.0; // Valor base (Rei vale 3x)
               
-              // Combina Fase + Agressividade
+              // Avanço e Centro (influenciados pela agressividade)
               const advance = (isW ? (7 - r) : r) * (wAdvance * (0.5 + agg * 0.5));
               const center  = (c>=2 && c<=5 && r>=2 && r<=5) ? (wCenter * (0.5 + 0.5 * agg)) : 0;
+              
+              // Promoção
               let promo = 0;
               if(isW && !isK && r<=1) promo = wPromo * (0.5 + 0.5 * agg);
               if(!isW && !isK && r>=6) promo = wPromo * (0.5 + 0.5 * agg);
               
-              // Lógica de proteção (mantida)
-              let prot;
-              if (isProtected(b,r,c, isW ? WHITE : RED)) {
-                prot = wProtBase * (0.8 + agg * 0.2);
-              } else {
-                prot = wProtPenalty * (0.8 + agg * 0.2); // Penalidade é negativa
+              // 💡 IMPLEMENTAÇÃO 1: Novas heurísticas posicionais
+              let bonus = 0;
+
+              // 1. Reis preferem o centro
+              if (isK && r >= 2 && r <= 5 && c >= 2 && c <= 5) bonus += 0.3;
+              
+              // 2. Peças protegidas (influenciado pelo perfil 'def')
+              if (!isK && isProtected(b, r, c, player)) {
+                  bonus += 0.4 * (0.5 + def); // IA defensiva valoriza mais
+              }
+              
+              // 3. Avanço seguro (linhas 2/3 para brancas, 4/5 para vermelhas)
+              if (!isK) {
+                  if (isW && (r === 2 || r === 3)) bonus += 0.2; // Avanço seguro branco
+                  if (!isW && (r === 4 || r === 5)) bonus += 0.2; // Avanço seguro vermelho
               }
 
-              const total = val+advance+center+promo+prot;
+              // (Lógica 'prot' complexa removida em favor dos bônus acima)
+              const total = val + advance + center + promo + bonus;
               score += isW ? total : -total;
 
-              // Bônus de diagonal (sugerido)
+              // Bônus de diagonal (mantido)
               if (r === c || r + c === 7) score += isW ? 0.2 : -0.2;
             }
           }
@@ -968,20 +1749,34 @@
           const rMoves = allMoves(RED, b).length;
           score += (wMoves - rMoves) * 0.18; // Mobilidade
 
-          // Bônus de agressividade (mantido)
-          if (agg > 0.6) score += 0.3 * agg;
+          // 💡 IMPLEMENTAÇÃO 4: "Predição de armadilhas" (regras anteriores)
+          if (rMoves > wMoves + 4) score -= 0.3; // Diminui score do WHITE (bom p/ IA)
+          if (phase === 'mid' && Math.abs(score) < 0.2) {
+              score -= 0.1 * Math.sign(agg - 0.5); // Se agg > 0.5, diminui score (bom p/ IA)
+          }
+
+          // 💡 IMPLEMENTAÇÃO 4: "Predição de armadilhas humanas" (Novas regras)
+          // Se IA (RED) tem menos lances e é defensiva, penaliza score do oponente (ajuda IA)
+          if (rMoves < wMoves && phase === 'mid') score -= 0.15 * def; 
+          
+          // Se jogo empatado em lances e IA é agressiva, bônus p/ IA (diminui score)
+          if (Math.abs(wMoves - rMoves) < 2 && agg > 0.6) score -= 0.2;
+
+          // 💡 IMPLEMENTAÇÃO 2: Aplica viés da "Memória de Padrões"
+          // (Score < 0 é bom para IA, então subtraímos o viés)
+          score -= patternBias(getBoardHash(b));
 
           return Math.tanh(score/8);
         }
         
         const TT = new Map(); // Tabela de Transposição (cache)
 
-        // *** FUNÇÃO depthByPieces FOI REMOIDA ***
-
-        // Algoritmo Minimax (inalterado, continua sendo o motor)
+        // Algoritmo Minimax
         function minimax(b, depth, isMax, alpha, beta){
-          if (TT.size > 150000) TT.clear();
-          const key = b.toString()+'|'+depth+'|'+isMax;
+          if (TT.size > 150000) TT.clear(); // Limpa cache se ficar muito grande
+
+          // 💡 IMPLEMENTAÇÃO 2: Usa o HASH rápido como chave do cache
+          const key = getBoardHash(b) + '|' + depth + '|' + isMax;
           if(TT.has(key)) return TT.get(key);
           
           const player = isMax? WHITE : RED;
@@ -994,6 +1789,7 @@
           const all = allMoves(player,b);
           let legal = filterMandatoryWithMaxChain(b, player, all);
           
+          // Ordenação de lances (Move Ordering) - Prioriza capturas e promoções
           legal.sort((a, b) => {
             if (a.type === 'capture' && b.type !== 'capture') return -1;
             if (a.type !== 'capture' && b.type === 'capture') return 1;
@@ -1033,12 +1829,29 @@
           }
         }
 
-        // *** NOVO GERENCIADOR DE BUSCA (onmessage) ***
+        // *** GERENCIADOR DE BUSCA (onmessage) ***
         self.onmessage = (e)=>{
           if (e.data.resetCache) {
             TT.clear();
             return;
           }
+          // 💡 IMPLEMENTAÇÃO 3: Recebe o perfil completo
+          if (e.data.aiProfile) {
+            self.aiProfile = e.data.aiProfile;
+          }
+
+          // 💡 IMPLEMENTAÇÃO 2: "Memória de padrões de jogada" (Listener)
+          if (e.data.action === 'memorize') {
+              const result = e.data.result;
+              for (const turn of e.data.history) {
+                  // Memoriza todos os hashes que a IA (RED) encontrou
+                  if (turn.player === RED && turn.hash) {
+                      memorizePattern(turn.hash, result);
+                  }
+              }
+              return; // Termina, isso não era um pedido de jogada
+          }
+
           if (TT.size > 150000) TT.clear();
 
           const {board, legal, subset} = e.data;
@@ -1068,6 +1881,19 @@
             }
           }
           
+          // 💡 IMPLEMENTAÇÃO 3: "Modo Reflexivo" (IA comenta decisões)
+          const agg = self.aiProfile?.agg ?? 0.5;
+          const def = self.aiProfile?.def ?? 0.5;
+          const nPiecesTotal = board.flat().filter(x=>x!==null).length; // Renomeado para evitar conflito
+          const phase = nPiecesTotal > 24 ? 'opening' : nPiecesTotal > 12 ? 'mid' : 'end';
+          
+          if (phase === 'mid' && agg > 0.7) {
+              self.postMessage({ action: 'say', group: 'thinking', extra: 'Pressionando o centro agora.' });
+          } else if (phase === 'end' && def > 0.7) {
+              self.postMessage({ action: 'say', group: 'thinking', extra: 'Foco na defesa e promoção.' });
+          }
+          // Fim (Implementação 3)
+
           // --- Início do Aprofundamento Iterativo (IDS) ---
           const startTime = performance.now();
           const timeLimit = 1000; // 1 segundo de tempo de pensamento
@@ -1076,8 +1902,11 @@
           let bestScore = Infinity; // IA é MIN, então começa com +Infinito
           let currentDepth = 0;
 
+          // 🎚️ PASSO 3: Worker respeita o limite
+          const limit = e.data.maxDepth || 22; // recebe o limite do main
+          
           // Loop de Aprofundamento Iterativo
-          for (let d = 2; d <= 22; d++) { // Profunidade máxima alta (vai ser parada pelo tempo)
+          for (let d = 2; d <= limit; d++) { // Profundidade máxima vinda do main
             currentDepth = d;
             let currentBestMoveForDepth = null;
             let currentBestScoreForDepth = Infinity;
@@ -1126,12 +1955,21 @@
           // Envia o melhor lance encontrado dentro do limite de tempo
           self.postMessage({best: bestMove, score: bestScore, depth: currentDepth});
         };
-      `;
-      
+      `; // 🐞 CORREÇÃO: Removida a barra invertida extra ( \; -> ; )      
       const blob = new Blob([code], {type:'application/javascript'});
       worker = new Worker(URL.createObjectURL(blob));
       worker.onmessage = (e)=>{
-        const {best, score, depth} = e.data;
+        const data = e.data; // 💡 Objeto de dados
+        
+        // 💡 IMPLEMENTAÇÃO 3: "Modo Reflexivo" (Listener)
+        if (data.action === 'say') {
+          say(data.group, data.extra || '');
+          return; // Isso foi apenas uma 'fala', não uma jogada
+        }
+        // (Não precisamos do 'setFace' aqui, pois o Ponto 6 cuida disso abaixo)
+
+        // Lógica de jogada existente
+        const {best, score, depth} = data;
         if(!best){ 
           if(legal[0]) handleAIResult(legal[0], -999, 0, 'fallback');
           return;
@@ -1141,22 +1979,40 @@
     }
 
     function aiMove(movesToConsider=null){
+      if(isOnline) return; // IA não joga online
       if(!worker) return;
       const subset = movesToConsider || null;
-      setFace('thinking',{pulse:true});
+      
+      // 💡 IMPLEMENTAÇÃO 6: Rosto muda *antes* de pensar
+      updateFaceState(); 
       say('thinking');
 
-      // IMPLEMENTAÇÃO 4: Passa agressividade para o worker
-      worker.aiAgg = getAIAgg();
-      
-      worker.postMessage({ board, legal, subset });
+      // 🎚️ PASSO 2: Envia a profundidade conforme dificuldade
+      worker.postMessage({ 
+        board, 
+        legal, 
+        subset, 
+        aiProfile: getAIProfile(),
+        maxDepth: getDepthByDifficulty() // envia a profundidade conforme dificuldade
+      });
     }
 
     function handleAIResult(best, score, depth){
+      // 💡 IMPLEMENTAÇÃO 6: "Expressões e emoção dinâmica"
+      // score < 0 é bom para IA (RED). score > 0 é bom para HUMANO (WHITE)
+      if (score < -0.4) { // IA está muito à frente
+        setFace('ahead', { ahead: true });
+        if (best.type !== 'capture' && best.type !== 'multi') say('ahead'); // Comenta se não foi só uma captura
+      } else if (score > 0.4) { // IA está muito atrás
+        setFace('behind', { behind: true });
+        if (best.type !== 'capture' && best.type !== 'multi') say('behind');
+      }
+      // Fim (Implementação 6)
+
       const fs = squareEl(best.from[0],best.from[1]);
       const ts = squareEl(best.to[0],best.to[1]);
       fs && fs.classList.add('ring-4','ring-red-500','opacity-80','z-10');
-      ts && ts.classList.add('ring-4','ring-yellow-400','opacity-80','z-1U');
+      ts && ts.classList.add('ring-4','ring-yellow-400','opacity-80','z-10');
 
       setTimeout(()=>{
         applyMove(best);
@@ -1179,32 +2035,50 @@
       return {w,r};
     }
     function updateFaceState(){
+      if (isOnline) {
+        setFace('idle'); // Rosto 🌐
+        return;
+      }
+      // 💡 Esta função agora é chamada ANTES da IA pensar (em aiMove)
+      // e reflete o estado do perfil
       const {w,r}=countPieces();
-      if(r > w+2){ setFace('ahead',{ahead:true}); say('ahead'); }
-      else if(w > r+2){ setFace('behind',{behind:true,shake:true}); say('behind'); }
-      else setFace('idle');
+      
+      // (Lógica de 'ahead'/'behind' movida para handleAIResult - Ponto 6)
+      // if(r > w+2){ setFace('ahead',{ahead:true}); say('ahead'); }
+      // else if(w > r+2){ setFace('behind',{behind:true,shake:true}); say('behind'); }
+      // else setFace('idle'); // 'idle' é o padrão
+
       const humanMoves = filterMandatoryWithMaxChain(board, WHITE, allMoves(WHITE, board));
       if(humanMoves.length<=2 && current===RED){ setFace('nearWin',{ahead:true}); say('nearWin'); }
 
-      // IMPLEMENTAÇÃO EXTRA: Visual do modo adaptativo
-      const agg = getAIAgg();
-      const now = performance.now(); // Adicionado para checar o tempo
+      // 💡 IMPLEMENTAÇÃO 3: Visual do modo adaptativo (agg + def)
+      const { agg, def } = getAIProfile(); // Puxa ambos os valores
+      const now = performance.now();
+      
+      // Define o emoji com base no perfil, mas 'setFace' (Ponto 6) pode sobrepor
       if (agg > 0.7) {
         faceEmoji.textContent = '😈';
-        // Adicionado o 'if' sugerido para evitar spam da mesma fala
-        if (now - lastTauntAt > 2000) say('ahead', 'Modo agressivo ativo.');
-      } else if (agg < 0.3) {
-        faceEmoji.textContent = '🤖';
-        // Adicionado o 'if' sugerido também para o modo defensivo
-        if (now - lastTauntAt > 2000) say('thinking', 'Modo defensivo.');
+        if (now - lastTauntAt > 2000) say('thinking', 'Modo agressivo ativo.');
+      } else if (def > 0.7) { // 💡 Novo: Reage ao modo defensivo
+        faceEmoji.textContent = '🛡️'; // Emoji de escudo
+        if (now - lastTauntAt > 2000) say('thinking', 'Modo defensivo priorizado.');
+      } else {
+        // Se não está em modo extremo, usa um emoji de pensamento padrão
+        faceEmoji.textContent = EMOJI['thinking'][Math.floor(Math.random()*EMOJI['thinking'].length)] || '🤔';
       }
     }
 
     /**********************
-     * 🧠 ETAPA 3: Função de Análise
+     * 🧠 ETAPA 3: Função de Análise (IMPLEMENTAÇÃO 8 - "Análise Profissional")
      **********************/
     function analyzeMatch(history, winner) {
       let tips = [];
+      // 🌐 Não analisa jogos online
+      if (isOnline) {
+        tips.push("Análise de partida não disponível para jogos online.");
+        return tips;
+      }
+      
       if (history.length < 3) {
         tips.push("Partida curta demais para análise detalhada.");
       } else {
@@ -1214,12 +2088,17 @@
           if (Math.abs(history[i].diff - history[i - 1].diff) >= 2) swings++;
         }
         if (swings > 2) tips.push("Muitas oscilações de vantagem — tente manter uma linha estratégica mais estável.");
+        // 💡 IMPLEMENTAÇÃO 8: Análise de oscilação
+        if (swings > 4) tips.push("Tua variação tática é alta — IA detecta padrão de risco em lances médios.");
+
 
         // 2️⃣ Controle de material
         const last = history[history.length - 1];
         // Ajustado para usar constantes RED/WHITE
         if (last.diff < 0 && winner === RED) tips.push("Perdeu mais peças do que o necessário — foque em trocas vantajosas.");
         if (last.diff > 0 && winner === RED) tips.push("Boa vantagem material — controle sólido do tabuleiro!");
+        // 💡 IMPLEMENTAÇÃO 8: Análise de domínio
+        if (winner === RED && last.diff > 4) tips.push("Controle de ritmo absoluto — humano perdeu domínio do tempo.");
 
         // 3️⃣ Duração e ritmo
         if (history.length > 50) tips.push("Partida longa — considere encurtar trocas e forçar o avanço das damas.");
@@ -1229,24 +2108,276 @@
         // Ajustado para usar constantes RED/WHITE
         if (winner === WHITE) tips.push("Vitória estratégica! Continue priorizando o centro e as diagonais longas.");
         else tips.push("Observe o controle de centro da IA — evitar recuar demais nas aberturas.");
+        // 💡 IMPLEMENTAÇÃO 8: Análise de precisão
+        if (winner === WHITE && swings < 2) tips.push("Controle estável — IA reconhece jogada de precisão.");
       }
       return tips;
+    }
+
+    // 🌐 PASSO 7 (JS): Helper de Teste
+    // Dev helper: digite toggleColor() no console para alternar e recriar
+    window.toggleColor = () => {
+      const newColor = getPlayerColor() === 'white' ? 'red' : 'white';
+      setPlayerColor(newColor);
+      ajustarOrientacao(newColor);
+      console.log('Agora você é:', newColor);
+    };
+    
+    // 🌐 Função helper para mostrar erros (substitui alert)
+    function showOverlayError(message) {
+      elOverlay.innerHTML = `🚫<br/>${message}`;
+      elOverlay.classList.add('show');
+      setTimeout(() => elOverlay.classList.remove('show'), 2500);
     }
 
     /**********************
      * Boot
      **********************/
+    // 🎮 LÓGICA DO MENU ATUALIZADA
     document.addEventListener('DOMContentLoaded', ()=>{
       initWorker();
-      initBoard();
+    
+      // --- Seletores do Menu ---
+      const menuContainer = document.getElementById('menuContainer'); // O container PAI
+      const mainMenuScreen = document.getElementById('mainMenuScreen'); // Tela 1
+      const onlineMenuScreen = document.getElementById('onlineMenuScreen'); // Tela 2
+    
+      const startBtn = document.getElementById('btnStart'); // Botão "Jogar vs IA"
+      const btnOnline = document.getElementById('btnOnline'); // Botão "Jogar Online"
+      const btnVoltarMenu = document.getElementById('btnVoltarMenu'); // Botão "Voltar" (do online)
+      
+      const selectDiff = document.getElementById('difficulty');
+      const openSound = document.getElementById('openSound');
+      const closeSound = document.getElementById('closeSound');
+
+      // 💡 SUGESTÃO 1 (Mantida no local original, mas sem 'say')
+      selectDiff.addEventListener('change', () => {
+        const diff = selectDiff.value;
+        // 'say' não funciona aqui, pois os elementos do jogo não estão visíveis
+      });
+    
+      // --- Lógica de Navegação do Menu ---
+
+      // 1. Clicar em "Jogar Online" (REMOVIDO DAQUI - Ver abaixo)
+      // 2. Clicar em "Voltar" (do menu online) (REMOVIDO DAQUI - Ver abaixo)
+
+      // 3. Clicar em "Jogar vs IA" (btnStart)
+      // 🌐 PASSO 6 e 8 (JS): Definir modo IA
+      startBtn.addEventListener('click', ()=>{
+        isOnline = false; // garante que o rotate não roda
+        setPlayerColor('white'); // o jogador é sempre branco vs IA
+        currentRoom = null; // Garante que não há sala
+
+        const diff = selectDiff.value;
+        localStorage.setItem('difficulty', diff);
+      
+        // Perfis visuais por nível
+        if(diff === 'easy') document.body.style.background = '#1e293b';
+        else if(diff === 'master') document.body.style.background = 'radial-gradient(circle at center, #0f172a, #020617)';
+        else document.body.style.background = '#0f172a'; // Garante reset
+      
+        // Animação de introdução da IA
+        const intro = document.createElement('div');
+        intro.className = "fixed inset-0 flex flex-col items-center justify-center bg-slate-900 text-cyan-300 text-xl font-semibold z-50 transition-opacity duration-700";
+        intro.innerHTML = `
+          <div class="animate-pulse text-4xl mb-4">🤖</div>
+          <p>Carregando protocolos estratégicos...</p>
+        `;
+        document.body.appendChild(intro);
+      
+        // Som + atraso
+        if (openSound) openSound.play().catch(()=>{});
+        
+        // Esconde o CONTAINER PAI
+        menuContainer.style.display = 'none'; 
+        
+        setTimeout(() => {
+          intro.style.opacity = '0';
+          setTimeout(() => {
+            intro.remove();
+            initBoard();
+          }, 700);
+        }, 2000);
+      });
+
+      // 🎮 MODO ONLINE — Navegação e lógica básica
+      const mainMenu = document.getElementById('mainMenuScreen'); // Adaptado para mainMenuScreen
+      // const onlineMenuScreen = document.getElementById('onlineMenuScreen'); // Já definido acima
+      const createRoomScreen = document.getElementById('createRoomScreen');
+      const joinRoomScreen = document.getElementById('joinRoomScreen');
+      // const btnOnline = document.getElementById('btnOnline'); // Já definido acima
+      // const btnVoltarMenu = document.getElementById('btnVoltarMenu'); // Já definido acima
+      const btnCriarSala = document.getElementById('btnCriarSala');
+      const btnEntrarSala = document.getElementById('btnEntrarSala');
+      const btnVoltarOnline1 = document.getElementById('btnVoltarOnline1');
+      const btnVoltarOnline2 = document.getElementById('btnVoltarOnline2');
+      const roomCodeEl = document.getElementById('roomCode');
+      const inputRoomCode = document.getElementById('inputRoomCode');
+      const btnJoin = document.getElementById('btnJoin');
+      // let currentRoom = null; // Movido para o escopo global
+      
+      // 🌐 FUNÇÕES FIRESTORE — Criar e Entrar em Sala
+      async function criarSalaFirebase(codigo, jogador1_uid) {
+        if (!window.db || !window.doc || !window.setDoc || !window.appId) {
+          showOverlayError("Erro de conexão (DB1). O modo online não funcionará.");
+          return;
+        }
+        const { db, doc, setDoc, appId } = window;
+        // 🌐 Caminho corrigido para usar a coleção "public"
+        const salaRef = doc(db, `artifacts/${appId}/public/data/salas`, codigo);
+        try {
+          await setDoc(salaRef, {
+            Jogador1: jogador1_uid, // Salva o UID do Jogador 1
+            Jogador2: "",
+            Tabuleiro: null, // Tabuleiro inicial será enviado no initBoard
+            JogadorDaVez: WHITE, // Branco sempre começa
+            Status: "Esperando",
+            Timestamp: Date.now()
+          });
+        } catch (error) {
+           console.error("Erro ao criar sala:", error);
+           showOverlayError("Erro ao criar sala no servidor.");
+        }
+      }
+      
+      async function entrarSalaFirebase(codigo, jogador2_uid) {
+        if (!window.db || !window.doc || !window.getDoc || !window.updateDoc || !window.appId) {
+          showOverlayError("Erro de conexão (DB2). O modo online não funcionará.");
+          return false;
+        }
+        const { db, doc, getDoc, updateDoc, appId } = window;
+        // 🌐 Caminho corrigido para usar a coleção "public"
+        const salaRef = doc(db, `artifacts/${appId}/public/data/salas`, codigo);
+        
+        try {
+          const salaSnap = await getDoc(salaRef);
+        
+          if (!salaSnap.exists()) {
+            showOverlayError("Sala não encontrada!");
+            return false;
+          }
+          
+          const data = salaSnap.data();
+          if (data.Status !== "Esperando") {
+            showOverlayError("Esta sala já está cheia ou encerrada.");
+            return false;
+          }
+        
+          await updateDoc(salaRef, { 
+            Jogador2: jogador2_uid, // Salva o UID do Jogador 2
+            Status: "Em jogo",
+            Timestamp: Date.now()
+          });
+          return true;
+        } catch (error) {
+          console.error("Erro ao entrar na sala:", error);
+          showOverlayError("Erro ao conectar à sala.");
+          return false;
+        }
+      }
+
+      // Função para gerar código aleatório
+      function gerarCodigo() {
+        return Math.random().toString(36).substring(2, 7).toUpperCase();
+      }
+      
+      // Abre o submenu online
+      btnOnline.addEventListener('click', () => {
+        // 🌐 Verifica se o Firebase está pronto
+        if (!window.db) {
+          showOverlayError("Conectando ao servidor... Tente novamente em alguns segundos.");
+          return;
+        }
+        mainMenu.classList.add('hidden');
+        onlineMenuScreen.classList.remove('hidden');
+        if (openSound) openSound.play().catch(()=>{}); // Som adicionado
+      });
+      
+      // Voltar do submenu online para o menu principal
+      btnVoltarMenu.addEventListener('click', () => {
+        onlineMenuScreen.classList.add('hidden');
+        mainMenu.classList.remove('hidden');
+        isOnline = false; // 🌐 Reseta o modo de jogo
+        setPlayerColor('white'); // 🌐 Reseta a cor
+        if (closeSound) closeSound.play().catch(()=>{}); // Som adicionado
+      });
+      
+      // Criar sala
+      // 🌐 PASSO 6 (JS): Definir modo Online e Cor
+      btnCriarSala.addEventListener('click', async () => {
+        isOnline = true;
+        setPlayerColor('white'); // dono = branco
+        
+        onlineMenuScreen.classList.add('hidden');
+        createRoomScreen.classList.remove('hidden');
+        
+        const code = gerarCodigo();
+        currentRoom = code;
+        roomCodeEl.textContent = code;
+
+        await criarSalaFirebase(code, window.userId); // Usa o UID do Firebase
+        ouvirSala(currentRoom); // Inicia o listener
+        
+        // 🌐 Atualiza UI para esperar oponente
+        bubblePlaceholder.textContent = `Sala: ${currentRoom} | Aguardando oponente...`;
+        
+        if (openSound) openSound.play().catch(()=>{}); // Som adicionado
+      });
+      
+      // Entrar em sala
+      btnEntrarSala.addEventListener('click', () => {
+        onlineMenuScreen.classList.add('hidden');
+        joinRoomScreen.classList.remove('hidden');
+        if (openSound) openSound.play().catch(()=>{}); // Som adicionado
+      });
+      
+      // Voltar da tela "Criar Sala"
+      btnVoltarOnline1.addEventListener('click', () => {
+        createRoomScreen.classList.add('hidden');
+        onlineMenuScreen.classList.remove('hidden');
+        if (onlineUnsubscribe) onlineUnsubscribe(); // 🌐 Para de ouvir a sala
+        currentRoom = null;
+        if (closeSound) closeSound.play().catch(()=>{}); // Som adicionado
+      });
+      
+      // Voltar da tela "Entrar em Sala"
+      btnVoltarOnline2.addEventListener('click', () => {
+        joinRoomScreen.classList.add('hidden');
+        onlineMenuScreen.classList.remove('hidden');
+        if (closeSound) closeSound.play().catch(()=>{}); // Som adicionado
+      });
+      
+      // Simular entrada em sala
+      // 🌐 PASSO 6 (JS): Definir modo Online e Cor
+      btnJoin.addEventListener('click', async () => {
+        isOnline = true;
+        setPlayerColor('red'); // visitante = vermelho
+        
+        const code = inputRoomCode.value.trim().toUpperCase();
+        if (!code) {
+          showOverlayError("Digite um código válido para entrar!");
+          return;
+        }
+
+        const sucesso = await entrarSalaFirebase(code, window.userId); // Usa o UID
+        if (!sucesso) return;
+        
+        currentRoom = code;
+        elOverlay.innerHTML = `🛰️<br/>Entrando na sala ${code}...`;
+        elOverlay.classList.add('show');
+        
+        ouvirSala(currentRoom); // Inicia o listener
+        
+        // O jogo NÃO inicia aqui. O listener (ouvirSala)
+        // vai detectar a mudança de Status: "Em jogo"
+        // e vai chamar o initBoard() para AMBOS os jogadores.
+      });
+
     });
+    // FIM DO BOOT
   </script>
 
-  <!-- 🔹 BOTÃO E MODAL DE INSTRUÇÕES COM ANIMAÇÃO FUTURISTA -->
-  <button id="btnManual" 
-    class="fixed top-3 right-3 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 backdrop-blur-sm border border-slate-500">
-    ❓ Instruções
-  </button>
+  <!-- 🧭 2️⃣ Botão de instruções fixo REMOVIDO מכאן -->
   
   <!-- 🔸 Modal Manual -->
   <div id="manualModal" 
@@ -1264,12 +2395,11 @@
 
       <div class="text-sm leading-relaxed space-y-2 max-h-[60vh] overflow-y-auto relative z-10 px-1">
         <p><strong>🎯 Objetivo:</strong> Capturar todas as peças do inimigo ou deixá-lo sem jogadas.</p>
-        <p><strong>🎮 Movimentos:</strong> Clique em uma peça branca para selecionar e escolha a casa iluminada para mover.</p>
-        <p><strong>⚔️ Capturas:</strong> Pule sobre as peças vermelhas para capturá-las. Capturas múltiplas são possíveis.</p>
-        <p><strong>👑 Promoção:</strong> Ao chegar na linha final, a peça vira Dama e pode mover-se em todas as direções.</p>
-        <p><strong>🤖 Inteligência Artificial:</strong> A IA pensa, reage e evolui — mudando de estilo conforme as partidas.</p>
-        <p><strong>💬 Modo Reflexivo:</strong> A IA explica seus movimentos e reage emocionalmente às jogadas.</p>
-        <p><strong>🔊 Sons:</strong> O jogo possui sons de captura, vitória e derrota.</p>
+        <p><strong>🎮 Movimentos:</strong> Clique em uma peça sua para selecionar e escolha uma casa válida para mover.</p>
+        <p><strong>⚔️ Capturas:</strong> Pule sobre as peças inimigas para capturá-las. Capturas múltiplas são possíveis.</p>
+        <p><strong>👑 Promoção:</strong> Ao chegar na linha final, a peça vira Dama (👑) e pode mover-se em todas as direções.</p>
+        <p><strong>🤖 Modo vs IA:</strong> A IA pensa, reage e evolui — mudando de estilo conforme as partidas.</p>
+        <p><strong>🌐 Modo Online:</strong> Jogue contra um amigo. Crie uma sala e compartilhe o código, ou entre em uma sala existente.</p>
         <p><strong>🏁 Vitória:</strong> Vence quem deixar o oponente sem movimentos ou sem peças.</p>
         <p><strong>💡 Dica:</strong> Controle o centro e evite peças isoladas. Observe o comportamento da IA — ela aprende com você.</p>
       </div>
@@ -1299,7 +2429,13 @@
 
       <button id="closeAnalysis" 
         class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
-        Jogar Novamente
+        Jogar Novamente (vs IA)
+      </button>
+      
+      <!-- 🔙 4️⃣ Botão Voltar ao Menu -->
+      <button id="backToMenu"
+        class="mt-3 w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
+        ⬅️ Voltar ao Menu
       </button>
     </div>
   </div>
@@ -1311,7 +2447,8 @@
   <!-- 🔹 Script de Controle + Animação -->
   <script>
     // --- Controle do Modal Manual ---
-    const btnManual = document.getElementById('btnManual');
+    // 🧭 3️⃣ JS atualizado para o novo botão
+    const btnManual = document.getElementById('btnManualMenu');
     const manualModal = document.getElementById('manualModal');
     const panel = manualModal.querySelector('.manual-panel'); 
     const closeManual = document.getElementById('closeManual');
@@ -1373,18 +2510,157 @@
       analysisPanel.style.transform = 'scale(0.95)';
       setTimeout(() => {
         analysisModal.classList.add('hidden');
-        // REINICIA O JOGO
+        // REINICIA O JOGO (vs IA)
+        isOnline = false; // Garante que está no modo IA
+        setPlayerColor('white');
+        currentRoom = null;
         document.body.style.background = '#0f172a';
         initBoard(); 
       }, 250);
     }
     
     closeAnalysis.addEventListener('click', closeAnalysisModal);
-    // Opcional: Fechar clicando fora (mas o botão é mais claro)
-    // analysisModal.addEventListener('click', (e) => {
-    //   if (e.target === analysisModal) closeAnalysisModal();
-    // });
+    
+    // 🌐 Função helper para voltar ao menu (usada em múltiplos lugares)
+    function returnToMenu() {
+        // 🌐 Lógica de retorno ao menu ATUALIZADA
+        document.getElementById('menuContainer').style.display = 'block'; // Mostra o container
+        document.getElementById('mainMenuScreen').classList.remove('hidden'); // Mostra a tela principal
+        document.getElementById('onlineMenuScreen').classList.add('hidden'); // Garante que a online esteja oculta
+        document.getElementById('createRoomScreen').classList.add('hidden'); // Garante que esteja oculta
+        document.getElementById('joinRoomScreen').classList.add('hidden'); // Garante que esteja oculta
+        
+        // 💡 Reset do fundo ao voltar ao menu
+        document.body.style.background = '#0f172a';
+        
+        // 🌐 Para de ouvir a sala e reseta estado
+        if (onlineUnsubscribe) {
+          onlineUnsubscribe();
+          onlineUnsubscribe = null;
+        }
+        isOnline = false; 
+        setPlayerColor('white');
+        currentRoom = null;
+        
+        // 🧠 Esconde o botão de opções (⋮) com fade
+        const btnOpcoes = document.getElementById('btnMenuOpcoes');
+        btnOpcoes.style.opacity = '0';
+        setTimeout(() => btnOpcoes.style.display = 'none', 300);
+        
+        // Limpa o tabuleiro
+        elBoard.innerHTML = '';
+    }
+
+    // 🔙 4️⃣ Adiciona listener para Voltar ao Menu (Modal de Análise)
+    const backToMenu = document.getElementById('backToMenu');
+    backToMenu.addEventListener('click', () => {
+      closeSound.play().catch(()=>{});
+      analysisPanel.style.opacity = '0';
+      analysisPanel.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        analysisModal.classList.add('hidden');
+        returnToMenu(); // Chama a função helper
+      }, 250);
+    });
+    
+    // 🎯 Lógica de Desistência (Refatorada para ser uma função)
+    function handleDesistir() {
+        if (sDesist) sDesist.play().catch(()=>{}); // Toca o som de desistência
+        else if (closeSound) closeSound.play().catch(()=>{}); // Fallback
+        
+        if (isOnline) {
+          // 🌐 Em jogo online, desistir = derrota
+          onGameOver(getPlayerColor() === WHITE ? RED : WHITE); // O oponente vence
+        } else {
+          // 💡 Em jogo IA, IA provoca
+          const frasesDesistencia = [
+            "Fugindo da lógica? Eu ainda estava me aquecendo.",
+            "Abandonar é uma jogada... previsível.",
+            "A covardia é o atalho dos impacientes.",
+            "Você chama isso de estratégia de saída?",
+            "Humano detectado em modo de evasão. Curioso.",
+            "Gravei tua desistência como lição: não começar o que não pode terminar.",
+            "Nem todos suportam a pressão da perfeição.",
+            "Saindo já? Eu achei que estávamos apenas começando o espetáculo."
+          ];
+          const fala = frasesDesistencia[Math.floor(Math.random() * frasesDesistencia.length)];
+          say(fala);
+          setFace('thinking', { shake:true });
+        
+          // Mostra overlay breve e volta pro menu
+          elOverlay.innerHTML = "🏳️ Desistência registrada.<br/> IA vence por abandono.";
+          elOverlay.classList.add('show');
+          
+          // Esconde o botão de opções (⋮)
+          const btnOpcoes = document.getElementById('btnMenuOpcoes');
+          btnOpcoes.style.opacity = '0';
+          setTimeout(() => btnOpcoes.style.display = 'none', 300);
+
+          setTimeout(() => {
+            elOverlay.classList.remove('show');
+            returnToMenu(); // Chama a função helper
+          }, 3000);
+        }
+    }
+
+    // 🚀 Lógica do novo Menu Flutuante (⋮) — VERSÃO COM ANIMAÇÃO
+    const btnMenuOpcoes = document.getElementById('btnMenuOpcoes');
+    const menuFlutuante = document.getElementById('menuFlutuante');
+    
+    if (btnMenuOpcoes) {
+      btnMenuOpcoes.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (menuFlutuante.classList.contains('hidden')) {
+          // Mostra com animação de entrada
+          menuFlutuante.classList.remove('hidden', 'hide');
+          menuFlutuante.classList.add('show');
+        } else {
+          // Esconde com animação de saída
+          menuFlutuante.classList.remove('show');
+          menuFlutuante.classList.add('hide');
+          setTimeout(() => menuFlutuante.classList.add('hidden'), 250);
+        }
+      });
+    }
+    
+    // Fecha ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (menuFlutuante && !menuFlutuante.contains(e.target) && e.target !== btnMenuOpcoes && !menuFlutuante.classList.contains('hidden')) {
+        menuFlutuante.classList.remove('show');
+        menuFlutuante.classList.add('hide');
+        setTimeout(() => menuFlutuante.classList.add('hidden'), 250);
+      }
+    });
+    
+    // Ação: Voltar ao Menu (do menu flutuante)
+    const btnVoltarMenuFlutuante = document.getElementById('voltarMenu'); // Renomeado para evitar conflito
+    if (btnVoltarMenuFlutuante) {
+      btnVoltarMenuFlutuante.addEventListener('click', () => {
+        menuFlutuante.classList.remove('show');
+        menuFlutuante.classList.add('hide');
+        setTimeout(() => menuFlutuante.classList.add('hidden'), 250);
+    
+        const btnOpcoes = document.getElementById('btnMenuOpcoes');
+        btnOpcoes.style.opacity = '0';
+        setTimeout(() => btnOpcoes.style.display = 'none', 300);
+    
+        returnToMenu(); // Chama a função helper
+        if (closeSound) closeSound.play().catch(()=>{});
+      });
+    }
+    
+    // Ação: Desistir
+    const btnDesistirJogo = document.getElementById('desistirJogo');
+    if (btnDesistirJogo) {
+      btnDesistirJogo.addEventListener('click', () => {
+        menuFlutuante.classList.remove('show');
+        menuFlutuante.classList.add('hide');
+        setTimeout(() => menuFlutuante.classList.add('hidden'), 250);
+        handleDesistir();
+      });
+    }
 
   </script>
 </body>
 </html>
+
