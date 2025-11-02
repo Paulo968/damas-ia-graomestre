@@ -75,11 +75,17 @@
     .manual-panel, .analysis-panel {
       transition: opacity 300ms ease-out, transform 300ms ease-out;
     }
+    
+    /* 🔧 BUG DOS 3 PONTINHOS:
+       Este 'display: none' ESCONDE o botão por padrão.
+       Ele só aparece quando o JS (initBoard) mandar.
+    */
     #btnMenuOpcoes {
-      display: none;
+      display: none; 
       opacity: 0;
       transition: opacity 0.3s ease;
     }
+    
     @keyframes slideFadeIn {
       from { opacity: 0; transform: translateY(-10px) scale(0.98); }
       to { opacity: 1; transform: translateY(0) scale(1); }
@@ -124,13 +130,18 @@
       color: #e2e8f0;
       z-index: 50;
     }
+
+    /* 🔧 BUG DA CENTRALIZAÇÃO:
+       'justify-content: center' FORÇA a centralização vertical.
+       'align-items: center' FORÇA a centralização horizontal.
+    */
     .menu-screen {
       position: absolute;
       inset: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: center; /* Centraliza verticalmente */
       transition: opacity 0.4s ease, visibility 0.4s;
       visibility: visible;
       opacity: 1;
@@ -159,7 +170,9 @@
     
     <div id="loginScreen" class="menu-screen">
       <h1 class="text-4xl font-extrabold mb-8 text-cyan-300 drop-shadow-lg w-full text-center">Login</h1>
-      <p id="loginError" class="text-red-400 mb-4 h-5"></p> <input id="inputNomeLogin" type="text" placeholder="Seu Nome"
+      <p id="loginError" class="text-red-400 mb-4 h-5"></p>
+      
+      <input id="inputNomeLogin" type="text" placeholder="Seu Nome"
         class="text-center bg-slate-800 border border-slate-600 rounded-xl px-6 py-3 mb-4 text-white w-60 uppercase tracking-widest" />
       
       <input id="inputPinLogin" type="password" placeholder="PIN de 4 dígitos" maxlength="4"
@@ -176,7 +189,9 @@
 
     <div id="registerScreen" class="menu-screen hidden">
       <h1 class="text-4xl font-extrabold mb-8 text-cyan-300 drop-shadow-lg w-full text-center">Registrar</h1>
-      <p id="registerError" class="text-red-400 mb-4 h-5"></p> <input id="inputNomeReg" type="text" placeholder="Crie seu Nome"
+      <p id="registerError" class="text-red-400 mb-4 h-5"></p>
+      
+      <input id="inputNomeReg" type="text" placeholder="Crie seu Nome"
         class="text-center bg-slate-800 border border-slate-600 rounded-xl px-6 py-3 mb-4 text-white w-60 uppercase tracking-widest" />
       
       <input id="inputPinReg" type="password" placeholder="Crie um PIN de 4 dígitos" maxlength="4"
@@ -256,7 +271,7 @@
   </div>
   <audio id="s-move" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
   <audio id="s-cap"  src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
-  <audio id="s-win"  src="httpsactions.google.com/sounds/v1/cartoon/congratulations.ogg" preload="auto"></audio>
+  <audio id="s-win"  src="https://actions.google.com/sounds/v1/cartoon/congratulations.ogg" preload="auto"></audio>
   <audio id="s-lose" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto"></audio>
   <audio id="s-desist" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto"></audio>
 
