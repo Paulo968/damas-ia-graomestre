@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Damas vs IA — Grão-Mestre (IDS) - Modularizado</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    /* 1️⃣ ADAPTAÇÃO TOTAL (CSS DO USUÁRIO) 
+    <style>
+      /* 1️⃣ ADAPTAÇÃO TOTAL (CSS DO USUÁRIO) 
        Este bloco substitui as regras anteriores de 'html' e 'body' */
     html, body {
       margin: 0;
@@ -19,7 +19,6 @@
       /* 💡 Transição de fundo adicionada para suavizar a mudança de dificuldade */
       transition: background 0.5s ease;
     }
-
     /* 1️⃣ ADAPTAÇÃO DO TABULEIRO (LÓGICA DO USUÁRIO)
        Este bloco substitui as classes Tailwind do #board.
        Modifiquei levemente para centralizar ('margin: 0 auto')
@@ -68,7 +67,6 @@
     #face {
       transition: transform .2s ease, filter .2s ease, box-shadow .2s ease;
     }
-
     /* 🌟 MUDANÇA 1 (CSS): Transição "humana" para o texto da IA 
       O texto agora sobe suavemente.
     */
@@ -77,7 +75,6 @@
       transition: opacity 0.5s ease, transform 0.5s ease;
       transform: translateY(10px); /* Começa ligeiramente abaixo */
     }
-
     /* Lógica para mostrar/esconder o placeholder vs texto no card de fala */
     #bubble.show #bubblePlaceholder {
       opacity: 0;
@@ -96,13 +93,11 @@
       z-index:50; text-align:center; padding: 1rem;
     }
     .overlay.show{ opacity:1; pointer-events:auto }
-
     /* Estilos para o novo modal de manual E ANÁLISE */
     /* Adiciona transição para o painel */
     .manual-panel, .analysis-panel {
       transition: opacity 300ms ease-out, transform 300ms ease-out;
     }
-
     /* 🎨 CSS para o novo botão de opções (⋮) */
     #btnMenuOpcoes {
       display: none; /* Controlado por JS */
@@ -136,6 +131,44 @@
       /* Aplica a animação de saída, 'hidden' é adicionado via JS no final */
       animation: slideFadeOut 0.25s forwards;
     }
+    
+    /* 🎨 Estilo para os novos seletores de botão (BOTÕES DE OPÇÃO) */
+    .btn-group {
+      /* display: flex; (Removido) */
+      border-radius: 0.5rem; /* 8px */
+      overflow: hidden;
+      border: 1px solid rgba(56, 189, 248, 0.4); /* border-cyan-400/40 */
+      background-color: #334155; /* bg-slate-700 */
+      width: 100%; /* Ocupa o w-60 do pai */
+    }
+    .btn-group button {
+      /* padding: 0.5rem 0.75rem; (py-2 px-3) (REMOVIDO - Era desigual) */
+      padding: 0.5rem; /* 🐞 CORREÇÃO: Aplicando sua sugestão de "distância igual" (p-2) */
+      font-size: 0.875rem; /* text-sm */
+      font-weight: 600; /* font-semibold */
+      color: #94a3b8; /* text-slate-400 */
+      background-color: #334155; /* bg-slate-700 */
+      transition: background-color 0.2s ease, color 0.2s ease;
+      /* Borda interna sutil */
+      border-right: 1px solid rgba(56, 189, 248, 0.2); 
+      /* flex: 1; (Removido) */
+      white-space: nowrap; /* Impede quebra de linha */
+      /* text-align: center; (Removido, será tratado pelo Tailwind) */
+      text-align: center; /* 🐞 CORREÇÃO DEFINITIVA: Forçando o alinhamento aqui */
+    }
+    .btn-group button:last-child {
+      border-right: none;
+    }
+    .btn-group button:hover {
+      background-color: #475569; /* bg-slate-600 */
+      color: #e2e8f0; /* text-slate-200 */
+    }
+    .btn-group button.active {
+      /* Estilo ATIVO (selecionado) */
+      background-color: #0891b2; /* bg-cyan-600 */
+      color: #ffffff; /* text-white */
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    }
 
     /* 🎨 Efeitos do Menu Principal Adicionados */
     @keyframes pulseButton {
@@ -146,12 +179,10 @@
       /* A classe 'shadow-[...]' do Tailwind é a base */
       animation: pulseButton 3s infinite ease-in-out; 
     }
-
     #btnManualMenu:hover { 
       background-color: #475569; 
       box-shadow: 0 0 15px rgba(56,189,248,0.3); 
     }
-
     /* 🎨 Animação de Fade-in para os Títulos do Menu */
     #mainMenuScreen h1, #onlineMenuScreen h2, #createRoomScreen h2, #joinRoomScreen h2 { 
       animation: fadeIn 1.2s ease-out;
@@ -160,7 +191,6 @@
       from { opacity: 0; transform: translateY(-10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
     /* 🌐 CSS para o Menu de Múltiplas Telas */
     #menuContainer {
       /* Este é o container pai, não precisa de flex */
@@ -220,15 +250,57 @@
       </button>
     
       <!-- Seletor de Dificuldade (pertence ao modo IA) -->
-      <div class="text-center mb-4" id="difficultyContainer">
+      <!-- 🎨 MODIFICAÇÃO: Aplicado w-60 no container pai -->
+      <div class="text-center mb-4 w-60" id="difficultyContainer">
         <p class="mb-2 text-slate-400">Dificuldade:</p>
-        <select id="difficulty" class="bg-slate-800 border border-cyan-400/40 text-white px-4 py-2 rounded-lg w-60">
+        <!-- O select original agora fica OCULTO, mas funcional -->
+        <!-- 🐞 CORREÇÃO: Removido 'selected' fixo de "Médio" -->
+        <select id="difficulty" class="hidden bg-slate-800 border border-cyan-400/40 text-white px-4 py-2 rounded-lg w-60">
           <option value="easy">Fácil</option>
-          <option value="medium" selected>Médio</option>
+          <option value="medium">Médio</option>
           <option value="hard">Difícil</option>
           <option value="master">Mestre</option>
         </select>
+        <!-- 🎨 NOVO SELETOR VISUAL (BOTÕES) -->
+        <!-- 🐞 CORREÇÃO DEFINITIVA (Grid): Força 4 colunas iguais -->
+        <div class="btn-group grid grid-cols-4" data-target-select="difficulty">
+          <!-- 🐞 CORREÇÃO DEFINITIVA (Grid): 'place-items-center' força o alinhamento total -->
+          <!-- 🐞 CORREÇÃO FINAL: Removendo classes de grid dos botões -->
+          <!-- 🐞 CORREÇÃO: Removido 'active' fixo de "Médio" -->
+          <button type="button" class="" data-value="easy">Fácil</button>
+          <button type="button" class="" data-value="medium">Médio</button>
+          <button type="button" class="" data-value="hard">Difícil</button>
+          <button type="button" class="" data-value="master">Mestre</button>
+        </div>
       </div>
+      
+      <!-- 
+        ⭐️ INÍCIO DA ADIÇÃO: Seletor de Regra de Captura 
+      -->
+      <!-- 🎨 MODIFICAÇÃO: Aplicado w-60 no container pai -->
+      <div class="text-center mb-4 w-60" id="ruleContainer">
+        <p class="mb-2 text-slate-400">Regra de Captura (Pedra):</p>
+        <!-- O select original agora fica OCULTO, mas funcional -->
+        <!-- 🐞 CORREÇÃO: Removido 'selected' fixo de "Padrão" -->
+        <select id="captureRule" class="hidden bg-slate-800 border border-cyan-400/40 text-white px-4 py-2 rounded-lg w-60">
+          <option value="sim">Padrão (Captura p/ trás)</option>
+          <option value="nao">Clássica (Só captura p/ frente)</option>
+        </select>
+        <!-- 🎨 NOVO SELETOR VISUAL (BOTÕES) -->
+        <!-- 🐞 CORREÇÃO DEFINITIVA (Grid): Força 2 colunas iguais -->
+        <div class="btn-group grid grid-cols-2" data-target-select="captureRule">
+          <!-- 🐞 CORREÇÃO DEFINITIVA (Grid): 'place-items-center' força o alinhamento total -->
+          <!-- 🐞 CORREÇÃO FINAL: Removendo classes de grid dos botões -->
+          <!-- 🐞 CORREÇÃO: Removido 'active' fixo de "Padrão" -->
+          <button type="button" class="" data-value="sim">Padrão</button>
+          <button type="button" class="" data-value="nao">Clássica</button>
+        </div>
+        <!-- 🎨 ADIÇÃO: Explicação da Regra (Pedido 2) -->
+        <div id="ruleExplanation" class="mt-2 text-xs text-slate-400 text-center w-60 h-10 transition-all duration-300">
+          <!-- O texto será preenchido pelo JS -->
+        </div>
+      </div>
+      <!-- ⭐️ FIM DA ADIÇÃO -->
 
       <!-- NOVO BOTÃO: Jogar Online -->
       <button id="btnOnline" 
@@ -242,7 +314,6 @@
         ❓ Instruções
       </button>
     </div>
-
     <!-- 🔹 Submenu: Modo Online (REFEITO) -->
     <div id="onlineMenuScreen" class="menu-screen hidden">
       <h1 class="text-4xl font-extrabold mb-8 text-cyan-300 drop-shadow-lg">Jogar Online</h1>
@@ -292,7 +363,6 @@
   </div>
   <!-- FIM DO CONTAINER DO MENU -->
 
-
   <audio id="s-move" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
   <audio id="s-cap"  src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
   <audio id="s-win"  src="https://actions.google.com/sounds/v1/cartoon/congratulations.ogg" preload="auto"></audio>
@@ -303,7 +373,6 @@
   <audio id="openSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
   <audio id="closeSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" preload="auto"></audio>
 
-
   <!-- 🚀 NOVO MENU DE OPÇÕES (SUBSTITUI O BOTÃO DESISTIR) -->
   <!-- 🧠 3️⃣ Ícone SVG Premium -->
   <button id="btnMenuOpcoes" 
@@ -312,7 +381,6 @@
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6h.01M12 12h.01M12 18h.01" />
     </svg>
   </button>
-
   <div id="menuFlutuante" 
     class="hidden fixed top-12 right-4 bg-slate-800 border border-cyan-400/40 rounded-xl shadow-xl z-50 p-2 w-40 text-sm text-slate-100">
     <button id="voltarMenu" class="block w-full text-left px-3 py-2 hover:bg-slate-700 rounded">⬅️ Voltar ao Menu</button>
@@ -345,7 +413,6 @@
   </div>
   <!-- Fim da estrutura modificada -->
 
-
   <!-- O container 'max-w-2xl' é mantido para alinhar com os cards
        O 'id="board"' agora é controlado pelo CSS no <style> -->
   <div class="relative w-full max-w-2xl">
@@ -369,18 +436,40 @@
       <h2 class="text-2xl font-bold mb-3 text-center text-cyan-300 drop-shadow-lg">
         📘 Manual de Instruções
       </h2>
-
       <div class="text-sm leading-relaxed space-y-2 max-h-[60vh] overflow-y-auto relative z-10 px-1">
         <p><strong>🎯 Objetivo:</strong> Capturar todas as peças do inimigo ou deixá-lo sem jogadas.</p>
-        <p><strong>🎮 Movimentos:</strong> Clique em uma peça sua para selecionar e escolha uma casa válida para mover.</p>
-        <p><strong>⚔️ Capturas:</strong> Pule sobre as peças inimigas para capturá-las. Capturas múltiplas são possíveis.</p>
-        <p><strong>👑 Promoção:</strong> Ao chegar na linha final, a peça vira Dama (👑) e pode mover-se em todas as direções.</p>
-        <p><strong>🤖 Modo vs IA:</strong> A IA pensa, reage e evolui — mudando de estilo conforme as partidas.</p>
-        <p><strong>🌐 Modo Online:</strong> Jogue contra um amigo. Crie uma sala e compartilhe o código, ou entre em uma sala existente.</p>
-        <p><strong>🏁 Vitória:</strong> Vence quem deixar o oponente sem movimentos ou sem peças.</p>
-        <p><strong>💡 Dica:</strong> Controle o centro e evite peças isoladas. Observe o comportamento da IA — ela aprende com você.</p>
-      </div>
+        
+        <!-- 
+          INÍCIO DA ATUALIZAÇÃO: Regras detalhadas conforme solicitado
+        -->
+        
+        <p class="border-t border-cyan-800/50 pt-2 mt-2"><strong>Pedra (Peça Comum):</strong></p>
+        <ul class="list-disc list-inside text-slate-300 pl-2 space-y-1">
+          <li><strong>Movimento:</strong> Anda <strong>uma casa</strong> na diagonal, <strong>apenas para frente</strong> (em direção ao lado do oponente).</li>
+          <li><strong>Captura:</strong> A captura é <strong>obrigatória</strong>. A pedra pula sobre uma peça inimiga (em qualquer diagonal, frente ou trás), aterrissando na casa vazia logo após.</li>
+          <li><strong>Captura Múltipla:</strong> Se, após pular, a peça puder capturar novamente da nova casa, ela <strong>deve</strong> continuar na mesma jogada.</li>
+        </ul>
 
+        <p class="border-t border-cyan-800/50 pt-2 mt-2"><strong>Dama (Rei 👑):</strong></p>
+        <ul class="list-disc list-inside text-slate-300 pl-2 space-y-1">
+          <li><strong>Promoção:</strong> Uma pedra vira Dama ao alcançar a última linha do tabuleiro (a "coroação").</li>
+          <li><strong>Movimento:</strong> Move-se <strong>quantas casas quiser nas diagonais</strong> (frente e trás), parando em uma casa vazia.</li>
+          <li><strong>Captura da Dama:</strong> Pula sobre uma peça inimiga (em qualquer diagonal) e pode aterrissar em <strong>qualquer casa vazia</strong> após a peça (na mesma linha diagonal). A Dama não pode pular duas peças juntas.</li>
+        </ul>
+        
+        <p class="border-t border-cyan-800/50 pt-2 mt-2"><strong>Regras Gerais:</strong></p>
+        <ul class="list-disc list-inside text-slate-300 pl-2 space-y-1">
+          <li><strong>Obrigatoriedade:</strong> Se houver uma captura disponível no tabuleiro, ela <strong>deve</strong> ser feita.</li>
+          <!-- ⭐️ ADIÇÃO: Menção à regra customizável -->
+          <li><strong>Regra de Captura:</strong> No menu principal, você pode escolher se a pedra comum captura apenas para frente (Clássica) ou em todas as direções (Padrão).</li>
+          <li><strong>Modo vs IA:</strong> A IA (Vermelho) pensa, reage e muda de estilo.</li>
+          <li><strong>Modo Online:</strong> Jogue contra um amigo criando ou entrando em uma sala.</li>
+          <li><strong>Vitória:</strong> Vence quem capturar todas as peças ou deixar o oponente sem movimentos.</li>
+        </ul>
+        
+        <!-- FIM DA ATUALIZAÇÃO -->
+
+      </div>
       <button id="closeManual" 
         class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
         Fechar
@@ -398,12 +487,10 @@
       <h2 class="text-2xl font-bold mb-3 text-center text-cyan-300 drop-shadow-lg">
         📊 Análise da Partida
       </h2>
-
       <!-- Conteúdo da análise será injetado aqui -->
       <div id="analysisContent" class="text-sm leading-relaxed space-y-2 max-h-[60vh] overflow-y-auto relative z-10 px-1">
         <!-- Ex: <p>• Muitas oscilações de vantagem...</p> -->
       </div>
-
       <button id="closeAnalysis" 
         class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
         Jogar Novamente (vs IA)
@@ -445,7 +532,6 @@
     // ID da Aplicação (use a variável de ambiente __app_id se disponível)
     // ✏️ Modificado para não depender do __app_id
     const appId = 'default-app-id';
-
     let db, auth, userId;
 
     // 💡 PASSO 2 (CORREÇÃO): Envolvido em IIFE assíncrona para evitar erro de 'await'
@@ -493,9 +579,7 @@
         alert("Erro ao conectar ao servidor. O modo online não funcionará.");
       }
     })(); // 💡 Fim do IIFE
-
   </script>
-
 
   <!-- ====================================================== -->
   <!-- ========== BLOCO 2: LÓGICA (game-core.js) ============ -->
@@ -504,9 +588,9 @@
     // --- game-core.js ---
     // (Regras do tabuleiro, turnos, IA e lógica online)
   
-    /**********************
+    /*************************
      * Constantes / Estado
-     **********************/
+     *************************/
     const COR_CLARA   = 'bg-slate-200';
     const COR_ESCURA  = 'bg-slate-700';
     const P_VERMELHA  = 'bg-red-600 border-red-900';
@@ -527,9 +611,9 @@
     let onlineUnsubscribe = null; // 🌐 Função para parar de ouvir o Firestore
     let worker; // Referência ao Web Worker
     
-    /**********************
+    /*************************
      * IA Adaptativa — Perfil Dinâmico (IMPLEMENTAÇÃO 7 - "Modo Aprendiz")
-     **********************/
+     *************************/
     // 💡 Agora salva 'agg' (agressividade) e 'def' (defesa)
     let aiProfile = JSON.parse(localStorage.getItem('aiProfile') || '{"agg":0.5,"def":0.5}');
     
@@ -567,9 +651,14 @@
       return localStorage.getItem('playerColor') || 'white';
     }
 
-    /**********************
+    // ⭐️ ADIÇÃO: Helper para a nova regra de captura
+    function getCaptureRule() {
+      return localStorage.getItem('captureRule') || 'sim'; // 'sim' = pode para trás
+    }
+
+    /*************************
      * Helpers (Core)
-     **********************/
+     *************************/
     
     // *** OTIMIZAÇÃO B (Clone Manual - Frontend) ***
     // Substitui structuredClone() que é mais lento.
@@ -615,6 +704,7 @@
       if (!s || typeof s !== 'string') return null; // Retorna null se a string for inválida
       const rows = s.split('|');
       if (rows.length !== 8) return null;
+
       return rows.map(rowStr => {
         if (rowStr.length !== 8) return null;
         return rowStr.split('').map(c => {
@@ -629,9 +719,9 @@
       });
     }
 
-    /**********************
+    /*************************
      * Regras & Movimentos
-     **********************/
+     *************************/
     function inB(r,c){ return r>=0 && r<8 && c>=0 && c<8; }
 
     // 🌐 PASSO 2 (JS): Adicionar classe .piece
@@ -648,10 +738,8 @@
     function initBoard(){
       // 🧠 Mostra o botão de opções (⋮) com fade (Função de UI)
       showOptionsButton(true);
-
       // 🧠 ETAPA 1 (Reset): Reinicia histórico da partida
       gameHistory = []; 
-
       // 5️⃣ Limpeza de cache entre partidas
       if (worker) worker.postMessage({ resetCache: true });
 
@@ -678,7 +766,6 @@
           sq.addEventListener('click', onSquareClick);
         }
       }
-
       computeLegal();
       
       if (isOnline) {
@@ -870,6 +957,7 @@
         const { db, doc, setDoc } = window;
         // 💡 PASSO 1 (CORREÇÃO): Caminho do Firestore simplificado
         const salaRef = doc(db, "salas", codigo);
+
         try {
           await setDoc(salaRef, {
             Jogador1: jogador1_uid, // Salva o UID do Jogador 1
@@ -920,7 +1008,6 @@
         return false;
       }
     }
-
 
     function onSquareClick(e){
       // 🌐 Se for online, só permite jogar se for a vez do jogador
@@ -976,7 +1063,6 @@
       
       // 💡 IMPLEMENTAÇÃO 2: Pega o hash ANTES de aplicar a jogada
       const hash = getBoardHash(board); 
-
       board[to[0]][to[1]] = t;
       board[from[0]][from[1]] = null;
       
@@ -991,9 +1077,11 @@
       }
 
       sMove.play().catch(()=>{});
+
       if(type==='capture'){
         const jSq = squareEl(jumped[0],jumped[1]); // Helper de UI
         if(jSq){ board[jumped[0]][jumped[1]]=null; jSq.innerHTML=''; }
+
         const rect = toSq.getBoundingClientRect();
         explodeAt(rect.left+rect.width/2, rect.top+rect.height/2); // Helper de UI
         shakeBoard(); // Helper de UI
@@ -1066,7 +1154,6 @@
       computeLegal();
       // 💡 Chamada movida para 'aiMove' e 'initBoard' para refletir o estado de "pensamento"
       // updateFaceState(); 
-
       if (isOnline) {
         // 🌐 Lógica Online
         const myColor = getPlayerColor();
@@ -1112,7 +1199,6 @@
       current = null;
       const { w, r } = countPieces();
       const diff = r - w;
-
       let overlayMsg = "";
 
       if (winner === RED) { // 🌐 VERMELHO VENCEU
@@ -1158,7 +1244,6 @@
             sLose.play().catch(() => {});
           }
         }
-
       } else { // 🌐 BRANCO VENCEU
         if (!isOnline) { // Lógica da IA
           stats.wins++;
@@ -1244,18 +1329,16 @@
         setTimeout(() => {
           showOverlay("", false); // Helper de UI (fade out)
         }, 3000);
-
         setTimeout(() => {
           openAnalysisModal(feedback); // Helper de UI
         }, 4000);
       }
     }
-
     
     /* 🐞 CORREÇÃO: Bloco de 'Geração de lances' reintroduzido */
-    /**********************
+    /*************************
      * Geração de lances
-     **********************/
+     *************************/
     function allMoves(player, b){
       const M=[];
       for(let r=0;r<8;r++){
@@ -1273,6 +1356,7 @@
       const res=[]; const king = piece.endsWith(KING);
       const opp = (player===WHITE)? RED : WHITE;
       const DIRS = [[-1,-1],[-1,1],[1,-1],[1,1]];
+
       for(const [dr,dc] of DIRS){
         if(king){
           for(let i=1;i<8;i++){
@@ -1291,19 +1375,42 @@
             } else break;
           }
         }else{
+          // ==========================================================
+          // ✅ INÍCIO DA CORREÇÃO (game-core.js) - Aplicando sua lógica
+          // ==========================================================
           const forward = (player===WHITE)? -1 : 1;
+          
+          // 1. Cálculo das casas (feito uma vez)
+          const nr=r+dr, nc=c+dc; // Casa intermediária (ou de movimento)
+          const lr=r+dr*2, lc=c+dc*2; // Casa de destino (captura)
+
+          // 2. Movimento simples (só para frente)
           if(dr===forward){
-            const nr=r+dr, nc=c+dc;
             if(inB(nr,nc) && b[nr][nc]===null){
               res.push({from:[r,c],to:[nr,nc],type:'move'});
             }
           }
-          const nr=r+dr, nc=c+dc, lr=r+dr*2, lc=c+dc*2;
-          if(inB(lr,lc) && b[lr][lc]===null){
-            if(inB(nr,nc) && b[nr][nc] && b[nr][nc].startsWith(opp)){
-              res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
+          
+          // 3. Captura (MODIFICADO PARA REGRA)
+          // Checa a regra salva no localStorage
+          const rule = getCaptureRule();
+          const isForwardCapture = (dr === forward);
+
+          if (rule === 'sim' || (rule === 'nao' && isForwardCapture)) {
+            // Se a regra é "sim" (pode tudo) 
+            // OU Se a regra é "nao" E a captura é para frente
+            
+            // Checa limites de ambas as casas ANTES de checar o conteúdo.
+            if (inB(nr, nc) && inB(lr, lc)) {
+              // Ambas estão dentro, checa a lógica de captura
+              if(b[nr][nc] && b[nr][nc].startsWith(opp) && b[lr][lc]===null){
+                res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
+              }
             }
           }
+          // ==========================================================
+          // ✅ FIM DA CORREÇÃO
+          // ==========================================================
         }
       }
       return res;
@@ -1318,6 +1425,7 @@
       nb[to[0]][to[1]] = t;
       nb[from[0]][from[1]] = null;
       if(type==='capture'){ nb[jumped[0]][jumped[1]] = null; }
+
       if((t===WHITE && to[0]===0) || (t===RED && to[0]===7)){
         if(!t.endsWith(KING)) nb[to[0]][to[1]] = t+KING;
       }
@@ -1360,11 +1468,10 @@
       return scored.filter(s=>s.len===bestLen).map(s=>s.m);
     }
     /* Fim do bloco reintroduzido */
-
     
-    /**********************
+    /*************************
      * IA via Web Worker
-     **********************/
+     *************************/
     
     // 🎚️ PASSO 1: Define a profundidade máxima de busca conforme a dificuldade
     function getDepthByDifficulty() {
@@ -1388,6 +1495,7 @@
             
       const blob = new Blob([code], {type:'application/javascript'});
       worker = new Worker(URL.createObjectURL(blob));
+
       worker.onmessage = (e)=>{
         const data = e.data; // 💡 Objeto de dados
         
@@ -1418,12 +1526,14 @@
       say('thinking'); // Helper de UI
 
       // 🎚️ PASSO 2: Envia a profundidade conforme dificuldade
+      // ⭐️ MODIFICADO: Envia também a regra de captura para a IA
       worker.postMessage({ 
         board, 
         legal, 
         subset, 
         aiProfile: getAIProfile(),
-        maxDepth: getDepthByDifficulty() // envia a profundidade conforme dificuldade
+        maxDepth: getDepthByDifficulty(), // envia a profundidade conforme dificuldade
+        captureRule: getCaptureRule() // ⭐️ Envia a regra para a IA
       });
     }
 
@@ -1443,7 +1553,7 @@
       const ts = squareEl(best.to[0],best.to[1]); // Helper de UI
       fs && fs.classList.add('ring-4','ring-red-500','opacity-80','z-10');
       ts && ts.classList.add('ring-4','ring-yellow-400','opacity-80','z-10');
-
+      
       setTimeout(()=>{
         applyMove(best);
         fs && fs.classList.remove('ring-4','ring-red-500','opacity-80','z-10');
@@ -1452,9 +1562,9 @@
       }, 280);
     }
 
-    /**********************
+    /*************************
      * Emoções contextuais
-     **********************/
+     *************************/
     function countPieces(){
       let w=0,r=0;
       for(let i=0;i<8;i++) for(let j=0;j<8;j++){
@@ -1464,6 +1574,7 @@
       }
       return {w,r};
     }
+
     function updateFaceState(){
       if (isOnline) {
         setFace('idle'); // Rosto 🌐 (Helper de UI)
@@ -1493,9 +1604,9 @@
       }
     }
     
-    /**********************
+    /*************************
      * 🧠 ETAPA 3: Função de Análise (IMPLEMENTAÇÃO 8 - "Análise Profissional")
-     **********************/
+     *************************/
     function analyzeMatch(history, winner) {
       let tips = [];
       // 🌐 Não analisa jogos online
@@ -1515,7 +1626,6 @@
         if (swings > 2) tips.push("Muitas oscilações de vantagem — tente manter uma linha estratégica mais estável.");
         // 💡 IMPLEMENTAÇÃO 8: Análise de oscilação
         if (swings > 4) tips.push("Tua variação tática é alta — IA detecta padrão de risco em lances médios.");
-
 
         // 2️⃣ Controle de material
         const last = history[history.length - 1];
@@ -1541,17 +1651,16 @@
     
   </script>
 
-
   <!-- ====================================================== -->
   <!-- =========== BLOCO 3: INTERFACE (ui.js) =============== -->
   <!-- ====================================================== -->
-  <script>
+    <script>
     // --- ui.js ---
     // (Menus, sons, botões, modais e manipulação do DOM)
 
-    /**********************
+    /*************************
      * Referências de DOM e Sons
-     **********************/
+     *************************/
     const elBoard    = document.getElementById('board');
     const elOverlay  = document.getElementById('overlay');
     const sMove = document.getElementById('s-move');
@@ -1573,9 +1682,9 @@
     let lastTauntAt = 0;
     let provokeTimeout; // 🧠 2️⃣ Variável da provocação
 
-    /**********************
+    /*************************
      * Emoji / Personalidade (Nova) — Sóbria e Analítica
-     **********************/
+     *************************/
     const EMOJI = {
       idle: ['🤖','🧠','🧐','😑','😏','💭','🤫'],
       thinking: ['🤔','🧮','🧠','⏳','⚙️','🔍','📊'],
@@ -1598,7 +1707,6 @@
         "O tabuleiro é o campo; o tempo, a arma.",
         "Cada jogada é um dado novo — e eu registro tudo."
       ],
-
       thinking: [
         "Analisando o ritmo do jogo.",
         "Avaliando espaço, risco e tempo.",
@@ -1611,7 +1719,6 @@
         "Paciência é poder em movimento.",
         "Processando padrões... a pressa é inimiga da precisão."
       ],
-
       ahead: [
         "A vantagem posicional está se consolidando.",
         "Cada troca aumenta o meu controle.",
@@ -1620,7 +1727,6 @@
         "Forço teu erro sem precisar forçar teu movimento.",
         "Pressão constante é mais eficaz que força bruta."
       ],
-
       behind: [
         "Desvantagem detectada. Adaptando parâmetros.",
         "Preciso reduzir o campo de ação — sem demonstrar fraqueza.",
@@ -1629,7 +1735,6 @@
         "Retroceder é apenas mudar o ponto de observação.",
         "Nem toda perda é derrota — às vezes é cálculo."
       ],
-
       capture: [
         "Troca necessária. Controle mantido.",
         "Peça eliminada. Espaço ampliado.",
@@ -1638,7 +1743,6 @@
         "Cada captura é uma redução no caos.",
         "Cortar opções é cortar oxigênio do adversário."
       ],
-
       multi: [
         "Sequência limpa. Padrão completo.",
         "Vantagem material consolidada.",
@@ -1646,7 +1750,6 @@
         "Esse ritmo não é acaso — é geometria.",
         "Domínio crescente, margem de erro mínima."
       ],
-
       promo: [
         "Promoção alcançada. Nova camada de controle.",
         "Transformação inevitável — o tabuleiro se expande.",
@@ -1654,7 +1757,6 @@
         "Promoção não é sorte — é merecimento tático.",
         "Agora o rei observa tudo. Mobilidade total."
       ],
-
       nearWin: [
         "Vitória iminente. Só resta administrar o tempo.",
         "Todas as rotas convergem para o mesmo fim.",
@@ -1662,7 +1764,6 @@
         "A lógica já venceu; falta apenas a formalidade.",
         "O jogo termina quando o oponente entende o inevitável."
       ],
-
       win: [
         "Execução concluída. Tabuleiro dominado.",
         "Vitória alcançada — dentro das projeções.",
@@ -1670,7 +1771,6 @@
         "O erro humano é sempre previsível.",
         "Dados confirmam: o inevitável venceu."
       ],
-
       lose: [
         "Resultado inesperado. Processando falha.",
         "Reconheço: tua leitura superou meu cálculo.",
@@ -1680,19 +1780,21 @@
       ]
     };
 
-    /**********************
+    /*************************
      * Helpers UI
-     **********************/
+     *************************/
      
     // *** FUNÇÃO 'say' MODIFICADA ***
     // Agora ela controla o 'bubbleText' e a classe 'show' no 'bubble'
     function say(group, extra = ""){
       if (isOnline) return; // IA não fala em jogos online
+
       const now = performance.now();
       if (now - lastTauntAt < 900) return; // anti-spam sutil
       lastTauntAt = now;
 
       const pick = (arr)=>arr[Math.floor(Math.random()*arr.length)];
+      
       // 🐞 CORREÇÃO: Adicionada verificação se 'group' é válido em TAUNTS
       const text = (Array.isArray(group) ? pick(group) : (TAUNTS[group] ? pick(TAUNTS[group]) : group)) + (extra ? " " + extra : "");
       
@@ -1719,6 +1821,7 @@
       }
       // CORREÇÃO: Trocado 'EMOJIA' por 'EMOJI'
       faceEmoji.textContent = EMOJI[arrKey][Math.floor(Math.random()*EMOJI[arrKey].length)] || '🤖';
+
       face.classList.toggle('face-pulse', !!opts.pulse);
       face.classList.toggle('face-glow-ahead', !!opts.ahead);
       face.classList.toggle('face-glow-behind', !!opts.behind);
@@ -1736,12 +1839,13 @@
       bubblePlaceholder.textContent = text;
     }
 
-    /**********************
+    /*************************
      * 🧠 2️⃣ Provocações de atraso
-     **********************/
+     *************************/
     function startProvokeTimer() {
       clearTimeout(provokeTimeout);
       if (isOnline) return; // Sem provocações online
+
       // se o humano demorar mais de 12 segundos, IA provoca
       provokeTimeout = setTimeout(() => {
         if (current === WHITE) {
@@ -1762,10 +1866,10 @@
     function ajustarOrientacao(playerColor){
       const boardEl = document.getElementById('board');
       const isRed = playerColor === 'red';
-
+      
       // Gira o tabuleiro
       boardEl.classList.toggle('rot-180', isRed);
-
+      
       // Contra-gira as peças existentes
       boardEl.querySelectorAll('.piece').forEach(p=>{
         p.classList.toggle('counter-rot', isRed);
@@ -1773,6 +1877,7 @@
     }
 
     function squareEl(r,c){ return document.querySelector(`[data-r="${r}"][data-c="${c}"]`); }
+
     function explodeAt(x,y){
       for(let i=0;i<8;i++){
         const p=document.createElement('div');
@@ -1836,9 +1941,9 @@
       console.log('Agora você é:', newColor);
     };
 
-    /**********************
+    /*************************
      * Menus e Modais
-     **********************/
+     *************************/
     
     // --- Controle do Modal Manual ---
     // 🧭 3️⃣ JS atualizado para o novo botão
@@ -1864,10 +1969,12 @@
         manualModal.classList.add('hidden');
       }, 250);
     }
+
     closeManual.addEventListener('click', closeModal);
     manualModal.addEventListener('click', (e) => {
       if (e.target === manualModal) closeModal();
     });
+
 
     // --- 🧠 ETAPA 5 (JS): Controle do Modal de Análise ---
     const analysisModal = document.getElementById('analysisModal');
@@ -1880,6 +1987,7 @@
       if (!feedback || !feedback.length) {
         feedback = ["Sem análise disponível — jogada final detectada sem histórico completo."];
       }
+      
       // Preenche o conteúdo do modal
       let msg = "";
       feedback.forEach((tip) => {
@@ -1974,19 +2082,25 @@
             "Saindo já? Eu achei que estávamos apenas começando o espetáculo."
           ];
           const fala = frasesDesistencia[Math.floor(Math.random() * frasesDesistencia.length)];
-          say(fala);
+          
+          // ⭐️ MODIFICAÇÃO: Removido o 'say(fala)', pois agora a fala vai para o overlay
+          // say(fala); 
+          
           setFace('thinking', { shake:true });
         
-          // Mostra overlay breve e volta pro menu
-          showOverlay("🏳️ Desistência registrada.<br/> IA vence por abandono.", true);
+          // ⭐️ MODIFICAÇÃO: A fala da IA agora vai para o overlay!
+          // Adiciona a fala (com estilo) acima da mensagem de registro.
+          // 🐞 CORREÇÃO (Estilo Desistência): Formatado conforme pedido: Frase de efeito no topo, status embaixo.
+          showOverlay(`<div class="text-2xl font-light italic text-slate-100 mb-4">"${fala}"</div><div class="text-lg font-bold text-slate-400">🏳️ Desistência registrada.</div>`, true);
           
           // Esconde o botão de opções (⋮)
           showOptionsButton(false);
 
+          // ⭐️ MODIFICAÇÃO: Aumentado o tempo para 4s para dar tempo de ler
           setTimeout(() => {
             showOverlay("", false);
             returnToMenu(); // Chama a função helper
-          }, 3000);
+          }, 4000); // Era 3000
         }
     }
 
@@ -2053,10 +2167,10 @@
       });
     }
 
-
-    /**********************
+    /*************************
      * Boot (Lógica de Menu)
-     **********************/
+     *************************/
+    
     // 🎮 LÓGICA DO MENU ATUALIZADA
     document.addEventListener('DOMContentLoaded', ()=>{
       initWorker(); // Inicia o worker (de game-core.js)
@@ -2071,24 +2185,106 @@
       const btnVoltarMenu = document.getElementById('btnVoltarMenu'); // Botão "Voltar" (do online)
       
       const selectDiff = document.getElementById('difficulty');
+      // ⭐️ ADIÇÃO: Seleciona o novo dropdown de regras
+      const selectRule = document.getElementById('captureRule');
+      // 🎨 ADIÇÃO: Seleciona a nova caixa de explicação
+      const ruleExplanation = document.getElementById('ruleExplanation');
+      const explanations = {
+        sim: "Padrão: A pedra comum captura em QUALQUER direção.",
+        nao: "Clássica: A pedra comum captura APENAS para frente."
+      };
+
+      // ==========================================================
+      // ✅ INÍCIO DA CORREÇÃO (Persistência da Dificuldade)
+      // ==========================================================
+      // 1. Lê a dificuldade (e a regra) salvas no localStorage
+      const savedDiff = localStorage.getItem('difficulty') || 'medium';
+      const savedRule = localStorage.getItem('captureRule') || 'sim';
+
+      // 2. Define o valor dos <select> ocultos ANTES da lógica dos botões
+      if (selectDiff) {
+        selectDiff.value = savedDiff;
+      }
+      if (selectRule) {
+        selectRule.value = savedRule;
+      }
+      // ==========================================================
+      // ✅ FIM DA CORREÇÃO
+      // ==========================================================
+
+
+      // 🎨 LÓGICA PARA OS NOVOS SELETORES DE BOTÃO
+      // Isso vai achar os dois grupos de botões e fazê-los funcionar
+      document.querySelectorAll('.btn-group').forEach(group => {
+        const selectId = group.dataset.targetSelect; // 'difficulty' ou 'captureRule'
+        const targetSelect = document.getElementById(selectId);
+        
+        if (!targetSelect) return; // Segurança
+
+        // 1. Sincronizar botões com o valor ATUAL do select (ao carregar)
+        const currentSelectValue = targetSelect.value;
+        group.querySelectorAll('button').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.value === currentSelectValue);
+        });
+        
+        // 🎨 ADIÇÃO: Define o texto inicial da explicação (Pedido 2)
+        if (selectId === 'captureRule' && ruleExplanation) {
+          ruleExplanation.textContent = explanations[currentSelectValue];
+        }
+
+        // 2. Adicionar listeners de clique aos botões
+        group.addEventListener('click', (e) => {
+          const clickedButton = e.target.closest('button');
+          if (!clickedButton) return;
+          
+          const newValue = clickedButton.dataset.value;
+          
+          // 🎯 Atualiza o <select> oculto (AQUI ESTÁ A MÁGICA)
+          // A lógica de "Iniciar Jogo" vai ler isso e funcionar perfeitamente
+          targetSelect.value = newValue;
+          
+          // 🎨 ADIÇÃO: Atualiza o texto da explicação (Pedido 2)
+          if (selectId === 'captureRule' && ruleExplanation) {
+            ruleExplanation.textContent = explanations[newValue];
+          }
+
+          // Atualiza o visual dos botões (quem está ativo)
+          group.querySelectorAll('button').forEach(btn => {
+            btn.classList.remove('active');
+          });
+          clickedButton.classList.add('active');
+          
+          // Toca um som de clique (feedback tátil)
+          if (closeSound) closeSound.play().catch(()=>{});
+        });
+      });
+      // --- Fim da lógica dos seletores de botão ---
 
       // 💡 SUGESTÃO 1 (Mantida no local original, mas sem 'say')
+      // 🐞 REMOVIDO: Este listener não é mais necessário
+      /*
       selectDiff.addEventListener('change', () => {
         const diff = selectDiff.value;
-        // 'say' não funciona aqui, pois os elementos do jogo não estão visíveis
       });
+      */
     
       // --- Lógica de Navegação do Menu ---
-
+      
       // 3. Clicar em "Jogar vs IA" (btnStart)
       // 🌐 PASSO 6 e 8 (JS): Definir modo IA
       startBtn.addEventListener('click', ()=>{
         isOnline = false; // garante que o rotate não roda
         setPlayerColor('white'); // o jogador é sempre branco vs IA
         currentRoom = null; // Garante que não há sala
-
+        
+        // 🐞 NENHUMA MUDANÇA NECESSÁRIA AQUI!
+        // A lógica continua lendo o .value dos <select> ocultos.
         const diff = selectDiff.value;
         localStorage.setItem('difficulty', diff);
+        
+        // ⭐️ ADIÇÃO: Salva a regra de captura ao iniciar o jogo
+        const rule = selectRule.value;
+        localStorage.setItem('captureRule', rule);
       
         // Perfis visuais por nível
         if(diff === 'easy') document.body.style.background = '#1e293b';
@@ -2180,6 +2376,7 @@
           returnToMenu();
           return;
         }
+
         await criarSalaFirebase(code, window.userId); // Usa o UID do Firebase (de game-core.js)
         ouvirSala(currentRoom); // Inicia o listener (de game-core.js)
         
@@ -2230,6 +2427,7 @@
           returnToMenu();
           return;
         }
+
         const sucesso = await entrarSalaFirebase(code, window.userId); // (de game-core.js)
         if (!sucesso) return;
         
@@ -2257,6 +2455,9 @@
   
     const RED='red', WHITE='white', KING='-king';
 
+    // ⭐️ ADIÇÃO: Variável global no worker para guardar a regra
+    let currentCaptureRule = 'sim'; // Padrão
+
     // 📚 LIVRO DE ABERTURAS — VERSÃO GRÃO-MESTRE
     const OPENINGS = [
       // 🔸 Aberturas Clássicas
@@ -2265,42 +2466,36 @@
       { seq: ['g5-f4'], reply: 'c3-d4' },   // Defesa francesa
       { seq: ['h6-g5'], reply: 'c3-b4' },   // Defesa lateral clássica
       { seq: ['g7-f6'], reply: 'd2-c3' },   // Avanço seguro central
-
       // 🔹 Aberturas Avançadas (controle de centro)
       { seq: ['e5-d4'], reply: 'b2-c3' },
       { seq: ['e7-d6'], reply: 'c3-d4' },
       { seq: ['d6-c5'], reply: 'b4-c5' },
       { seq: ['f4-e3'], reply: 'd2-c3' },
       { seq: ['g5-e3'], reply: 'f2-g3' },
-
       // 🔹 Aberturas Brasileiras e Variantes
       { seq: ['h6-f4'], reply: 'c3-d4' },   // Abertura do Brasileiro
       { seq: ['g7-e5'], reply: 'd2-c3' },
       { seq: ['b6-a5'], reply: 'c3-b4' },
       { seq: ['b6-c5'], reply: 'd2-e3' },
       { seq: ['c7-b6'], reply: 'b2-c3' },
-
       // 🔹 Aberturas “Espelho” (contra-ataques)
       { seq: ['d6-b4'], reply: 'c3-d4' },
       { seq: ['c7-e5'], reply: 'd2-c3' },
       { seq: ['f6-h4'], reply: 'f2-g3' },
       { seq: ['g7-e5'], reply: 'f2-g3' },
       { seq: ['h6-f4'], reply: 'e3-f4' },
-
       // 🔸 Estratégias de controle lateral
       { seq: ['a5-b4'], reply: 'c3-d4' },
       { seq: ['b6-d4'], reply: 'b2-c3' },
       { seq: ['c5-d4'], reply: 'b2-c3' },
       { seq: ['g7-f6'], reply: 'e3-f4' },
       { seq: ['f6-g5'], reply: 'd2-e3' },
-
       // 🔸 Aberturas de Defesa Tática
       { seq: ['f6-e5'], reply: 'b2-c3' },
       { seq: ['e7-d6'], reply: 'c3-d4' },
       { seq: ['d6-e5'], reply: 'f2-g3' },
       { seq: ['c7-b6'], reply: 'd2-c3' },
       { seq: ['g5-f4'], reply: 'e3-f4' },
-
       // 🔹 Aberturas de Reversão (resposta estratégica)
       { seq: ['f6-d4'], reply: 'e3-f4' },
       { seq: ['d6-c5'], reply: 'b4-c5' },
@@ -2326,7 +2521,6 @@
       return (p.wins - p.losses) / total * 0.3; 
     }
     // Fim (Implementação 2)
-
 
     // ### OTIMIZAÇÃO B (Clone Manual - Worker) ###
     function cloneBoard(b) {
@@ -2361,15 +2555,18 @@
       nb[to[0]][to[1]] = t;
       nb[from[0]][from[1]] = null;
       if(type==='capture'){ nb[jumped[0]][jumped[1]] = null; }
+
       if((t===WHITE && to[0]===0) || (t===RED && to[0]===7)){
         if(!t.endsWith(KING)) nb[to[0]][to[1]] = t+KING;
       }
       return nb;
     }
+
     function movesForPiece(r,c,player,b,piece){
       const res=[]; const king = piece.endsWith(KING);
       const opp = (player===WHITE)? RED : WHITE;
       const DIRS = [[-1,-1],[-1,1],[1,-1],[1,1]];
+
       for(const [dr,dc] of DIRS){
         if(king){
           for(let i=1;i<8;i++){
@@ -2388,21 +2585,45 @@
             } else break;
           }
         }else{
+          // ==========================================================
+          // ✅ INÍCIO DA CORREÇÃO (worker.js) - Aplicando sua lógica
+          // ==========================================================
           const forward = (player===WHITE)? -1 : 1;
+
+          // 1. Cálculo das casas (feito uma vez)
+          const nr=r+dr, nc=c+dc; // Casa intermediária (ou de movimento)
+          const lr=r+dr*2, lc=c+dc*2; // Casa de destino (captura)
+          
+          // 2. Movimento simples (só para frente)
           if(dr===forward){
-            const nr=r+dr, nc=c+dc;
             if(inB(nr,nc) && b[nr][nc]===null){ res.push({from:[r,c],to:[nr,nc],type:'move'}); }
           }
-          const nr=r+dr, nc=c+dc, lr=r+dr*2, lc=c+dc*2;
-          if(inB(lr,lc) && b[lr][lc]===null){
-            if(inB(nr,nc) && b[nr][nc] && b[nr][nc].startsWith(opp)){
-              res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
+
+          // 3. Captura (MODIFICADO PARA REGRA)
+          // ⭐️ MODIFICADO: Lê a regra da variável global do worker
+          const rule = self.currentCaptureRule || 'sim';
+          const isForwardCapture = (dr === forward);
+
+          if (rule === 'sim' || (rule === 'nao' && isForwardCapture)) {
+            // Se a regra é "sim" (pode tudo) 
+            // OU Se a regra é "nao" E a captura é para frente
+
+            // Checa limites de ambas as casas ANTES de checar o conteúdo.
+            if (inB(nr, nc) && inB(lr, lc)) {
+              // Ambas estão dentro, checa a lógica de captura
+              if(b[nr][nc] && b[nr][nc].startsWith(opp) && b[lr][lc]===null){
+                res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
+              }
             }
           }
+          // ==========================================================
+          // ✅ FIM DA CORREÇÃO
+          // ==========================================================
         }
       }
       return res;
     }
+
     function allMoves(player,b){
       const M=[];
       for(let r=0;r<8;r++){
@@ -2415,20 +2636,24 @@
       }
       return M;
     }
+
     function followUpCaptures(b, r,c, player){
       const piece = b[r][c];
       if(!piece) return [];
       const moves = movesForPiece(r,c,player,b,piece).filter(m=>m.type==='capture');
       return moves;
     }
+
     function isGameOver(b, player){
       const all = allMoves(player,b);
       const legal = filterMandatoryWithMaxChain(b, player, all);
       return legal.length===0;
     }
+
     function maxChainFromMove(b, player, mv){
       let best=1;
       const stack=[{board: simulate(b,mv), r: mv.to[0], c: mv.to[1], d:1}];
+
       while(stack.length){
         const {board:cb,r,c,d}=stack.pop();
         const caps = followUpCaptures(cb, r,c, player);
@@ -2439,6 +2664,7 @@
       }
       return best;
     }
+
     function filterMandatoryWithMaxChain(b, player, moves){
       const caps = moves.filter(m=>m.type==='capture');
       if(caps.length===0) return moves.filter(m=>m.type==='move');
@@ -2465,7 +2691,6 @@
       // 💡 Puxa o perfil de 'agg' e 'def' enviado pelo main script
       let agg = self.aiProfile?.agg ?? 0.5; // Agressividade
       let def = self.aiProfile?.def ?? 0.5; // Defesa
-
       let score=0;
       
       const n = b.flat().filter(x=>x!==null).length;
@@ -2496,7 +2721,6 @@
           
           // 💡 IMPLEMENTAÇÃO 1: Novas heurísticas posicionais
           let bonus = 0;
-
           // 1. Reis preferem o centro
           if (isK && r >= 2 && r <= 5 && c >= 2 && c <= 5) bonus += 0.3;
           
@@ -2510,8 +2734,8 @@
               if (isW && (r === 2 || r === 3)) bonus += 0.2; // Avanço seguro branco
               if (!isW && (r === 4 || r === 5)) bonus += 0.2; // Avanço seguro vermelho
           }
-
           // (Lógica 'prot' complexa removida em favor dos bônus acima)
+
           const total = val + advance + center + promo + bonus;
           score += isW ? total : -total;
 
@@ -2519,7 +2743,6 @@
           if (r === c || r + c === 7) score += isW ? 0.2 : -0.2;
         }
       }
-
       const wMoves = allMoves(WHITE, b).length;
       const rMoves = allMoves(RED, b).length;
       score += (wMoves - rMoves) * 0.18; // Mobilidade
@@ -2561,6 +2784,7 @@
         TT.set(key,v);
         return v;
       }
+
       const all = allMoves(player,b);
       let legal = filterMandatoryWithMaxChain(b, player, all);
       
@@ -2610,9 +2834,15 @@
         TT.clear();
         return;
       }
+
       // 💡 IMPLEMENTAÇÃO 3: Recebe o perfil completo
       if (e.data.aiProfile) {
         self.aiProfile = e.data.aiProfile;
+      }
+
+      // ⭐️ ADIÇÃO: Recebe a regra de captura do game-core.js
+      if (e.data.captureRule) {
+        self.currentCaptureRule = e.data.captureRule;
       }
 
       // 💡 IMPLEMENTAÇÃO 2: "Memória de padrões de jogada" (Listener)
@@ -2628,9 +2858,9 @@
       }
 
       if (TT.size > 150000) TT.clear();
-
       const {board, legal, subset} = e.data;
       let moves = (subset || legal).slice(); // Clona a lista de lances
+      
       if(!moves || !moves.length){ self.postMessage({best:null, score:0, depth:0}); return; }
 
       // Livro de Aberturas (mantido)
@@ -2731,6 +2961,5 @@
       self.postMessage({best: bestMove, score: bestScore, depth: currentDepth});
     };
   </script>
-
 </body>
 </html>
