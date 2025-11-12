@@ -2273,6 +2273,8 @@
       // 3. Clicar em "Jogar vs IA" (btnStart)
       // 🌐 PASSO 6 e 8 (JS): Definir modo IA
       startBtn.addEventListener('click', ()=>{
+        if (closeSound) closeSound.play().catch(()=>{}); // 🔊 Som de clique imediato
+        
         isOnline = false; // garante que o rotate não roda
         setPlayerColor('white'); // o jogador é sempre branco vs IA
         currentRoom = null; // Garante que não há sala
@@ -2301,7 +2303,7 @@
         document.body.appendChild(intro);
       
         // Som + atraso
-        if (openSound) openSound.play().catch(()=>{});
+        if (openSound) openSound.play().catch(()=>{}); // 🔊 Som de "abrir" a tela de loading
         
         // Esconde o CONTAINER PAI
         menuContainer.style.display = 'none'; 
@@ -2345,7 +2347,7 @@
         }
         mainMenu.classList.add('hidden');
         onlineMenuScreen.classList.remove('hidden');
-        if (openSound) openSound.play().catch(()=>{}); // Som adicionado
+        if (closeSound) closeSound.play().catch(()=>{}); // 🔊 Som de clique (Era openSound)
       });
       
       // Voltar do submenu online para o menu principal
@@ -2360,6 +2362,8 @@
       // Criar sala
       // 🌐 PASSO 6 (JS): Definir modo Online e Cor
       btnCriarSala.addEventListener('click', async () => {
+        if (closeSound) closeSound.play().catch(()=>{}); // 🔊 Som de clique (Imediato)
+        
         isOnline = true;
         setPlayerColor('white'); // dono = branco
         
@@ -2383,14 +2387,15 @@
         // 🌐 Atualiza UI para esperar oponente
         setBubblePlaceholder(`Sala: ${currentRoom} | Aguardando oponente...`);
         
-        if (openSound) openSound.play().catch(()=>{}); // Som adicionado
+        // if (openSound) openSound.play().catch(()=>{}); // MOVIDO para o topo
       });
       
+      // Entrar em sala
       // Entrar em sala
       btnEntrarSala.addEventListener('click', () => {
         onlineMenuScreen.classList.add('hidden');
         joinRoomScreen.classList.remove('hidden');
-        if (openSound) openSound.play().catch(()=>{}); // Som adicionado
+        if (closeSound) closeSound.play().catch(()=>{}); // 🔊 Som de clique (Era openSound)
       });
       
       // Voltar da tela "Criar Sala"
@@ -2412,6 +2417,8 @@
       // Simular entrada em sala
       // 🌐 PASSO 6 (JS): Definir modo Online e Cor
       btnJoin.addEventListener('click', async () => {
+        if (closeSound) closeSound.play().catch(()=>{}); // 🔊 Som de clique (Imediato)
+        
         isOnline = true;
         setPlayerColor('red'); // visitante = vermelho
         
