@@ -170,6 +170,36 @@
         box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
       }
 
+      /* 🎨 MODIFICAÇÃO: Estilos para o novo modal de Análise Visual */
+      /* (Estes estilos são para os 'stat-item' que criei em 'openAnalysisModal') */
+      .stat-item {
+        transition: background-color 0.2s ease, transform 0.2s ease;
+      }
+      .stat-item:hover {
+        background-color: #334155; /* bg-slate-700 */
+        transform: translateY(-2px);
+      }
+      .stat-icon {
+        flex-shrink: 0;
+        opacity: 0.8;
+      }
+      .stat-value {
+        line-height: 1.2;
+      }
+      .stat-label {
+        line-height: 1.1;
+      }
+      .analysis-highlight, .master-tip {
+        transition: box-shadow 0.3s ease;
+      }
+      .analysis-highlight:hover {
+        box-shadow: 0 0 15px rgba(250, 204, 21, 0.2);
+      }
+      .master-tip:hover {
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+      }
+      /* Fim da Modificação */
+
       /* 🎨 Efeitos do Menu Principal Adicionados */
       @keyframes pulseButton {
         0%, 100% { box-shadow: 0 0 20px rgba(56,189,248,0.3); }
@@ -520,9 +550,13 @@
         <h2 class="text-2xl font-bold mb-3 text-center text-cyan-300 drop-shadow-lg">
           📊 Análise da Partida
         </h2>
-        <!-- Conteúdo da análise será injetado aqui -->
-        <div id="analysisContent" class="text-sm leading-relaxed space-y-2 max-h-[60vh] overflow-y-auto relative z-10 px-1">
-          <!-- Ex: <p>• Muitas oscilações de vantagem...</p> -->
+        <!-- 
+          🎨 MODIFICAÇÃO VISUAL: 
+          O conteúdo agora é injetado pelo 'openAnalysisModal' 
+          com uma estrutura de cards e ícones.
+        -->
+        <div id="analysisContent" class="text-sm leading-relaxed space-y-4 max-h-[65vh] overflow-y-auto relative z-10 px-1">
+          <!-- O JS vai preencher aqui com a nova estrutura visual -->
         </div>
         <button id="closeAnalysis" 
           class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
@@ -2092,67 +2126,77 @@
        * 🧠 ETAPA 3: Função de Análise (IMPLEMENTAÇÃO 8 - "Análise Profissional")
        *************************/
       // 🚀 FUNÇÃO DE ANÁLISE TOTALMENTE REFEITA (MAIS DETALHADA)
+      // 🎨 MODIFICAÇÃO VISUAL (REQUISIÇÃO DO USUÁRIO)
+      // Agora retorna um OBJETO em vez de um array de strings
       function analyzeMatch(history, winner) {
-        let tips = [];
+        
         // 🌐 Não analisa jogos online
         if (isOnline) {
-          tips.push("Análise de partida não disponível para jogos online.");
-          return tips;
+          return {
+            winner: winner,
+            totalMoves: 0,
+            playerCaptures: 0, aiCaptures: 0,
+            playerPromotions: 0, aiPromotions: 0,
+            turningPointMove: 0,
+            turningPointDesc: "Análise de partida não disponível para jogos online.",
+            masterTip: "Volte ao menu para iniciar um novo jogo."
+          };
         }
 
-        // 🤝 Lógica de Empate (vinda da merge anterior)
+        // 🤝 Lógica de Empate
         if (winner === 'draw') {
-          tips.push("Jogo empatado! Uma partida tática onde nenhum lado cedeu vantagem.");
+          return {
+            winner: "Empate",
+            totalMoves: history.length,
+            playerCaptures: history.filter(h => h.player === WHITE && h.move.type === 'capture').length,
+            aiCaptures: history.filter(h => h.player === RED && h.move.type === 'capture').length,
+            playerPromotions: 0, // (simplificado para empate)
+            aiPromotions: 0,
+            turningPointMove: 0,
+            turningPointDesc: "Partida tática onde nenhum lado cedeu vantagem.",
+            masterTip: "Um empate contra a IA é um ótimo sinal de consistência. Continue assim!"
+          };
         }
         
         if (history.length < 5) {
-          if (winner !== 'draw') tips.push("Partida curta demais para análise detalhada.");
-          return tips; // Retorna, mas *depois* de checar o empate
+          return {
+            winner: winner,
+            totalMoves: history.length,
+            playerCaptures: 0, aiCaptures: 0,
+            playerPromotions: 0, aiPromotions: 0,
+            turningPointMove: 0,
+            turningPointDesc: "Partida curta demais para análise detalhada.",
+            masterTip: "Tente desenvolver mais suas peças na próxima vez."
+          };
         }
 
         // --- Início da Análise Detalhada ---
-
-        // 1. Métricas Básicas (Total de Capturas)
         const totalMoves = history.length;
         const playerMoves = history.filter(h => h.player === WHITE);
         const aiMoves = history.filter(h => h.player === RED);
+        
         const playerCaptures = playerMoves.filter(h => h.move.type === 'capture').length;
         const aiCaptures = aiMoves.filter(h => h.move.type === 'capture').length;
 
-        tips.push(`Total de jogadas: ${totalMoves}`);
-        tips.push(`Você capturou ${playerCaptures} peças.`);
-        tips.push(`A IA capturou ${aiCaptures} peças.`);
+        // ⭐️ NOVO: Contagem de Promoções
+        let playerPromotions = 0;
+        let aiPromotions = 0;
+        // (Esta lógica é uma *estimativa* baseada no movimento final, 
+        // pois o 'gameHistory' não armazena se a peça *já* era Dama)
+        playerMoves.forEach(h => {
+          // 🐞 Correção: Peça branca (WHITE) promove na linha 0
+          if (h.move.to[0] === 0 && h.move.type !== 'multi') playerPromotions++; 
+        });
+        aiMoves.forEach(h => {
+          // Peça vermelha (RED) promove na linha 7
+          if (h.move.to[0] === 7 && h.move.type !== 'multi') aiPromotions++;
+        });
 
-        // 2. Análise de Ritmo (Tempo)
-        // Só calcula se não for online e não for modo treino
-        if (!isOnline && !trainingMode && playerMoves.length > 2) { 
-          let totalTime = 0;
-          let moveCount = 0;
-          for (let i = 1; i < playerMoves.length; i++) {
-            // Tenta pegar o tempo da jogada anterior da IA. 
-            // Se não existir (primeira jogada), usa a jogada anterior do player.
-            const lastMoveTime = aiMoves[i-1]?.time || playerMoves[i-1]?.time;
-            if (lastMoveTime) {
-                const timeDiff = playerMoves[i].time - lastMoveTime;
-                // Ignora jogadas muito rápidas (provavelmente cliques errados) ou pausas longas (mais de 1 min)
-                if (timeDiff > 100 && timeDiff < 60000) { 
-                  totalTime += timeDiff;
-                  moveCount++;
-                }
-            }
-          }
-          
-          if (moveCount > 0) {
-              const avgTime = (totalTime / moveCount / 1000).toFixed(1); // em segundos
-              tips.push(`Seu tempo médio por jogada foi de ${avgTime} segundos.`);
-              if (avgTime < 3) tips.push("Ritmo de jogo rápido! Bom instinto.");
-              else if (avgTime > 10) tips.push("Ritmo de jogo cauteloso. Você ponderou bem suas jogadas.");
-          }
-        }
 
-        // 3. Ponto de Virada (Turning Point)
+        // Ponto de Virada (Turning Point)
         let maxSwing = 0;
         let swingTurn = -1; // Índice da jogada no histórico
+        let turningPointDesc = "O jogo foi equilibrado, sem um único erro decisivo.";
 
         for (let i = 1; i < history.length; i++) {
           const prevDiff = history[i-1].diff; // Vantagem da IA no turno anterior
@@ -2169,38 +2213,46 @@
           }
         }
 
-        // Se um erro significativo (perda de 2+ peças) foi encontrado
+        let turningPointMove = 0;
         if (swingTurn !== -1 && maxSwing >= 2) { 
-          // Calcula o "número da jogada" (ex: Jogada 5)
-          const moveNumber = history.slice(0, swingTurn + 1).filter(h => h.player === WHITE).length;
-          tips.push(`**Ponto de Virada (Sua jogada ${moveNumber}):** Esta jogada permitiu à IA ganhar uma vantagem material de ${maxSwing} peças.`);
+          turningPointMove = history.slice(0, swingTurn + 1).filter(h => h.player === WHITE).length;
+          turningPointDesc = `Sua <strong>Jogada ${turningPointMove}</strong> permitiu à IA ganhar uma vantagem material equivalente a ${maxSwing} peças. Este foi um momento crítico.`;
         }
 
-        // 4. Análise de Fases e Vencedor
-        const lastState = history[history.length - 1];
-
-        if (winner === WHITE) {
-          tips.push("**Vitória!** Você manteve a pressão e converteu a vantagem.");
-          if (playerCaptures > aiCaptures) {
-              tips.push("Sua eficiência nas trocas foi decisiva.");
+        // 💡 NOVO: Dica do Mestre (Master's Tip)
+        let masterTip = "";
+        if (winner === RED) { // IA Venceu
+          if (aiCaptures > playerCaptures + 2) {
+            masterTip = "A IA foi muito eficiente nas trocas. Tente proteger melhor suas peças avançadas e evite trocas desvantajosas.";
+          } else if (turningPointMove > 0) {
+            masterTip = `A "Jogada ${turningPointMove}" foi decisiva. Tente analisar o que levou a essa posição e quais alternativas você tinha.`;
+          } else if (aiPromotions > playerPromotions) {
+            masterTip = "A IA conseguiu controlar as linhas de promoção. Foque em bloquear o avanço das peças inimigas para a coroação.";
+          } else {
+            masterTip = "Partida disputada! A IA capitalizou em pequenas vantagens posicionais. Continue focado no controle do centro.";
           }
-          if (lastState.white > 5 && lastState.red === 0) {
-              tips.push("Domínio total do tabuleiro. Excelente!");
-          }
-        } else if (winner === RED) {
-          tips.push("**Derrota.** A IA conseguiu capitalizar em aberturas ou erros de meio-jogo.");
-          if (aiCaptures > playerCaptures) {
-              tips.push("A IA foi mais agressiva nas capturas. Tente proteger suas peças-chave.");
-          }
-          if (swingTurn !== -1 && maxSwing >= 2) { // Só menciona se o ponto de virada foi significativo
-              tips.push("Aquele Ponto de Virada foi crucial. Revise essa jogada.");
+        } else { // Jogador Venceu
+          if (playerCaptures > aiCaptures + 2) {
+            masterTip = "Excelente agressividade! Você dominou as trocas e soube capitalizar a vantagem material. Um jogo limpo.";
+          } else if (playerPromotions > aiPromotions) {
+            masterTip = "Seu controle das colunas de promoção foi impecável. Coroar uma Dama foi a chave para esta vitória. Ótimo jogo!";
+          } else {
+            masterTip = "Vitória sólida! Você manteve a pressão e não deu chances à IA. Sua paciência e precisão tática foram recompensadas.";
           }
         }
 
-        // 5. Dicas Genéricas (mantidas)
-        if (history.length < 20 && winner !== 'draw') tips.push("Partida rápida — reveja aberturas e defesas iniciais.");
-        
-        return tips;
+        // Retorna o objeto estruturado
+        return {
+          winner: winner,
+          totalMoves: totalMoves,
+          playerCaptures: playerCaptures,
+          aiCaptures: aiCaptures,
+          playerPromotions: playerPromotions,
+          aiPromotions: aiPromotions,
+          turningPointMove: turningPointMove,
+          turningPointDesc: turningPointDesc,
+          masterTip: masterTip
+        };
       }
       
     </script>
@@ -2568,20 +2620,103 @@
       const analysisContent = document.getElementById('analysisContent');
       const closeAnalysis = document.getElementById('closeAnalysis');
 
-      function openAnalysisModal(feedback) {
-        // ⚙️ Extra opcional: segurança para o modal
-        if (!feedback || !feedback.length) {
-          feedback = ["Sem análise disponível — jogada final detectada sem histórico completo."];
-        }
+      // 🎨 FUNÇÃO ATUALIZADA PARA O NOVO VISUAL DA ANÁLISE
+      function openAnalysisModal(analysisData) {
+        // 'analysisData' agora é o objeto de analyzeMatch
         
-        // Preenche o conteúdo do modal
-        let msg = "";
-        feedback.forEach((tip) => {
-          msg += `<p class="border-b border-cyan-900/50 pb-2 mb-2">• ${tip}</p>`;
-        });
-        analysisContent.innerHTML = msg;
+        // ⚙️ Segurança: se 'analysisData' não for o objeto esperado,
+        // usa a versão antiga para evitar quebrar
+        if (Array.isArray(analysisData)) {
+          let msg = "";
+          analysisData.forEach((tip) => {
+            msg += `<p class="border-b border-cyan-900/50 pb-2 mb-2">• ${tip}</p>`;
+          });
+          analysisContent.innerHTML = msg;
+        } else {
+          // 💡 NOVO: Constrói o HTML visual
+          const winnerText = analysisData.winner === WHITE ? "Você Venceu!" : (analysisData.winner === RED ? "IA Venceu" : "Empate");
+          const winnerColor = analysisData.winner === WHITE ? "text-green-400" : (analysisData.winner === RED ? "text-red-400" : "text-yellow-400");
+          
+          // Ícones SVG (para "bem bonito visualmente")
+          const icons = {
+            winner: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.95-.69l1.519-4.674z" /></svg>`,
+            moves: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.828 15.172a4 4 0 01-5.656 0l-4-4a4 4 0 010-5.656l4-4a4 4 0 015.656 0l4 4a4 4 0 010 5.656l-4 4z" /></svg>`,
+            captures: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 10-2.828-2.828zM11.314 11.314l1.414-1.414m-1.414 0L10 12.728m1.314-1.414L12.728 10m-1.414 1.314L10 11.314" /></svg>`,
+            promo: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" transform="rotate(0 0 0)"/></svg>`
+          };
+          
+          analysisContent.innerHTML = `
+            <!-- Grade de Stats -->
+            <div class="analysis-grid grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+              
+              <!-- Resultado -->
+              <div class="stat-item bg-slate-800/50 p-3 rounded-lg flex items-center space-x-3 col-span-1 md:col-span-2 ${winnerColor.replace('text-', 'border-').replace('400', '500/50')} border-l-4">
+                <div class="stat-icon ${winnerColor}">${icons.winner}</div>
+                <div>
+                  <span class="stat-value text-lg font-bold ${winnerColor}">${winnerText}</span>
+                  <span class="stat-label text-xs text-slate-400 block">Resultado da Partida</span>
+                </div>
+              </div>
 
-        // Mostra o modal
+              <!-- Total de Jogadas -->
+              <div class="stat-item bg-slate-800/50 p-3 rounded-lg flex items-center space-x-3">
+                <div class="stat-icon text-cyan-400">${icons.moves}</div>
+                <div>
+                  <span class="stat-value text-lg font-bold text-white">${analysisData.totalMoves}</span>
+                  <span class="stat-label text-xs text-slate-400 block">Total de Jogadas</span>
+                </div>
+              </div>
+
+              <!-- Capturas (Jogador) -->
+              <div class="stat-item bg-slate-800/50 p-3 rounded-lg flex items-center space-x-3">
+                <div class="stat-icon text-green-400">${icons.captures}</div>
+                <div>
+                  <span class="stat-value text-lg font-bold text-white">${analysisData.playerCaptures}</span>
+                  <span class="stat-label text-xs text-slate-400 block">Suas Capturas</span>
+                </div>
+              </div>
+
+              <!-- Capturas (IA) -->
+              <div class="stat-item bg-slate-800/50 p-3 rounded-lg flex items-center space-x-3">
+                <div class="stat-icon text-red-400">${icons.captures}</div>
+                <div>
+                  <span class="stat-value text-lg font-bold text-white">${analysisData.aiCaptures}</span>
+                  <span class="stat-label text-xs text-slate-400 block">Capturas da IA</span>
+                </div>
+              </div>
+
+              <!-- Promoções -->
+              <div class="stat-item bg-slate-800/50 p-3 rounded-lg flex items-center space-x-3">
+                <div class="stat-icon text-yellow-400">${icons.promo}</div>
+                <div>
+                  <span class="stat-value text-lg font-bold text-white">${analysisData.playerPromotions} (Você) vs ${analysisData.aiPromotions} (IA)</span>
+                  <span class="stat-label text-xs text-slate-400 block">Damas Promovidas</span>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Ponto de Virada -->
+            <div class="analysis-highlight bg-yellow-900/30 border border-yellow-500/50 p-4 rounded-lg space-y-1">
+              <h3 class="font-bold text-yellow-300 text-base flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                Ponto de Virada
+              </h3>
+              <p class="text-yellow-100 text-sm">${analysisData.turningPointDesc}</p>
+            </div>
+
+            <!-- Dica do Mestre -->
+            <div class="master-tip bg-cyan-900/30 border border-cyan-500/50 p-4 rounded-lg space-y-1">
+              <h3 class="font-bold text-cyan-300 text-base flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707M12 21v-1m6.364-1.636l-.707-.707M6.343 17.657l-.707.707" /></svg>
+                Dica do Mestre
+              </h3>
+              <p class="text-cyan-100 text-sm">${analysisData.masterTip}</p>
+            </div>
+          `;
+        }
+
+        // Mostra o modal (lógica existente)
         analysisModal.classList.remove('hidden');
         openSound.play().catch(()=>{});
         setTimeout(() => {
@@ -3429,6 +3564,9 @@
         // 💡 NOVO: guardar posições para detectar "duplas" e cercos
         const positionsW = [];
         const positionsR = [];
+        
+        // 🧠 ADICIONADO: Contagem de peças real para o "King Hunt"
+        let wP=0, wK=0, rP=0, rK=0;
       
         for (let r = 0; r < 8; r++) {
           for (let c = 0; c < 8; c++) {
@@ -3438,6 +3576,13 @@
             const isW = v.startsWith(WHITE);
             const isK = v.endsWith(KING);
             const player = isW ? WHITE : RED;
+            
+            // 🧠 ADICIONADO: Popula a contagem de peças
+            if (isW) {
+              if (isK) wK++; else wP++;
+            } else {
+              if (isK) rK++; else rP++;
+            }
       
             // guarda posição para análise de sinergia depois
             if (isW) positionsW.push([r, c, isK]);
@@ -3470,7 +3615,15 @@
       
             // Peças protegidas ganham valor extra
             if (!isK && isProtected(b, r, c, player)) {
-              bonus += 0.4 * (0.5 + def);
+              // 🧠 MODIFICAÇÃO: Bônus de proteção é reduzido no final
+              // O bônus de proteção estava travando a IA no final (local maximum).
+              // Agora, ele vale muito no começo/meio (0.4) e quase nada no final (0.1),
+              // forçando a IA a buscar a promoção em vez de "campar".
+              let protectionWeight = 0.4;
+              if (phase === 'end') {
+                  protectionWeight = 0.1; // Muito menos importante no final
+              }
+              bonus += protectionWeight * (0.5 + def);
             }
       
             // Ligeira preferência por linhas "boas"
@@ -3497,6 +3650,72 @@
             if (r === c || r + c === 7) score += isW ? 0.2 : -0.2;
           }
         }
+      
+        // 🧠 NOVA LÓGICA: "PRECISÃO DE FINALIZAÇÃO" (Sua Sugestão)
+        // Detecta se a IA (Red) tem uma vitória clara no final do jogo
+        
+        // 🚫 LÓGICA ANTIGA (REMOVIDA) - Era muito específica
+        // Cenário 1: "Caça às Damas" (Red tem mais Damas, White não tem peões)
+        // const redKingHunt = (rK > wK && wP === 0 && rP === 0); // Só Damas no tabuleiro
+        // Cenário 2: "Damas vs Peões" (Red tem Damas, White SÓ tem peões)
+        // const redPawnHunt = (rK > 0 && wK === 0 && wP > 0);
+        // O "Modo Finalizador" é ativado se qualquer um desses cenários for verdadeiro E for final de jogo
+        // const isFinisherMode = (redKingHunt || redPawnHunt) && phase === 'end';
+        
+        // 💡 NOVA LÓGICA AMPLA "MODO FINALIZADOR" (Sua Sugestão 4x2, 5x1)
+        // Agora, avaliamos a vantagem material bruta. (Dama vale 3, Pedra vale 1)
+        const materialRed = (rK * 3) + rP;
+        const materialWhite = (wK * 3) + wP;
+        const materialAdvantageRed = materialRed - materialWhite;
+
+        // O "Modo Finalizador" é ativado se a IA (Red) tiver uma vantagem material
+        // clara (ex: 3+ pontos, ou seja, uma Dama ou 3 Pedras) E for o final do jogo.
+        // O "phase === 'end'" garante que isso não ative no meio do jogo.
+        const isFinisherMode = (materialAdvantageRed > 2) && (phase === 'end');
+        // FIM DA NOVA LÓGICA
+
+        // 🧠 NOVA LÓGICA: INCENTIVO À TROCA (Simplificação para Vitória)
+        // Adicionado para que a IA valorize a vitória (simplificação)
+        // 'score' aqui é o material. < 0 = IA (RED) na frente.
+        // 'n' é o total de peças (calculado no início da função).
+        const materialAdvantage = -score; // Ex: Se score=-2 (IA ganha), advantage=2
+        const nPieces = n; 
+
+        // Peso do incentivo. Aumenta à medida que o jogo avança (menos peças).
+        // 24.0 para forçar float.
+        const tradeWeight = 0.05 + (1.0 - (nPieces / 24.0)) * 0.15; // vai de 0.05 (início) a 0.20 (final)
+
+        if (materialAdvantage > 1.0) { 
+            // **** IA ESTÁ GANHANDO ****
+            
+            // 💡 MODIFICADO: Agora checa o "Modo Finalizador"
+            if (isFinisherMode) {
+                // 💡 MODO FINALIZADOR (Aniquilar):
+                // O Bônus de Dominação é INVERTIDO.
+                // A IA é recompensada por SIMPLIFICAR (menos peças = nPieces baixo).
+                // (24 - nPieces) é o "quão vazio" o tabuleiro está.
+                const simplificationBonus = (24 - nPieces) * tradeWeight * 2.0; // * 2.0 para ser mais forte
+                
+                // score é negativo. Subtrair o bônus torna o score MAIS negativo (muito bom).
+                score -= simplificationBonus;
+                
+            } else {
+                // 💡 MODO DOMINAÇÃO (Manter Peças):
+                // (Lógica anterior que você sugeriu)
+                const dominationBonus = (nPieces) * tradeWeight;
+                const finalDominationBonus = dominationBonus * (materialAdvantage * 0.5); 
+                score -= finalDominationBonus; 
+            }
+        
+        } else if (materialAdvantage < -1.0) { 
+            // **** IA ESTÁ PERDENDO ****
+            // Queremos complexidade (mais peças).
+            // (nPieces) é o "quão cheio" o tabuleiro está.
+            // Queremos maximizar isso (fazer o score ser MENOS RUIM).
+            const complexityBonus = (nPieces) * tradeWeight * 0.5; // 0.5 para ser menos extremo
+            score -= complexityBonus; // Subtrai, tornando o score "menos positivo" (bom para IA)
+        }
+        // 🧠 FIM DA NOVA LÓGICA
       
         // Mobilidade básica (antes de sinergia)
         const wMoves = allMoves(WHITE, b).length;
@@ -3567,8 +3786,37 @@
         score += (pairW - pairR) * pairWeight;
         score += (surroundW - surroundR) * surroundWeight;
       
-        // Mobilidade (mantida)
-        score += (wMoves - rMoves) * 0.22;
+        // --- Mobilidade (Com Lógica "King Hunt") ---
+        // 🧠 MODIFICAÇÃO: O bloco de mobilidade foi REESCRITO
+        
+        // 🧠 LÓGICA DE FINALIZAÇÃO (King Hunt)
+        // Detecta se um lado tem vantagem decisiva (Dama vs Peões, ou Dama+ vs Dama)
+        // e está "caçando" o oponente.
+        
+        // Condição de caça para a IA (Red): (Red tem mais Damas E White não tem peões) OU (Red tem Dama e White só tem peões)
+        const redIsHunting = (rK > wK && wP === 0) || (rK > 0 && wK === 0 && wP > 0);
+        
+        // Condição de caça para o Humano/IA (White):
+        const whiteIsHunting = (wK > rK && rP === 0) || (wK > 0 && rK === 0 && rP > 0);
+
+        let mobilityWeight = 0.22; // Peso normal
+
+        if (phase === 'end' && (redIsHunting || whiteIsHunting)) {
+            // Se estamos no final E é uma caçada, o único
+            // objetivo é estrangular a mobilidade do oponente.
+            // Aumenta o peso drasticamente para sobrepor bônus de "conforto" (como 'center').
+            mobilityWeight = 0.6; // Peso alto para forçar a IA a focar nisso
+        }
+        
+        // IA (Red) é 'min', então ela quer 'wMoves' baixo (penalidade)
+        // e 'rMoves' alto (bônus).
+        score += (wMoves * mobilityWeight) - (rMoves * mobilityWeight);
+        // --- Fim da Mobilidade ---
+
+        // -----------------------------------------------------
+        // ❌ REMOVIDO (linha antiga que foi substituída pelo bloco acima)
+        // score += (wMoves - rMoves) * 0.22;
+        // -----------------------------------------------------
       
         // Predição de armadilhas / ritmo (bloco antigo mantido)
         if (rMoves > wMoves + 4) score -= 0.3;
