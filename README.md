@@ -1,208 +1,218 @@
-# 🤖♟️ Damas vs IA — Nível Grão-Mestre Reflexiva  
-IA adaptativa com aprendizado, reflexões e emoções em tempo real.
+🧠 Damas vs IA – Inteligência Adaptativa, Evolutiva e Estratégica
 
-🎮 **[Jogar Agora](https://paulo968.github.io/damas-ia-graomestre/)**  
-[![GitHub Pages](https://img.shields.io/badge/Online-Damas%20vs%20IA-brightgreen?style=for-the-badge&logo=github)](https://paulo968.github.io/damas-ia-graomestre/)  
-![IA Adaptativa](https://img.shields.io/badge/IA%20Adaptativa-Ativa-blue?style=for-the-badge&logo=python)  
-![Análise Automática](https://img.shields.io/badge/An%C3%A1lise%20Autom%C3%A1tica-Ativa-green?style=for-the-badge&logo=codeium)
+Um sistema avançado de Inteligência Artificial para Damas, capaz de aprender, evoluir, refletir, criar cercos, armadilhas e estratégias em dupla, além de armazenar sua inteligência na nuvem via Firebase.
 
----
+<img src="capa.png" alt="Capa do Projeto" width="600"/>
+🎮 Jogar Agora
 
-<p align="center">
-  <img src="capa.png" alt="Capa do Projeto" width="720">
-</p>
+🔗 GitHub Pages: https://paulo968.github.io/damas-ia-graomestre/
 
----
+♟️ Modo IA vs Jogador
+🤖 Modo IA vs IA (Treino Evolutivo)
+🌐 Modo Online via Firebase
 
-## 🇧🇷 Versão em Português
+🚀 Destaques
 
-### 🧠 Sobre o Projeto
-Bem-vindo(a) ao **Damas vs IA**, um projeto que combina **inteligência artificial adaptativa**, **aprendizado dinâmico** e **emoções simuladas**.  
-Aqui, a IA **pensa, reage e evolui a cada partida** — alcançando o verdadeiro nível *Grão-Mestre*.
+🧠 IA adaptativa real (aprende com vitórias/derrotas)
 
-Este jogo de Damas foi desenvolvido em **JavaScript puro**, com um motor de IA que:
+🔥 Treino próprio IA vs IA para evolução constante
 
-- Aprende com vitórias e derrotas (ajustando agressividade);  
-- Analisa jogadas com **Minimax + poda Alpha-Beta**;  
-- Usa **Aprofundamento Iterativo (IDS)** para pensar dentro do tempo limite;  
-- Expressa emoções e reflexões analíticas em tempo real;  
-- Aplica **heurísticas evolutivas** com foco em posição, mobilidade e controle do centro.
+♟ Heurística avançada: centro, mobilidade, cerco, armadilhas, jogo em dupla
 
-💬 A IA comenta suas decisões:
-> "Promoção alcançada. A supremacia de alcance está garantida."  
-> “Você caiu na armadilha... desde o início!”
+⚡ Minimax + Alpha-Beta + IDS (Iterative Deepening)
 
----
+💬 Reflexões e emoções dinâmicas
 
-## 🧩 Inteligência Adaptativa — Estrutura Técnica
-A IA combina **velocidade e estratégia real**, unindo pensamento estratégico e comportamento dinâmico.
+🧬 Memória neural persistente (Firebase Firestore)
 
-### ⚙️ Núcleo de Decisão
-1. **Minimax com poda Alpha-Beta** — garante decisões racionais dentro do limite de tempo.  
-2. **Aprofundamento Iterativo (IDS)** — a IA pensa o máximo possível dentro de 1 segundo, sem travar.  
-3. **Heurística Adaptativa** — muda o estilo de jogo conforme a fase da partida e os erros do jogador.
+🎚 Personalidade dinâmica (agressivo/defensivo/equilibrado)
 
-#### 💡 Aprofundamento Iterativo (IDS)
-```js
+🎮 Modo online real-time sincronizado
+
+🎨 Interface moderna com Tailwind + áudio + animações
+
+🧩 Sobre o Projeto
+
+Este projeto cria uma IA viva, que:
+
+Pensa profundamente
+
+Ajusta personalidade
+
+Cria cercos e armadilhas
+
+Joga em dupla com sinergia
+
+Aprende com erros
+
+Evolui entre partidas
+
+Salva sua inteligência na nuvem
+
+“Cada jogo é uma lição. Cada vitória, uma evolução.”
+
+🧠 Arquitetura da Inteligência Artificial
+⚙️ Núcleo de Decisão
+🔹 Minimax + Alpha-Beta
+
+Garantia de decisões racionais e rápidas.
+
+🔹 Aprofundamento Iterativo (IDS)
+
+Até 1 segundo de reflexão por jogada:
+
 for (let d = 2; d <= 22; d++) {
   if (performance.now() - startTime > 1000) break;
 }
-Esse loop faz a IA pensar até 1 segundo por jogada, prevendo de 2 a 22 camadas à frente —
-mantendo o raciocínio profundo e a resposta instantânea.
 
-📊 Análise Pós-Partida
-Após cada partida, a IA gera um feedback técnico automático, avaliando o desempenho com base em estratégia, controle e ritmo de jogo.
+🔹 Heurística Evolutiva
 
-🧠 A análise identifica:
+A IA analisa:
 
-Oscilações de vantagem (instabilidade estratégica);
+Centro do tabuleiro
 
-Controle de material e promoções;
+Mobilidade
 
-Ritmo de jogo e duração da partida;
+Avanço
 
-Dicas de melhoria adaptadas ao estilo do jogador.
-
-💬 Exemplo real da IA:
-
-• Boa vantagem material — controle sólido do tabuleiro.
-• Observe o controle de centro da IA — evitar recuar demais nas aberturas.
-
-🧮 Heurística de Avaliação
-A função evalBoard() calcula a força do tabuleiro com base em:
-
-Controle de centro
-
-Mobilidade das peças
-
-Avanço e promoção
+Promoções
 
 Proteção mútua
 
-Fase do jogo (abertura, meio, final)
+Fase do jogo
 
-Agressividade adaptativa
+Cerco e armadilhas
 
-Essa combinação cria decisões inteligentes, realistas e imprevisíveis.
+Sinergia entre peças (duplas)
 
-🔁 Aprendizado entre Partidas
-A IA ajusta seu comportamento conforme ganha ou perde:
+Estilo adaptativo
 
-js
-Copiar código
-if(result === 'win')  aiProfile.agg = Math.max(0.1, aiProfile.agg - 0.05);
-if(result === 'lose') aiProfile.agg = Math.min(0.9, aiProfile.agg + 0.1);
-Ela se torna mais calma quando vence e mais agressiva quando perde — simulando aprendizado real.
+♟️ IA Estratégica – Cerco, Armadilha e Duplas
+🟢 Sinergia em Dupla
 
-🤖 Emoções e Reflexões
-Durante o jogo, a IA expressa “pensamentos” e reações contextuais:
+Peças coordenadas recebem pontuação extra.
 
-"Analisando o ritmo do jogo."
-"A vantagem posicional está se consolidando."
+🔴 Cercos
+
+Quando 2+ peças cercam um inimigo pelas diagonais, o sistema reconhece e premia.
+
+🟡 Armadilhas
+
+Identificação de iscas, recuos estratégicos e manipulação tática.
+
+Essas técnicas deixam a IA extremamente humana e inteligente.
+
+🔁 Inteligência Evolutiva
+
+A IA ajusta agressividade com base nas partidas:
+
+if (result === 'win')  aiProfile.agg -= 0.05;
+if (result === 'lose') aiProfile.agg += 0.10;
+
+
+E evolui via:
+
+Perfis dinâmicos
+
+Pesos neurais
+
+Memória tática
+
+Treino IA vs IA
+
+Salvamento no Firebase
+
+🔥 Firebase – Memória Neural Persistente
+
+A IA salva sua inteligência na nuvem:
+
+✔️ Dados salvos:
+
+neural_w
+
+neural_r
+
+patternMemory
+
+aiProfile
+
+Parâmetros de treino
+
+✔️ Carregamento Automático
+
+Ao abrir, o jogo baixa a inteligência mais recente.
+
+✔️ Regras Usadas:
+match /ia/{docId} {
+  allow read: if true;
+  allow write: if true;
+}
+
+💬 Emoções e Reflexões
+
+A IA reage:
+
+"Calculando linhas de cerco."
+
+"A vantagem posicional está aumentando."
+
+"Você caiu na minha armadilha."
+
 "Derrota inesperada. Ajustando parâmetros."
 
-Essas falas tornam o desafio mais imersivo e humano.
+Isso cria uma experiência imersiva e única.
 
-⚙️ Tecnologias Utilizadas
+📊 Análise Pós-Partida
+
+Após a partida, a IA gera insights:
+
+Oscilações de vantagem
+
+Controle central
+
+Trocas e precisão
+
+Ritmo da partida
+
+Pressão criada
+
+Recomendações
+
+🧑‍💻 Tecnologias Utilizadas
 Tecnologia	Função
-HTML5 / TailwindCSS	Interface moderna e responsiva
-JavaScript (ES6)	Motor principal e IA
-API Web Worker	Processamento paralelo
-Armazenamento local	Memória e aprendizagem adaptativa
-API de áudio	Sons de jogo
-Emoções Dinâmicas	Expressões e falas da IA
+JavaScript (ES6)	Motor da IA
+Web Worker	IA paralela
+Firebase Firestore	Memória neural
+TailwindCSS	Interface
+HTML5 Canvas	Renderização
+LocalStorage	Cache
+Áudio API	Efeitos sonoros
+🔧 Como Instalar
 
-🧩 Recursos Avançados da IA
-🧮 Zobrist Hashing (planejado) — cache rápido e sem colisões
+Clone:
 
-🧠 Self-Play Training (experimental) — IA treinando contra si mesma
+git clone https://github.com/Paulo968/damas-ia-graomestre.git
 
-⏱️ Alocação Dinâmica de Tempo — tempo variável por jogada
 
-🧬 Avaliação Neural (futuro) — heurística via rede neural leve
+Abra o arquivo:
 
-🏆 Destaques
-⚡ IA ultra-rápida e adaptável
+index.html
 
-🎓 Aprendizado com base em resultados
 
-💬 Modo Reflexivo com falas inteligentes
+Configure seu Firebase se quiser usar o modo online + IA evolutiva.
 
-👑 Promoções animadas
+👑 Autor
 
-💥 Efeitos sonoros e visuais de impacto
-
-🧑‍💻 Autor
 Paulo Zaqueu
 Desenvolvedor independente apaixonado por IA e jogos estratégicos.
 
-"Cada jogo é um cálculo. Cada vitória, uma evolução."
-
 📧 paulozaqueu3@gmail.com
-🔗 GitHub
+
+🔗 GitHub: https://github.com/Paulo968
+
+“Cada movimento é um cálculo. Cada vitória, uma evolução.”
 
 🧬 Licença
-Este projeto é de código aberto sob a Licença MIT.
-Sinta-se à vontade para estudá-lo, modificá-lo e aprimorá-lo — apenas mantenha os créditos.
 
-🇬🇧 English Version
-🧠 About the Project
-Welcome to Checkers vs AI, a project that merges adaptive intelligence, dynamic learning, and simulated emotions.
-Here, the AI thinks, reacts, and evolves after every match — reaching true Grandmaster level.
-
-Developed entirely in pure JavaScript, this engine:
-
-Learns from wins and losses (adjusting aggressiveness);
-
-Thinks using Minimax + Alpha-Beta pruning;
-
-Uses Iterative Deepening Search (IDS) to stay within time limits;
-
-Expresses emotions and reflections in real time;
-
-Applies evolutionary heuristics focused on position, mobility, and board control.
-
-💬 The AI explains its reasoning:
-
-"Promotion achieved. Range supremacy guaranteed."
-"You fell into my trap... from the very start."
-
-📊 Post-Match Analysis
-After each match, the AI produces a technical feedback summary, evaluating performance, control, and rhythm.
-
-🧠 The analysis identifies:
-
-Advantage swings (strategic instability);
-
-Material control and promotions;
-
-Game pace and move length;
-
-Personalized improvement tips.
-
-💬 Example:
-
-• Strong material advantage — solid board control.
-• Watch AI’s center control — avoid retreating too early in openings.
-
-🧩 Technologies Used
-Technology	Purpose
-HTML5 / TailwindCSS	Modern and responsive UI
-JavaScript (ES6)	Core logic and AI engine
-Web Worker API	Parallel computation
-Local Storage	Persistent adaptive learning
-Audio API	Game effects
-Dynamic Emotions	AI expressions and reflections
-
-🧑‍💻 Author
-Paulo Zaqueu
-Independent developer passionate about AI and strategic gameplay.
-
-“Every move is a calculation. Every victory, an evolution.”
-
-📧 paulozaqueu3@gmail.com
-🔗 GitHub
-
-🧬 License
-This project is open source under the MIT License.
-Feel free to study, modify, and improve it — just keep the credits.
+Projeto sob MIT License.
+Utilize, estude, modifique e evolua — mantendo os créditos.
