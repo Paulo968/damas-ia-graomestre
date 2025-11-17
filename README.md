@@ -18,7 +18,7 @@ Observe a IA jogar contra si mesma para treinar e evoluir o cérebro na nuvem.
 
 Jogue com um amigo em tempo real.
 
-Jogue agora: https://paulo968.github.io/damas-ia-graomestre/
+Jogue agora: https://damas-ia-graomestre.vercel.app/
 
 (Recomendo adicionar um GIF de 10 segundos do gameplay aqui)
 
@@ -82,7 +82,7 @@ A IA usa um vetor de 4 características (material, reis, centro, mobilidade) e a
 Memória de Padrões (Hashing):
 O tabuleiro é "hasheado" (transformado em uma string única) a cada movimento. A IA armazena posições que levaram a vitórias ou derrotas e usa essa memória (patternBias) para evitar repetir erros táticos.
 
-Heurística Tática Avançada (Sua visão!):
+Heurística Tática Avançada:
 A IA não avalia só o básico. A heurística (evalBoard) foi treinada para identificar e valorizar:
 
 Cercos e Armadilhas: Posições onde peças inimigas estão sendo "prensadas" ou têm pouca mobilidade.
@@ -103,7 +103,7 @@ O jogo chama updateAIProfile(winner) e adjustNeuralWeights(winner).
 
 O jogo envia os movimentos para o Worker (action: 'memorize').
 
-A função salvarInteligenciaIA() é chamada, atualizando o cérebro central no Firestore com essa nova "lição".
+A função salvarInteliglenciaIA() é chamada, atualizando o cérebro central no Firestore com essa nova "lição".
 
 Aprendizado Acelerado (Modo Treino 🤖 IA vs IA):
 
