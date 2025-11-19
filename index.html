@@ -170,36 +170,6 @@
         box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
       }
 
-      /* 🎨 MODIFICAÇÃO: Estilos para o novo modal de Análise Visual */
-      /* (Estes estilos são para os 'stat-item' que criei em 'openAnalysisModal') */
-      .stat-item {
-        transition: background-color 0.2s ease, transform 0.2s ease;
-      }
-      .stat-item:hover {
-        background-color: #334155; /* bg-slate-700 */
-        transform: translateY(-2px);
-      }
-      .stat-icon {
-        flex-shrink: 0;
-        opacity: 0.8;
-      }
-      .stat-value {
-        line-height: 1.2;
-      }
-      .stat-label {
-        line-height: 1.1;
-      }
-      .analysis-highlight, .master-tip {
-        transition: box-shadow 0.3s ease;
-      }
-      .analysis-highlight:hover {
-        box-shadow: 0 0 15px rgba(250, 204, 21, 0.2);
-      }
-      .master-tip:hover {
-        box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
-      }
-      /* Fim da Modificação */
-
       /* 🎨 Efeitos do Menu Principal Adicionados */
       @keyframes pulseButton {
         0%, 100% { box-shadow: 0 0 20px rgba(56,189,248,0.3); }
@@ -263,7 +233,13 @@
       
       /* 🚫 Regra 'html, body' anterior foi removida e substituída pela do usuário no topo */
     </style>
-  </head>
+  
+<script>
+// Liga tudo por padrão; pode desabilitar via console se quiser.
+window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:true, antiloop:true, miniEG:true };
+</script>
+
+</head>
   <!-- O layout flex-col do body é mantido para empilhar os cards e o tabuleiro -->
   <body class="min-h-screen flex flex-col items-center justify-center p-4">
 
@@ -426,17 +402,113 @@
     </div>
     <!-- FIM DO CONTAINER DO MENU -->
 
-    <audio id="s-move" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto"></audio>
-    <audio id="s-cap"  src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto"></audio>
-    <audio id="s-win"  src="https://actions.google.com/sounds/v1/cartoon/congratulations.ogg" preload="auto"></audio>
-    <audio id="s-lose" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto"></audio>
+    <audio id="s-move" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg" preload="auto" playsinline webkit-playsinline></audio>
+    <audio id="s-cap"  src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg" preload="auto" playsinline webkit-playsinline></audio>
+    <audio id="s-win"  src="https://actions.google.com/sounds/v1/cartoon/congratulations.ogg" preload="auto" playsinline webkit-playsinline></audio>
+    <audio id="s-lose" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto" playsinline webkit-playsinline></audio>
     <!-- 💬 Áudio de desistência (cinemático) -->
-    <audio id="s-desist" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto"></audio>
+    <audio id="s-desist" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_boing.ogg" preload="auto" playsinline webkit-playsinline></audio>
     <!-- 🔊 Som de interface -->
-    <audio id="openSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
-    <audio id="closeSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" preload="auto"></audio>
+    <audio id="openSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto" playsinline webkit-playsinline></audio>
+    <audio id="closeSound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg" preload="auto" playsinline webkit-playsinline></audio>
 
-    <!-- 🚀 NOVO MENU DE OPÇÕES (SUBSTITUI O BOTÃO DESISTIR) -->
+    
+<script>
+// === SFX Sync v2: one-shot per move, frame-accurate, mobile-safe ===
+(function(){
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const els = {
+    move:  document.getElementById('s-move'),
+    cap:   document.getElementById('s-cap'),
+    win:   document.getElementById('s-win'),
+    lose:  document.getElementById('s-lose'),
+    desist:document.getElementById('s-desist'),
+    open:  document.getElementById('openSound'),
+    close: document.getElementById('closeSound')
+  };
+  let ctx=null, buffers={}, unlocked=false;
+  let muted = (localStorage.getItem('muted')==='1');
+  let lastToken = null; // avoid double-fire
+
+  function unlockOnce(){
+    if (unlocked) return;
+    unlocked = true;
+    if (AC){
+      try{
+        ctx = ctx || new AC();
+        const b = ctx.createBuffer(1,1,22050);
+        const s = ctx.createBufferSource(); s.buffer=b; s.connect(ctx.destination); s.start(0);
+      }catch(_){}
+    } else {
+      try{ Object.values(els).forEach(a=>{ if(!a) return; a.volume=0; a.currentTime=0; a.play().then(()=>a.pause()).catch(()=>{}); }); }catch(_){}
+    }
+  }
+  window.addEventListener('pointerdown', unlockOnce, { once:true });
+
+  async function preload(){
+    if (!AC) return;
+    ctx = ctx || new AC();
+    const keys = Object.keys(els);
+    await Promise.all(keys.map(async k=>{
+      const el = els[k]; if (!el || !el.src) return;
+      try{
+        const res = await fetch(el.src, { mode:'cors' });
+        const buf = await res.arrayBuffer();
+        buffers[k] = await new Promise((resolve,reject)=>{
+          const p = ctx.decodeAudioData(buf, resolve, reject); if (p && p.then) p.then(resolve).catch(reject);
+        });
+      }catch(_){}
+    }));
+  }
+  preload();
+
+  function _playTag(key){
+    const el = els[key]; if (!el) return;
+    try{ el.currentTime = 0; const p = el.play(); if (p && p.catch) p.catch(()=>{}); }catch(_){}
+  }
+  function _playWebAudio(key){
+    if (!buffers[key] || !ctx) return false;
+    try{
+      if (ctx.state==='suspended') ctx.resume();
+      const src = ctx.createBufferSource(); src.buffer = buffers[key];
+      const g = ctx.createGain(); g.gain.value = 0.95;
+      src.connect(g).connect(ctx.destination); src.start(0);
+      return true;
+    }catch(_){ return false; }
+  }
+  function play(key, token){
+    if (muted) return;
+    if (token && token===lastToken) return; // gate double-trigger
+    lastToken = token || null;
+    if (!_playWebAudio(key)) _playTag(key);
+    // clear token on next frame to allow later plays
+    requestAnimationFrame(()=>{ lastToken=null; });
+  }
+  function playSync(key){
+    // align to next frame boundary for animation sync
+    let t=null;
+    function go(ts){ if (t===null) t=ts; play(key, 'f-'+(Math.floor(ts)||0)); }
+    requestAnimationFrame(go);
+  }
+  function setMuted(v){
+    muted = !!v;
+    try{ localStorage.setItem('muted', muted?'1':'0'); }catch(_){}
+    Object.values(els).forEach(a=>{ if (a) a.muted = muted; });
+    if (!muted && ctx && ctx.state==='suspended') try{ ctx.resume(); }catch(_){}
+  }
+
+  window.SFX = { play, playSync, setMuted, get muted(){ return muted; } };
+
+  // Patch global play sites if old code still calls audio tags directly
+  const map = { sMove:'move', sCap:'cap', sWin:'win', sLose:'lose', sDesist:'desist', openSound:'open', closeSound:'close' };
+  for (const id in map){
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.play = (function(orig, key){ return function(){ play(key); return Promise.resolve(); }; })(el.play, map[id]);
+  }
+})();
+</script>
+<!-- 🚀 NOVO MENU DE OPÇÕES (SUBSTITUI O BOTÃO DESISTIR) -->
     <!-- 🧠 3️⃣ Ícone SVG Premium -->
     <button id="btnMenuOpcoes" 
       class="fixed top-4 right-4 text-slate-300 z-50 hover:text-cyan-400 transition">
@@ -447,6 +519,7 @@
     <div id="menuFlutuante" 
       class="hidden fixed top-12 right-4 bg-slate-800 border border-cyan-400/40 rounded-xl shadow-xl z-50 p-2 w-40 text-sm text-slate-100">
       <button id="voltarMenu" class="block w-full text-left px-3 py-2 hover:bg-slate-700 rounded">⬅️ Voltar ao Menu</button>
+<button id="toggleMute" class="block w-full text-left px-3 py-2 hover:bg-slate-700 rounded">🔊 Som: ligado</button>
       <button id="desistirJogo" class="block w-full text-left px-3 py-2 hover:bg-slate-700 rounded">🏳️ Desistir</button>
     </div>
     <!-- FIM NOVO MENU -->
@@ -491,7 +564,7 @@
       class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
       
       <div class="manual-panel bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 border border-cyan-400/40 
-                  shadow-[0_0_25px_rgba(56,189,248,0.5)] p-6 rounded-2xl w-[90%] max-w-lg relative overflow-hidden transform scale-95 opacity-0">
+                  shadow-[0_0_25px_rgba(56,189,248,0.5)]] p-6 rounded-2xl w-[90%] max-w-lg relative overflow-hidden transform scale-95 opacity-0">
         
         <!-- Luz de fundo animada -->
         <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 via-transparent to-blue-500/10 blur-3xl"></div>
@@ -550,13 +623,9 @@
         <h2 class="text-2xl font-bold mb-3 text-center text-cyan-300 drop-shadow-lg">
           📊 Análise da Partida
         </h2>
-        <!-- 
-          🎨 MODIFICAÇÃO VISUAL: 
-          O conteúdo agora é injetado pelo 'openAnalysisModal' 
-          com uma estrutura de cards e ícones.
-        -->
-        <div id="analysisContent" class="text-sm leading-relaxed space-y-4 max-h-[65vh] overflow-y-auto relative z-10 px-1">
-          <!-- O JS vai preencher aqui com a nova estrutura visual -->
+        <!-- Conteúdo da análise será injetado aqui -->
+        <div id="analysisContent" class="text-sm leading-relaxed space-y-2 max-h-[60vh] overflow-y-auto relative z-10 px-1">
+          <!-- Ex: <p>• Muitas oscilações de vantagem...</p> -->
         </div>
         <button id="closeAnalysis" 
           class="mt-5 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-2 rounded-lg shadow-lg relative z-10 transition duration-300">
@@ -663,6 +732,21 @@
       const P_VERMELHA  = 'bg-red-600 border-red-900';
       const P_BRANCA    = 'bg-white border-slate-400';
       const RED   = 'red';
+      // === BigInt-safe JSON helpers (para salvar/ler histórico com hash BigInt) ===
+      function stringifyWithBigInt(obj) {
+        return JSON.stringify(obj, (_k, v) => typeof v === 'bigint' ? v.toString() + 'n' : v);
+      }
+      function parseJSONWithBigInt(str) {
+        if (!str) return null;
+        try {
+          return JSON.parse(str, (_k, v) => (typeof v === 'string' && /^[0-9]+n$/.test(v)) ? BigInt(v.slice(0, -1)) : v);
+        } catch (e) {
+          console.warn('Falha ao parsear JSON com BigInt:', e);
+          return null;
+        }
+      }
+      // === fim BigInt-safe helpers ===
+
       const WHITE = 'white';
       const KING  = '-king';
 
@@ -671,12 +755,40 @@
       let selected = null;      // {row,col,el}
       let legal = [];
       let stats = JSON.parse(localStorage.getItem('damasStats') || '{"wins":0,"losses":0}');
-      let matchHistory = JSON.parse(localStorage.getItem('matchHistory') || '[]'); // 🧠 ETAPA 1: Histórico de partidas salvo
+      let matchHistory = parseJSONWithBigInt(localStorage.getItem('matchHistory')) || []; // 🧠 ETAPA 1: Histórico de partidas salvo
       let gameHistory = []; // 🧠 Histórico da partida atual
       let isOnline = false; // 🌐 Controla o modo de jogo
       let currentRoom = null; // 🌐 ID da sala online
       let onlineUnsubscribe = null; // 🌐 Função para parar de ouvir o Firestore
       let worker; // Referência ao Web Worker
+      let gameEnded = false; // 🔒 Travamento de interação pós-jogo
+      
+      // Rastreia timeouts para limpar no fim de jogo/início
+      (function(){
+        const __setTimeout = window.setTimeout;
+        window.__timeouts = [];
+        window.setTimeout = function(fn, t){
+          const id = __setTimeout(fn, t);
+          window.__timeouts.push(id);
+          return id;
+        };
+        
+        window.clearAllTimeouts = function(){
+          for (const id of window.__timeouts) clearTimeout(id);
+          window.__timeouts = [];
+          // 🔧 Limpa partículas/efeitos temporários que poderiam ficar sem o timeout de remoção
+          document.querySelectorAll('.particle').forEach(el => el.remove());
+          // Remove possíveis anéis/hightlights de casas
+          document.querySelectorAll('#board .ring-4').forEach(el => el.classList.remove('ring-4','ring-yellow-400','ring-red-500','opacity-80','z-10'));
+        };
+
+      })();
+      
+      function lockInteraction(lock=true){
+        const b = document.getElementById('board');
+        if (b) b.style.pointerEvents = lock ? 'none' : 'auto';
+      }
+
       
       /* FIX: Removido comentário HTML inválido que causava SyntaxError
       */
@@ -799,6 +911,138 @@
         getNeuralWeights.cache[winnerColor] = wWeights;
         getNeuralWeights.cache[loserColor] = lWeights;
       }
+      
+      // ==========================================================
+      // ✅ NOVO BLOCO: HEURÍSTICA DE FIM DE JOGO ADAPTATIVA (MAIN)
+      // ==========================================================
+      
+      // [Controlo_Diagonais, Oposição_Rei, Forçar_Canto]
+      const ENDGAME_DEFAULT_WEIGHTS = [1.0, 0.4, 0.3]; 
+
+      function getEndgameKey(color) {
+        return `endgameWeights_${color}`;
+      }
+
+      function loadEndgameWeights(color) {
+        const key = getEndgameKey(color);
+        try {
+          const raw = localStorage.getItem(key);
+          if (raw) {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr) && arr.length === 3) {
+              return arr.map(v => (typeof v === 'number' ? v : 0));
+            }
+          }
+        } catch (e) {
+          console.warn("Falha ao ler pesos de fim de jogo:", e);
+        }
+        return [...ENDGAME_DEFAULT_WEIGHTS];
+      }
+
+      function saveEndgameWeights(color, weights) {
+        try {
+          localStorage.setItem(getEndgameKey(color), JSON.stringify(weights));
+        } catch (e) {
+          console.warn("Falha ao salvar pesos de fim de jogo:", e);
+        }
+      }
+
+      function getEndgameWeights(player = RED) {
+        const color = (player === WHITE) ? 'white' : 'red';
+        if (!getEndgameWeights.cache) getEndgameWeights.cache = {};
+        if (!getEndgameWeights.cache[color]) {
+          getEndgameWeights.cache[color] = loadEndgameWeights(color);
+        }
+        return getEndgameWeights.cache[color];
+      }
+
+      function extractEndgameFeaturesFor(color) {
+          const isWhite = (color === 'white');
+          let controlDiag = 0, kingOpp = 0, cornering = 0;
+          
+          let myKings = [], oppKings = [];
+          
+          for (let r = 0; r < 8; r++) {
+              for (let c = 0; c < 8; c++) {
+                  const p = board[r][c];
+                  if (!p) continue;
+                  const isW = p.startsWith(WHITE);
+                  const isK = p.endsWith(KING);
+                  
+                  if (isW === isWhite) {
+                      if (isK) myKings.push({r, c});
+                      // 1. Control Diag: Controle da diagonal principal para a frente
+                      if ((isWhite && r > c) || (!isWhite && c > r)) {
+                          controlDiag += 0.1;
+                      }
+                      
+                      // 3. Cornering: Peças no lado adversário (r=0 para White, r=7 para Red)
+                      if (isWhite) cornering += (7 - r) / 7;
+                      else cornering += r / 7;
+                      
+                  } else if (isK) {
+                      oppKings.push({r, c});
+                  }
+              }
+          }
+
+          // 2. King Opposition: Distância mínima entre reis
+          if (myKings.length > 0 && oppKings.length > 0) {
+              let minDist = 100;
+              for (const myK of myKings) {
+                  for (const oppK of oppKings) {
+                      // Distância xadrez
+                      const dist = Math.max(Math.abs(myK.r - oppK.r), Math.abs(myK.c - oppK.c));
+                      minDist = Math.min(minDist, dist);
+                  }
+              }
+              // Oposição é boa se a distância for pequena (forcing move)
+              kingOpp = 1 - Math.min(minDist / 7, 1); 
+          }
+
+          // [Control_Diag, King_Opp, Cornering]
+          return [controlDiag, kingOpp, cornering];
+      }
+
+      function adjustEndgameWeights(winner) {
+          // Só ajusta se houver peças suficientes para a análise (mais de 2 vs 1)
+          const n = board.flat().filter(x => x !== null).length;
+          if (n > 10 || n < 3) return; 
+
+          const winnerColor = (winner === WHITE) ? 'white' : 'red';
+          const loserColor  = (winner === WHITE) ? 'red'   : 'white';
+
+          // A IA deve aprender a valorizar o que o vencedor tinha e desvalorizar o que o perdedor tinha
+          const featWinner = extractEndgameFeaturesFor(winnerColor);
+          const featLoser  = extractEndgameFeaturesFor(loserColor);
+
+          const wWeights = getEndgameWeights(winner === WHITE ? WHITE : RED).slice();
+          const lWeights = getEndgameWeights(winner === WHITE ? RED : WHITE).slice();
+
+          const lr = 0.05; // Taxa de aprendizado um pouco maior para fins de jogo (aprendizagem mais rápida)
+
+          for (let i = 0; i < 3; i++) {
+              const diff = (featWinner[i] - featLoser[i]) || 0;
+              // Ajusta o peso: se a feature foi maior para o vencedor, o peso aumenta
+              wWeights[i] += lr * diff;
+              // E diminui para o perdedor
+              lWeights[i] -= lr * diff;
+              
+              // Mantém os pesos em um intervalo razoável (ex: [0.1, 2.0])
+              wWeights[i] = Math.max(0.1, Math.min(wWeights[i], 2.0));
+              lWeights[i] = Math.max(0.1, Math.min(lWeights[i], 2.0));
+          }
+
+          saveEndgameWeights(winnerColor, wWeights);
+          saveEndgameWeights(loserColor, lWeights);
+
+          if (!getEndgameWeights.cache) getEndgameWeights.cache = {};
+          getEndgameWeights.cache[winnerColor] = wWeights;
+          getEndgameWeights.cache[loserColor] = lWeights;
+      }
+      // ==========================================================
+      // ✅ FIM DO NOVO BLOCO
+      // ==========================================================
 
       async function updateSingleAIProfile(color, isWinner) {
         const storageKey = `aiProfile_${color}`;
@@ -940,6 +1184,25 @@
 
         return base;
       }
+      
+      // 💡 ZOBRIST HASHING: Geração de Chaves Aleatórias (BigInt)
+      const ZOBRIST_KEYS = [];
+      function initializeZobrist() {
+        // 5 peças possíveis (null=0, white=1, red=2, white-king=3, red-king=4)
+        // Usamos 4 chaves (1-4) para 64 casas. null não precisa de chave.
+        const pieces = 5; 
+        const squares = 64;
+        for (let i = 0; i < pieces * squares; i++) {
+          // Gera um BigInt aleatório (64-bit)
+          ZOBRIST_KEYS.push(BigInt(Math.floor(Math.random() * 0xFFFFFFFF)) * BigInt(0xFFFFFFFF) + BigInt(Math.floor(Math.random() * 0xFFFFFFFF)));
+        }
+        console.log("Zobrist Keys geradas:", ZOBRIST_KEYS.length);
+        window.ZOBRIST_KEYS = ZOBRIST_KEYS; // Torna global para o worker
+      }
+
+      // Chama a inicialização no carregamento
+      initializeZobrist();
+
 
       // ======================================================
       // 🔥 INÍCIO DA INTEGRAÇÃO FIREBASE (APRENDIZADO IA)
@@ -959,11 +1222,14 @@
   
         try {
           // 1. Pega os dados de APRENDIZADO REAIS que estão no localStorage
-          // (O script já salva os pesos neurais e a memória de padrões no localStorage)
           
-          // Suas variáveis 'neural_w' e 'neural_r' correspondem a 'neuralWeights_white' e 'neuralWeights_red' no script
+          // Seus pesos neurais
           const neural_w = loadNeuralWeights('white'); // Função loadNeuralWeights() já existe
           const neural_r = loadNeuralWeights('red');   // Função loadNeuralWeights() já existe
+
+          // Seus pesos de fim de jogo
+          const endgame_w = loadEndgameWeights('white'); // Função loadEndgameWeights() já existe
+          const endgame_r = loadEndgameWeights('red');   // Função loadEndgameWeights() já existe
           
           // Sua variável 'patternMemory' está dividida em duas no script
           const patternMemory_w = JSON.parse(localStorage.getItem('patternMemory_white') || '{}');
@@ -973,6 +1239,8 @@
           await setDoc(doc(db, "ia", "inteligencia"), {
             neural_w: neural_w,
             neural_r: neural_r,
+            endgame_w: endgame_w, // NOVO: Pesos de fim de jogo
+            endgame_r: endgame_r, // NOVO: Pesos de fim de jogo
             patternMemory_white: patternMemory_w, // Salva a memória das brancas
             patternMemory_red: patternMemory_r,   // Salva a memória das vermelhas
             updatedAt: Date.now()
@@ -1016,6 +1284,18 @@
               saveNeuralWeights('red', data.neural_r);
               if (!getNeuralWeights.cache) getNeuralWeights.cache = {};
               getNeuralWeights.cache['red'] = data.neural_r;
+            }
+
+            // 1.5. Carrega os Pesos de Fim de Jogo (e salva no localStorage)
+            if (data.endgame_w) {
+                saveEndgameWeights('white', data.endgame_w); 
+                if (!getEndgameWeights.cache) getEndgameWeights.cache = {};
+                getEndgameWeights.cache['white'] = data.endgame_w;
+            }
+            if (data.endgame_r) {
+                saveEndgameWeights('red', data.endgame_r);
+                if (!getEndgameWeights.cache) getEndgameWeights.cache = {};
+                getEndgameWeights.cache['red'] = data.endgame_r;
             }
   
             // 2. Carrega a Memória de Padrões (e salva no localStorage)
@@ -1078,22 +1358,33 @@
         for (let i = 0; i < 8; i++) nb[i] = b[i].slice();
         return nb;
       }
+      
+      // 💡 ZOBRIST HASHING: Converte board para Zobrist Hash (BigInt)
+      function pieceToIndex(p) {
+        if (p === WHITE) return 0;
+        if (p === RED) return 1;
+        if (p === WHITE + KING) return 2;
+        if (p === RED + KING) return 3;
+        return 4; // null ou peça inválida
+      }
 
-      // 💡 IMPLEMENTAÇÃO 2: "Memória de padrões" (Hashing no Main-thread)
-      // Copiada do worker para que o main-thread possa gerar hashes para o histórico
       function getBoardHash(b) {
-        let hash = '';
+        if (!window.ZOBRIST_KEYS) return ''; // Fallback
+        
+        let hash = BigInt(0);
         for (let r = 0; r < 8; r++) {
           for (let c = 0; c < 8; c++) {
             const p = b[r][c];
-            if (p === null) hash += '0';
-            else if (p === WHITE) hash += '1';
-            else if (p === RED) hash += '2';
-            else if (p === (WHITE + KING)) hash += '3';
-            else if (p === (RED + KING)) hash += '4';
+            const pieceIdx = pieceToIndex(p);
+            // 5 peças * 64 casas. pieceIdx=0-4, squareIdx=0-63
+            const keyIndex = pieceIdx * 64 + (r * 8 + c);
+            if (pieceIdx !== 4 && keyIndex < window.ZOBRIST_KEYS.length) {
+              hash ^= window.ZOBRIST_KEYS[keyIndex];
+            }
           }
         }
-        return hash;
+        // O hash é retornado como BigInt
+        return hash; 
       }
       
       // 🌐 Helper para serializar/desserializar o tabuleiro para o Firebase
@@ -1147,6 +1438,7 @@
       }
 
       function initBoard(){
+        gameEnded = false; lockInteraction(false); clearAllTimeouts();
         // 🧠 Mostra o botão de opções (⋮) com fade (Função de UI)
         showOptionsButton(true);
         // 🧠 ETAPA 1 (Reset): Reinicia histórico da partida
@@ -1429,6 +1721,7 @@
       /* ETAPA 4: onSquareClick (bloqueio de clique humano)
       */
       function onSquareClick(e){
+        if (gameEnded) return;
         // 🌐 Se for online, só permite jogar se for a vez do jogador
         if (isOnline && current !== getPlayerColor()) {
           console.log("Não é sua vez!");
@@ -1525,7 +1818,7 @@
         gameHistory.push({
           player: current, // 'current' é o jogador que ACABOU de mover
           move: mv,
-          hash: hash, // 💡 IMPLEMENTAÇÃO 2: Salva o hash do tabuleiro *antes* da jogada
+          hash: hash, // 💡 IMPLEMENTAÇÃO 2: Salva o hash do tabuleiro *antes* da jogada (AGORA ZOBRIST BIGINT)
           white: w,
           red: r,
           diff: r - w, // vantagem da IA (positivo = IA à frente)
@@ -1566,7 +1859,7 @@
         
         // 🌐 Se não for captura múltipla, troca o jogador
         if (!isMultiCapture) {
-          // 🌐 Se for online, envia a jogada final (ou única)
+          // 🌐 Se for online, envia a jogada final (or única)
           if (isOnline) {
             enviarJogadaFirebase(mv);
           }
@@ -1627,6 +1920,7 @@
 
       // ✅ FUNÇÃO ONGAMEOVER (MODIFICADA PARA CHAMAR ANÁLISE)
       function onGameOver(winner){
+        gameEnded = true; lockInteraction(true); clearAllTimeouts(); current = null;
         // 🌐 Se for online, envia o resultado (só o host/branco)
         if (isOnline && getPlayerColor() === WHITE) {
           enviarFimDeJogoFirebase(winner);
@@ -1749,13 +2043,15 @@
           updateAIProfile(winner);
           // 🧠 Ajuste adicional via heurística neural (brancas e vermelhas)
           adjustNeuralWeights(winner);
+          // 🧠 NOVO: Ajuste de pesos de fim de jogo (se aplicável)
+          adjustEndgameWeights(winner);
         }
 
         // 🧠 ETAPA 4: Salva partida no histórico e Gera análise (só no modo IA)
         if (!isOnline) {
           matchHistory.push({ winner, date: new Date().toISOString(), moves: gameHistory });
           if (matchHistory.length > 3) matchHistory.shift(); // mantém apenas as 3 últimas
-          localStorage.setItem('matchHistory', JSON.stringify(matchHistory));
+          localStorage.setItem('matchHistory', stringifyWithBigInt(matchHistory));
         }
         
         const feedback = analyzeMatch(gameHistory, winner);
@@ -1781,7 +2077,7 @@
           // exibe análise mais rápido, sem fade
           setTimeout(() => {
             showOverlay("", false, true); // Helper de UI (force remove)
-            openAnalysisModal(feedback); // Helper de UI
+            openAnalysisModal(feedback, (winner===WHITE ? 'positive' : 'negative')); // Helper de UI
           }, 1200);
         } else {
           // mantém transição no desktop
@@ -1789,7 +2085,7 @@
             showOverlay("", false); // Helper de UI (fade out)
           }, 3000);
           setTimeout(() => {
-            openAnalysisModal(feedback); // Helper de UI
+            openAnalysisModal(feedback, (winner===WHITE ? 'positive' : 'negative')); // Helper de UI
           }, 4000);
         }
       }
@@ -2001,7 +2297,9 @@
           worker.postMessage({
             type: 'loadPatternMemory',
             patternMemory_white: memWhite,
-            patternMemory_red: memRed
+            patternMemory_red: memRed,
+            // 💡 ZOBRIST: Envia as chaves para o worker
+            ZOBRIST_KEYS: window.ZOBRIST_KEYS.map(key => key.toString()) // Converte para string para BigInt ser transferido
           });
         } catch (err) {
           console.warn("Falha ao carregar patternMemory do localStorage:", err);
@@ -2009,6 +2307,7 @@
       }
 
       function aiMove(movesToConsider=null){
+        if (gameEnded) return;
         if(isOnline) return; // IA não joga online
         if(!worker) return;
         const subset = movesToConsider || null;
@@ -2020,19 +2319,19 @@
 
         // 🎚️ PASSO 2: Envia a profundidade conforme dificuldade
         // ⭐️ MODIFICADO: Envia também a regra de captura para a IA
-        // 🧠 MODIFICADO: Envia AMBOS os perfis (Branco e Vermelho) + pesos neurais simples
+        // 🧠 MODIFICADO: Envia AMBOS os perfis + pesos neurais + pesos de fim de jogo
         worker.postMessage({ 
           board, 
           legal, 
           subset, 
-          // 🐞 CORREÇÃO: 'aiProfile' removido
-          // aiProfile: getAIProfile(),
-          aiProfile_w: getAIProfile(WHITE), // 🧠 Envia perfil Branco
-          aiProfile_r: getAIProfile(RED),   // 🧠 Envia perfil Vermelho
-          neural_w: getNeuralWeights(WHITE), // 🧠 Pesos neurais branco
-          neural_r: getNeuralWeights(RED),   // 🧠 Pesos neurais vermelho
-          maxDepth: getDepthByDifficulty(), // envia o profundidade conforme dificuldade
-          captureRule: getCaptureRule() // ⭐️ Envia a regra para a IA
+          aiProfile_w: getAIProfile(WHITE), 
+          aiProfile_r: getAIProfile(RED),   
+          neural_w: getNeuralWeights(WHITE), 
+          neural_r: getNeuralWeights(RED),   
+          endgame_w: getEndgameWeights(WHITE), // NOVO: Pesos de fim de jogo
+          endgame_r: getEndgameWeights(RED),   // NOVO: Pesos de fim de jogo
+          maxDepth: getDepthByDifficulty(), 
+          captureRule: getCaptureRule() 
         });
       }
 
@@ -2126,77 +2425,67 @@
        * 🧠 ETAPA 3: Função de Análise (IMPLEMENTAÇÃO 8 - "Análise Profissional")
        *************************/
       // 🚀 FUNÇÃO DE ANÁLISE TOTALMENTE REFEITA (MAIS DETALHADA)
-      // 🎨 MODIFICAÇÃO VISUAL (REQUISIÇÃO DO USUÁRIO)
-      // Agora retorna um OBJETO em vez de um array de strings
       function analyzeMatch(history, winner) {
-        
+        let tips = [];
         // 🌐 Não analisa jogos online
         if (isOnline) {
-          return {
-            winner: winner,
-            totalMoves: 0,
-            playerCaptures: 0, aiCaptures: 0,
-            playerPromotions: 0, aiPromotions: 0,
-            turningPointMove: 0,
-            turningPointDesc: "Análise de partida não disponível para jogos online.",
-            masterTip: "Volte ao menu para iniciar um novo jogo."
-          };
+          tips.push("Análise de partida não disponível para jogos online.");
+          return tips;
         }
 
-        // 🤝 Lógica de Empate
+        // 🤝 Lógica de Empate (vinda da merge anterior)
         if (winner === 'draw') {
-          return {
-            winner: "Empate",
-            totalMoves: history.length,
-            playerCaptures: history.filter(h => h.player === WHITE && h.move.type === 'capture').length,
-            aiCaptures: history.filter(h => h.player === RED && h.move.type === 'capture').length,
-            playerPromotions: 0, // (simplificado para empate)
-            aiPromotions: 0,
-            turningPointMove: 0,
-            turningPointDesc: "Partida tática onde nenhum lado cedeu vantagem.",
-            masterTip: "Um empate contra a IA é um ótimo sinal de consistência. Continue assim!"
-          };
+          tips.push("Jogo empatado! Uma partida tática onde nenhum lado cedeu vantagem.");
         }
         
         if (history.length < 5) {
-          return {
-            winner: winner,
-            totalMoves: history.length,
-            playerCaptures: 0, aiCaptures: 0,
-            playerPromotions: 0, aiPromotions: 0,
-            turningPointMove: 0,
-            turningPointDesc: "Partida curta demais para análise detalhada.",
-            masterTip: "Tente desenvolver mais suas peças na próxima vez."
-          };
+          if (winner !== 'draw') tips.push("Partida curta demais para análise detalhada.");
+          return tips; // Retorna, mas *depois* de checar o empate
         }
 
         // --- Início da Análise Detalhada ---
+
+        // 1. Métricas Básicas (Total de Capturas)
         const totalMoves = history.length;
         const playerMoves = history.filter(h => h.player === WHITE);
         const aiMoves = history.filter(h => h.player === RED);
-        
         const playerCaptures = playerMoves.filter(h => h.move.type === 'capture').length;
         const aiCaptures = aiMoves.filter(h => h.move.type === 'capture').length;
 
-        // ⭐️ NOVO: Contagem de Promoções
-        let playerPromotions = 0;
-        let aiPromotions = 0;
-        // (Esta lógica é uma *estimativa* baseada no movimento final, 
-        // pois o 'gameHistory' não armazena se a peça *já* era Dama)
-        playerMoves.forEach(h => {
-          // 🐞 Correção: Peça branca (WHITE) promove na linha 0
-          if (h.move.to[0] === 0 && h.move.type !== 'multi') playerPromotions++; 
-        });
-        aiMoves.forEach(h => {
-          // Peça vermelha (RED) promove na linha 7
-          if (h.move.to[0] === 7 && h.move.type !== 'multi') aiPromotions++;
-        });
+        tips.push(`Total de jogadas: ${totalMoves}`);
+        tips.push(`Você capturou ${playerCaptures} peças.`);
+        tips.push(`A IA capturou ${aiCaptures} peças.`);
 
+        // 2. Análise de Ritmo (Tempo)
+        // Só calcula se não for online e não for modo treino
+        if (!isOnline && !trainingMode && playerMoves.length > 2) { 
+          let totalTime = 0;
+          let moveCount = 0;
+          for (let i = 1; i < playerMoves.length; i++) {
+            // Tenta pegar o tempo da jogada anterior da IA. 
+            // Se não existir (primeira jogada), usa a jogada anterior do player.
+            const lastMoveTime = aiMoves[i-1]?.time || playerMoves[i-1]?.time;
+            if (lastMoveTime) {
+                const timeDiff = playerMoves[i].time - lastMoveTime;
+                // Ignora jogadas muito rápidas (provavelmente cliques errados) ou pausas longas (mais de 1 min)
+                if (timeDiff > 100 && timeDiff < 60000) { 
+                  totalTime += timeDiff;
+                  moveCount++;
+                }
+            }
+          }
+          
+          if (moveCount > 0) {
+              const avgTime = (totalTime / moveCount / 1000).toFixed(1); // em segundos
+              tips.push(`Seu tempo médio por jogada foi de ${avgTime} segundos.`);
+              if (avgTime < 3) tips.push("Ritmo de jogo rápido! Bom instinto.");
+              else if (avgTime > 10) tips.push("Ritmo de jogo cauteloso. Você ponderou bem suas jogadas.");
+          }
+        }
 
-        // Ponto de Virada (Turning Point)
+        // 3. Ponto de Virada (Turning Point)
         let maxSwing = 0;
         let swingTurn = -1; // Índice da jogada no histórico
-        let turningPointDesc = "O jogo foi equilibrado, sem um único erro decisivo.";
 
         for (let i = 1; i < history.length; i++) {
           const prevDiff = history[i-1].diff; // Vantagem da IA no turno anterior
@@ -2213,46 +2502,38 @@
           }
         }
 
-        let turningPointMove = 0;
+        // Se um erro significativo (perda de 2+ peças) foi encontrado
         if (swingTurn !== -1 && maxSwing >= 2) { 
-          turningPointMove = history.slice(0, swingTurn + 1).filter(h => h.player === WHITE).length;
-          turningPointDesc = `Sua <strong>Jogada ${turningPointMove}</strong> permitiu à IA ganhar uma vantagem material equivalente a ${maxSwing} peças. Este foi um momento crítico.`;
+          // Calcula o "número da jogada" (ex: Jogada 5)
+          const moveNumber = history.slice(0, swingTurn + 1).filter(h => h.player === WHITE).length;
+          tips.push(`**Ponto de Virada (Sua jogada ${moveNumber}):** Esta jogada permitiu à IA ganhar uma vantagem material de ${maxSwing} peças.`);
         }
 
-        // 💡 NOVO: Dica do Mestre (Master's Tip)
-        let masterTip = "";
-        if (winner === RED) { // IA Venceu
-          if (aiCaptures > playerCaptures + 2) {
-            masterTip = "A IA foi muito eficiente nas trocas. Tente proteger melhor suas peças avançadas e evite trocas desvantajosas.";
-          } else if (turningPointMove > 0) {
-            masterTip = `A "Jogada ${turningPointMove}" foi decisiva. Tente analisar o que levou a essa posição e quais alternativas você tinha.`;
-          } else if (aiPromotions > playerPromotions) {
-            masterTip = "A IA conseguiu controlar as linhas de promoção. Foque em bloquear o avanço das peças inimigas para a coroação.";
-          } else {
-            masterTip = "Partida disputada! A IA capitalizou em pequenas vantagens posicionais. Continue focado no controle do centro.";
+        // 4. Análise de Fases e Vencedor
+        const lastState = history[history.length - 1];
+
+        if (winner === WHITE) {
+          tips.push("**Vitória!** Você manteve a pressão e converteu a vantagem.");
+          if (playerCaptures > aiCaptures) {
+              tips.push("Sua eficiência nas trocas foi decisiva.");
           }
-        } else { // Jogador Venceu
-          if (playerCaptures > aiCaptures + 2) {
-            masterTip = "Excelente agressividade! Você dominou as trocas e soube capitalizar a vantagem material. Um jogo limpo.";
-          } else if (playerPromotions > aiPromotions) {
-            masterTip = "Seu controle das colunas de promoção foi impecável. Coroar uma Dama foi a chave para esta vitória. Ótimo jogo!";
-          } else {
-            masterTip = "Vitória sólida! Você manteve a pressão e não deu chances à IA. Sua paciência e precisão tática foram recompensadas.";
+          if (lastState.white > 5 && lastState.red === 0) {
+              tips.push("Domínio total do tabuleiro. Excelente!");
+          }
+        } else if (winner === RED) {
+          tips.push("**Derrota.** A IA conseguiu capitalizar em aberturas ou erros de meio-jogo.");
+          if (aiCaptures > playerCaptures) {
+              tips.push("A IA foi mais agressiva nas capturas. Tente proteger suas peças-chave.");
+          }
+          if (swingTurn !== -1 && maxSwing >= 2) { // Só menciona se o ponto de virada foi significativo
+              tips.push("Aquele Ponto de Virada foi crucial. Revise essa jogada.");
           }
         }
 
-        // Retorna o objeto estruturado
-        return {
-          winner: winner,
-          totalMoves: totalMoves,
-          playerCaptures: playerCaptures,
-          aiCaptures: aiCaptures,
-          playerPromotions: playerPromotions,
-          aiPromotions: aiPromotions,
-          turningPointMove: turningPointMove,
-          turningPointDesc: turningPointDesc,
-          masterTip: masterTip
-        };
+        // 5. Dicas Genéricas (mantidas)
+        if (history.length < 20 && winner !== 'draw') tips.push("Partida rápida — reveja aberturas e defesas iniciais.");
+        
+        return tips;
       }
       
     </script>
@@ -2276,6 +2557,23 @@
       const sDesist = document.getElementById('s-desist');
       const openSound = document.getElementById('openSound');
       const closeSound = document.getElementById('closeSound');
+      
+      // === Controle de Som (Mute/Unmute) Persistente ===
+      let isMuted = (localStorage.getItem('muted') === '1');
+      function applyMuteState(){
+        document.querySelectorAll('audio').forEach(a => a.muted = isMuted);
+        if (window.SFX) window.SFX.setMuted(isMuted);
+        const btn = document.getElementById('toggleMute');
+        if (btn) btn.textContent = isMuted ? '🔇 Som: desligado' : '🔊 Som: ligado';
+      }
+      function toggleMute(){
+        isMuted = !isMuted;
+        localStorage.setItem('muted', isMuted ? '1' : '0');
+        applyMuteState();
+      }
+      // aplica estado no boot
+      applyMuteState();
+
 
       // *** VARIÁVEIS DE UI ATUALIZADAS ***
       const face = document.getElementById('face');
@@ -2519,7 +2817,7 @@
       function explodeAt(x,y){
         for(let i=0;i<8;i++){
           const p=document.createElement('div');
-          p.className='fixed w-1.5 h-1.5 bg-red-400 rounded-full z-40';
+          p.className='particle fixed w-1.5 h-1.5 bg-red-400 rounded-full z-40';
           p.style.left=x+'px'; p.style.top=y+'px';
           document.body.appendChild(p);
           const ang=Math.random()*Math.PI*2, dist=Math.random()*60+35;
@@ -2620,103 +2918,83 @@
       const analysisContent = document.getElementById('analysisContent');
       const closeAnalysis = document.getElementById('closeAnalysis');
 
-      // 🎨 FUNÇÃO ATUALIZADA PARA O NOVO VISUAL DA ANÁLISE
-      function openAnalysisModal(analysisData) {
-        // 'analysisData' agora é o objeto de analyzeMatch
+      function openAnalysisModal(feedback, tone='neutral') {
+        // ⚙️ Extra opcional: segurança para o modal
+        if (!feedback || !feedback.length) {
+          feedback = ["Sem análise disponível — jogada final detectada sem histórico completo."];
+        }
         
-        // ⚙️ Segurança: se 'analysisData' não for o objeto esperado,
-        // usa a versão antiga para evitar quebrar
-        if (Array.isArray(analysisData)) {
-          let msg = "";
-          analysisData.forEach((tip) => {
-            msg += `<p class="border-b border-cyan-900/50 pb-2 mb-2">• ${tip}</p>`;
-          });
+        // Preenche o conteúdo do modal
+        let msg = "";
+        feedback.forEach((tip) => {
+          msg += `<p class="border-b border-cyan-900/50 pb-2 mb-2">• ${tip}</p>`;
+        });
+        analysisContent.innerHTML = msg;
+
+        // 💅 Formatação: tips como cartões (para tom positivo)
+        function __formatTip(txt){
+          // Converte **negrito** para <strong>
+          return txt.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        }
+        if (tone === 'positive') {
+          msg = feedback.map(t => 
+            `<div class="rounded-lg border border-emerald-400/30 bg-emerald-400/10 px-3 py-2 flex gap-2 items-start">
+               <span class="mt-1">✅</span>
+               <span>${__formatTip(t)}</span>
+             </div>`
+          ).join('');
           analysisContent.innerHTML = msg;
+        }
+        
+        // 🎉 Confetti elegante para vitória
+        function confettiBurstAt(x,y){
+          const colors = ['#34d399','#22d3ee','#fde047','#60a5fa','#f472b6'];
+          for(let i=0;i<80;i++){
+            const p = document.createElement('div');
+            p.className = 'particle fixed w-1.5 h-1.5 rounded-sm z-50';
+            p.style.background = colors[i % colors.length];
+            p.style.left = x+'px'; p.style.top = y+'px';
+            document.body.appendChild(p);
+            const ang = Math.random()*Math.PI*2;
+            const dist = Math.random()*80+40;
+            const dx = Math.cos(ang)*dist;
+            const dy = Math.sin(ang)*dist;
+            p.animate([{transform:'translate(0,0) rotate(0deg)',opacity:1},
+                       {transform:`translate(${dx}px,${dy}px) rotate(${Math.random()*360}deg)`,opacity:0}], 
+                       {duration:900+Math.random()*600, easing:'ease-out'});
+            setTimeout(()=>p.remove(), 1600);
+          }
+        }
+        
+        // 🎨 Tema do painel conforme o tom
+        analysisPanel.classList.remove('border-cyan-400/40');
+        if (tone === 'positive') {
+          analysisPanel.classList.add('from-emerald-900','to-slate-900','border-emerald-400/50');
+          const h = analysisPanel.querySelector('h2');
+          if (h) {
+            h.innerHTML = '🏆 Análise Tática — Vitória';
+            h.classList.remove('text-cyan-300');
+            h.classList.add('text-emerald-300');
+          }
+          // Dispara confete no centro do painel
+          const rect = analysisPanel.getBoundingClientRect();
+          confettiBurstAt(rect.left + rect.width/2, rect.top + rect.height/2);
+        } else if (tone === 'negative') {
+          analysisPanel.classList.add('from-rose-900','to-slate-900');
+          const h = analysisPanel.querySelector('h2');
+          if (h) {
+            h.innerHTML = '📉 Análise Tática — Ajustes';
+            h.classList.remove('text-cyan-300');
+            h.classList.add('text-rose-300');
+          }
         } else {
-          // 💡 NOVO: Constrói o HTML visual
-          const winnerText = analysisData.winner === WHITE ? "Você Venceu!" : (analysisData.winner === RED ? "IA Venceu" : "Empate");
-          const winnerColor = analysisData.winner === WHITE ? "text-green-400" : (analysisData.winner === RED ? "text-red-400" : "text-yellow-400");
-          
-          // Ícones SVG (para "bem bonito visualmente")
-          const icons = {
-            winner: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.196-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.783-.57-.38-1.81.588-1.81h4.914a1 1 0 00.95-.69l1.519-4.674z" /></svg>`,
-            moves: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.828 15.172a4 4 0 01-5.656 0l-4-4a4 4 0 010-5.656l4-4a4 4 0 015.656 0l4 4a4 4 0 010 5.656l-4 4z" /></svg>`,
-            captures: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 10-2.828-2.828zM11.314 11.314l1.414-1.414m-1.414 0L10 12.728m1.314-1.414L12.728 10m-1.414 1.314L10 11.314" /></svg>`,
-            promo: `<svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" transform="rotate(0 0 0)"/></svg>`
-          };
-          
-          analysisContent.innerHTML = `
-            <!-- Grade de Stats -->
-            <div class="analysis-grid grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-              
-              <!-- Resultado -->
-              <div class="stat-item bg-slate-800/50 p-3 rounded-lg flex items-center space-x-3 col-span-1 md:col-span-2 ${winnerColor.replace('text-', 'border-').replace('400', '500/50')} border-l-4">
-                <div class="stat-icon ${winnerColor}">${icons.winner}</div>
-                <div>
-                  <span class="stat-value text-lg font-bold ${winnerColor}">${winnerText}</span>
-                  <span class="stat-label text-xs text-slate-400 block">Resultado da Partida</span>
-                </div>
-              </div>
-
-              <!-- Total de Jogadas -->
-              <div class="stat-item bg-slate-800/50 p-3 rounded-lg flex items-center space-x-3">
-                <div class="stat-icon text-cyan-400">${icons.moves}</div>
-                <div>
-                  <span class="stat-value text-lg font-bold text-white">${analysisData.totalMoves}</span>
-                  <span class="stat-label text-xs text-slate-400 block">Total de Jogadas</span>
-                </div>
-              </div>
-
-              <!-- Capturas (Jogador) -->
-              <div class="stat-item bg-slate-800/50 p-3 rounded-lg flex items-center space-x-3">
-                <div class="stat-icon text-green-400">${icons.captures}</div>
-                <div>
-                  <span class="stat-value text-lg font-bold text-white">${analysisData.playerCaptures}</span>
-                  <span class="stat-label text-xs text-slate-400 block">Suas Capturas</span>
-                </div>
-              </div>
-
-              <!-- Capturas (IA) -->
-              <div class="stat-item bg-slate-800/50 p-3 rounded-lg flex items-center space-x-3">
-                <div class="stat-icon text-red-400">${icons.captures}</div>
-                <div>
-                  <span class="stat-value text-lg font-bold text-white">${analysisData.aiCaptures}</span>
-                  <span class="stat-label text-xs text-slate-400 block">Capturas da IA</span>
-                </div>
-              </div>
-
-              <!-- Promoções -->
-              <div class="stat-item bg-slate-800/50 p-3 rounded-lg flex items-center space-x-3">
-                <div class="stat-icon text-yellow-400">${icons.promo}</div>
-                <div>
-                  <span class="stat-value text-lg font-bold text-white">${analysisData.playerPromotions} (Você) vs ${analysisData.aiPromotions} (IA)</span>
-                  <span class="stat-label text-xs text-slate-400 block">Damas Promovidas</span>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Ponto de Virada -->
-            <div class="analysis-highlight bg-yellow-900/30 border border-yellow-500/50 p-4 rounded-lg space-y-1">
-              <h3 class="font-bold text-yellow-300 text-base flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                Ponto de Virada
-              </h3>
-              <p class="text-yellow-100 text-sm">${analysisData.turningPointDesc}</p>
-            </div>
-
-            <!-- Dica do Mestre -->
-            <div class="master-tip bg-cyan-900/30 border border-cyan-500/50 p-4 rounded-lg space-y-1">
-              <h3 class="font-bold text-cyan-300 text-base flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707M12 21v-1m6.364-1.636l-.707-.707M6.343 17.657l-.707.707" /></svg>
-                Dica do Mestre
-              </h3>
-              <p class="text-cyan-100 text-sm">${analysisData.masterTip}</p>
-            </div>
-          `;
+          // neutral
+          const h = analysisPanel.querySelector('h2');
+          if (h) { h.innerHTML = '📊 Análise da Partida'; }
+          analysisPanel.classList.add('from-slate-900','to-slate-800');
         }
 
-        // Mostra o modal (lógica existente)
+        // Mostra o modal
         analysisModal.classList.remove('hidden');
         openSound.play().catch(()=>{});
         setTimeout(() => {
@@ -2762,7 +3040,8 @@
       
       // 🌐 Função helper para voltar ao menu (usada em múltiplos lugares)
       function returnToMenu() {
-          // 🌐 Lógica de retorno ao menu ATUALIZADA
+          gameEnded = true; lockInteraction(true); clearAllTimeouts();
+        // 🌐 Lógica de retorno ao menu ATUALIZADA
           document.getElementById('menuContainer').style.display = 'block'; // Mostra o container
           document.getElementById('mainMenuScreen').classList.remove('hidden'); // Mostra a tela principal
           document.getElementById('onlineMenuScreen').classList.add('hidden'); // Garante que a online esteja oculta
@@ -2908,6 +3187,17 @@
       });
       
       // Ação: Voltar ao Menu (do menu flutuante)
+      
+      // Ação: Mudo/Ligar Som
+      const btnToggleMute = document.getElementById('toggleMute');
+      if (btnToggleMute) {
+        btnToggleMute.addEventListener('click', () => {
+          toggleMute();
+          // feedback visual sonoro só quando ligando som
+          if (!isMuted && openSound) { try { SFX.playSync('open'); } catch (e) {} }
+        });
+      }
+
       const btnVoltarMenuFlutuante = document.getElementById('voltarMenu'); // Renomeado para evitar conflito
       if (btnVoltarMenuFlutuante) {
         btnVoltarMenuFlutuante.addEventListener('click', () => {
@@ -3344,25 +3634,107 @@
         { seq: ['h6-g5'], reply: 'c3-b4' }
       ];
       
+      // 💡 ZOBRIST HASHING: Variáveis de Inicialização
+      let ZOBRIST_KEYS;
+      function pieceToIndex(p) {
+        if (p === WHITE) return 0;
+        if (p === RED) return 1;
+        if (p === WHITE + KING) return 2;
+        if (p === RED + KING) return 3;
+        return 4; // null
+      }
+      
+      // 💡 ZOBRIST HASHING: Hashing incremental (muito mais rápido que o hash de string)
+      function getZobristHash(b) {
+        if (!ZOBRIST_KEYS) return BigInt(0);
+        
+        let hash = BigInt(0);
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const p = b[r][c];
+            const pieceIdx = pieceToIndex(p);
+            const keyIndex = pieceIdx * 64 + (r * 8 + c);
+            if (pieceIdx !== 4 && keyIndex < ZOBRIST_KEYS.length) {
+              hash ^= ZOBRIST_KEYS[keyIndex];
+            }
+          }
+        }
+        return hash;
+      }
+
+      // 💡 ZOBRIST HASHING: Função de simulação que retorna o novo ZHash
+      function simulate(b, mv, zHash){
+        const nb = cloneBoard(b); // Clone do tabuleiro
+        let newZHash = zHash;     // ZHash inicial
+        
+        const {from,to,type,jumped}=mv;
+        const t=nb[from[0]][from[1]];
+        const fromIdx = from[0] * 8 + from[1];
+        const toIdx = to[0] * 8 + to[1];
+
+        // 1. Remove a peça da casa 'from' (XOR out)
+        let pieceIdx = pieceToIndex(t);
+        let keyIndex = pieceIdx * 64 + fromIdx;
+        if (pieceIdx !== 4 && keyIndex < ZOBRIST_KEYS.length) {
+          newZHash ^= ZOBRIST_KEYS[keyIndex];
+        }
+        nb[from[0]][from[1]] = null;
+        
+        // 2. Remove a peça pulada (se houver)
+        if(type==='capture'){ 
+          const jIdx = jumped[0] * 8 + jumped[1];
+          const jPiece = nb[jumped[0]][jumped[1]];
+          let jPieceIdx = pieceToIndex(jPiece);
+          let jKeyIndex = jPieceIdx * 64 + jIdx;
+          if (jPieceIdx !== 4 && jKeyIndex < ZOBRIST_KEYS.length) {
+            newZHash ^= ZOBRIST_KEYS[jKeyIndex];
+          }
+          nb[jumped[0]][jumped[1]] = null; 
+        }
+
+        // 3. Move/Coloca a peça na casa 'to' (XOR in)
+        let promoted = t;
+        if((t===WHITE && to[0]===0) || (t===RED && to[0]===7)){
+          if(!t.endsWith(KING)) promoted = t+KING; // Promoção
+        }
+        
+        nb[to[0]][to[1]] = promoted;
+        
+        let newPieceIdx = pieceToIndex(promoted);
+        let newKeyIndex = newPieceIdx * 64 + toIdx;
+        if (newPieceIdx !== 4 && newKeyIndex < ZOBRIST_KEYS.length) {
+          newZHash ^= ZOBRIST_KEYS[newKeyIndex];
+        }
+
+        // Retorna o novo tabuleiro e o novo Zobrist Hash
+        return { board: nb, zHash: newZHash };
+      }
+
       // 💡 IMPLEMENTAÇÃO 2: "Memória de padrões de jogada"
       // 🧠 MODIFICADO: Memória dividida por cor
       let patternMemory_white = {};
       let patternMemory_red = {};
 
+      // 🔄 PONTO 1/4: Anti-Loop: Contador de Repetições
+      const repetitionCount = new Map(); // Global Map no Worker
+
       function memorizePattern(hash, result, player) {
         // 🧠 Seleciona a memória correta
         const memory = (player === WHITE) ? patternMemory_white : patternMemory_red;
         
-        if (!memory[hash]) memory[hash] = { wins: 0, losses: 0 };
-        if (result === 'win') memory[hash].wins++;
-        else memory[hash].losses++;
-        // console.log("Memorizado:", player, hash, memory[hash]); // (Debug)
+        // ZOBRIST: Hash é agora um BigInt, usa toString() como chave
+        const hashKey = hash.toString();
+
+        if (!memory[hashKey]) memory[hashKey] = { wins: 0, losses: 0 };
+        if (result === 'win') memory[hashKey].wins++;
+        else memory[hashKey].losses++;
       }
       
       function patternBias(hash, player) {
         // 🧠 Seleciona a memória correta
         const memory = (player === WHITE) ? patternMemory_white : patternMemory_red;
-        const p = memory[hash];
+        const hashKey = hash.toString(); // ZOBRIST: Hash é BigInt
+        const p = memory[hashKey];
         
         if (!p) return 0;
         const total = p.wins + p.losses;
@@ -3381,39 +3753,9 @@
         return nb;
       }
 
-      // ### OTIMIZAÇÃO 2 (Hashing Rápido) ###
-      // Converte o tabuleiro em uma string compacta para usar como chave de cache
-      function getBoardHash(b) {
-        let hash = '';
-        for (let r = 0; r < 8; r++) {
-          for (let c = 0; c < 8; c++) {
-            const p = b[r][c];
-            if (p === null) hash += '0';
-            else if (p === WHITE) hash += '1';
-            else if (p === RED) hash += '2';
-            else if (p === (WHITE + KING)) hash += '3';
-            else if (p === (RED + KING)) hash += '4';
-          }
-        }
-        return hash;
-      }
-
       function inB(r,c){ return r>=0 && r<8 && c>=0 && c<8; }
       
-      function simulate(b, mv){
-        const nb = cloneBoard(b); // Rápido (OTIMIZAÇÃO B)
-        const {from,to,type,jumped}=mv;
-        const t=nb[from[0]][from[1]];
-        nb[to[0]][to[1]] = t;
-        nb[from[0]][from[1]] = null;
-        if(type==='capture'){ nb[jumped[0]][jumped[1]] = null; }
-
-        if((t===WHITE && to[0]===0) || (t===RED && to[0]===7)){
-          if(!t.endsWith(KING)) nb[to[0]][to[1]] = t+KING;
-        }
-        return nb;
-      }
-
+      // Funções de movimento (mantidas)
       function movesForPiece(r,c,player,b,piece){
         const res=[]; const king = piece.endsWith(KING);
         const opp = (player===WHITE)? RED : WHITE;
@@ -3437,40 +3779,25 @@
               } else break;
             }
           }else{
-            // ==========================================================
-            // ✅ INÍCIO DA CORREÇÃO (worker.js) - Aplicando sua lógica
-            // ==========================================================
             const forward = (player===WHITE)? -1 : 1;
 
-            // 1. Cálculo das casas (feito uma vez)
-            const nr=r+dr, nc=c+dc; // Casa intermediária (ou de movimento)
-            const lr=r+dr*2, lc=c+dc*2; // Casa de destino (captura)
+            const nr=r+dr, nc=c+dc; 
+            const lr=r+dr*2, lc=c+dc*2; 
             
-            // 2. Movimento simples (só para frente)
             if(dr===forward){
               if(inB(nr,nc) && b[nr][nc]===null){ res.push({from:[r,c],to:[nr,nc],type:'move'}); }
             }
 
-            // 3. Captura (MODIFICADO PARA REGRA)
-            // ⭐️ MODIFICADO: Lê a regra da variável global do worker
             const rule = self.currentCaptureRule || 'sim';
             const isForwardCapture = (dr === forward);
 
             if (rule === 'sim' || (rule === 'nao' && isForwardCapture)) {
-              // Se a regra é "sim" (pode tudo) 
-              // OU Se a regra é "nao" E a captura é para frente
-
-              // Checa limites de ambas as casas ANTES de checar o conteúdo.
               if (inB(nr, nc) && inB(lr, lc)) {
-                // Ambas estão dentro, checa a lógica de captura
                 if(b[nr][nc] && b[nr][nc].startsWith(opp) && b[lr][lc]===null){
                   res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
                 }
               }
             }
-            // ==========================================================
-            // ✅ FIM DA CORREÇÃO
-            // ==========================================================
           }
         }
         return res;
@@ -3504,14 +3831,15 @@
 
       function maxChainFromMove(b, player, mv){
         let best=1;
-        const stack=[{board: simulate(b,mv), r: mv.to[0], c: mv.to[1], d:1}];
+        // 💡 ZOBRIST: Não precisamos de zHash aqui, apenas para Minimax/TT
+        const stack=[{board: simulate(b,mv, BigInt(0)).board, r: mv.to[0], c: mv.to[1], d:1}];
 
         while(stack.length){
           const {board:cb,r,c,d}=stack.pop();
           const caps = followUpCaptures(cb, r,c, player);
           if(caps.length===0){ if(d>best) best=d; }
           else{
-            for(const m of caps) stack.push({board: simulate(cb,m), r:m.to[0], c:m.to[1], d:d+1});
+            for(const m of caps) stack.push({board: simulate(cb,m, BigInt(0)).board, r:m.to[0], c:m.to[1], d:d+1});
           }
         }
         return best;
@@ -3537,9 +3865,122 @@
           return inB(nr,nc) && b[nr][nc]?.startsWith(player);
         });
       }
+      
+      // ==========================================================
+      // ✅ NOVA FUNÇÃO: EVALIAÇÃO DE FIM DE JOGO (ENDGAME EVAL)
+      // ==========================================================
+
+      function evalEndgame(b, player, weights) {
+          // [Control_Diag, Oposição_Rei, Forçar_Canto]
+          const [wCD, wKO, wCor] = weights; 
+          
+          const isWhite = (player === WHITE);
+          const opp = isWhite ? RED : WHITE;
+
+          let score = 0;
+          let myKings = [], oppKings = [];
+          
+          // 1. Encontra posições dos Reis
+          for (let r = 0; r < 8; r++) {
+              for (let c = 0; c < 8; c++) {
+                  const p = b[r][c];
+                  if (!p) continue;
+                  const isK = p.endsWith(KING);
+                  if (p.startsWith(player) && isK) myKings.push({r, c});
+                  else if (p.startsWith(opp) && isK) oppKings.push({r, c});
+              }
+          }
+          
+          // 2. Control Diag (Controlo de Diagonais) - Favorece o lado da maioria
+          for (let r = 0; r < 8; r++) {
+              for (let c = 0; c < 8; c++) {
+                  const p = b[r][c];
+                  if (!p || !p.startsWith(player)) continue;
+                  
+                  // Foco nas diagonais que avançam para o território inimigo
+                  const forwardRows = isWhite ? 7 - r : r; 
+                  score += forwardRows * 0.05 * wCD;
+              }
+          }
+
+          // 3. King Opposition (Oposição do Rei) - Tenta manter o Rei inimigo perto
+          if (myKings.length > 0 && oppKings.length > 0) {
+              let minDist = 100;
+              for (const myK of myKings) {
+                  for (const oppK of oppKings) {
+                      // Distância xadrez (Rei)
+                      const dist = Math.max(Math.abs(myK.r - oppK.r), Math.abs(myK.c - oppK.c));
+                      minDist = Math.min(minDist, dist);
+                  }
+              }
+              // Oposição é boa se a distância for pequena (forcing move)
+              // 1 - (minDist / 7) -> Maior para menor distância
+              score += (1 - Math.min(minDist / 7, 1)) * wKO * 1.5; 
+          }
+          
+          // 4. Cornering Bias (Forçar o Canto) - Empurrar o Rei inimigo para o lado oposto
+          if (oppKings.length > 0) {
+              let avgOppRow = oppKings.reduce((sum, p) => sum + p.r, 0) / oppKings.length;
+              // Row 7 (top) é a row ideal para Vermelho (RED)
+              // Row 0 (bottom) é a row ideal para Branco (WHITE)
+              
+              if (isWhite) {
+                  // Branco quer que a Row Média do Vermelho seja ALTA (perto de 7)
+                  score += avgOppRow / 7 * wCor * 1.0;
+              } else {
+                  // Vermelho quer que a Row Média do Branco seja BAIXA (perto de 0)
+                  score += (7 - avgOppRow) / 7 * wCor * 1.0;
+              }
+          }
+          
+          // 5. Mobilidade (Extra: Força o jogador com mais peças a manter a mobilidade)
+          score += allMoves(player, b).length * 0.1;
+          
+          return score;
+      }
+      
+      // ==========================================================
+      // ✅ FUNÇÃO EVALBOARD: Agora prioriza a evalEndgame
+      // ==========================================================
 
       // *** IMPLEMENTAÇÃO 1 & 3: HEURÍSTICA REFINADA + PERFIL ADAPTATIVO (POR COR) ***
       function evalBoard(b){
+        const n = b.flat().filter(x => x !== null).length;
+        
+        // 📌 NOVO: HEURÍSTICA DE FIM DE JOGO (Menos de 10 peças)
+        if (n <= 10) {
+            // A heurística de fim de jogo se torna DOMINANTE
+            const weightsW = self.endgame_w || [1.0, 0.4, 0.3];
+            const weightsR = self.endgame_r || [1.0, 0.4, 0.3];
+            
+            let scoreEndgame = 0;
+            
+            // Avaliação para Brancas (MAX)
+            const evalW = evalEndgame(b, WHITE, weightsW);
+            // Avaliação para Vermelhas (MIN)
+            const evalR = evalEndgame(b, RED, weightsR);
+            
+            // O score é: (Avaliação Branca) - (Avaliação Vermelha)
+            scoreEndgame = evalW - evalR;
+            
+            // Adiciona o viés de padrão e anti-loop (Ponto 2)
+            const hash = getZobristHash(b); // ZOBRIST Hash
+            if (repetitionCount) {
+                const rep = repetitionCount.get(hash.toString()) || 0; // ZOBRIST BigInt para string
+                if (rep > 1) scoreEndgame *= (1 - Math.min(0.03 * rep, 0.25));
+            }
+            scoreEndgame += patternBias(hash, WHITE);
+            scoreEndgame -= patternBias(hash, RED);
+
+            // Um valor grande no fim de jogo (ex: 100) garante que o minimax não vai errar.
+            // Para forçar a IA a se concentrar em *concluir* o jogo.
+            return scoreEndgame * 100;
+        }
+
+
+        // Fase da partida (abertura/meio/final) - Continua a lógica padrão
+        const phase = n > 24 ? 'opening' : n > 12 ? 'mid' : 'end';
+        
         // Perfis da IA por cor (branca/vermelha)
         const profileW = self.aiProfile_w || { agg: 0.5, def: 0.5 };
         const profileR = self.aiProfile_r || { agg: 0.5, def: 0.5 };
@@ -3548,10 +3989,6 @@
         const defR = (typeof profileR.def === 'number') ? profileR.def : 0.5;
       
         let score = 0;
-      
-        // Fase da partida (abertura/meio/final)
-        const n = b.flat().filter(x => x !== null).length;
-        const phase = n > 24 ? 'opening' : n > 12 ? 'mid' : 'end';
       
         const baseCenter  = (phase === 'opening' ? 1.0 : (phase === 'mid' ? 0.6 : 0.2));
         const basePromo   = (phase === 'end' ? 1.8 : 0.7);
@@ -3564,9 +4001,6 @@
         // 💡 NOVO: guardar posições para detectar "duplas" e cercos
         const positionsW = [];
         const positionsR = [];
-        
-        // 🧠 ADICIONADO: Contagem de peças real para o "King Hunt"
-        let wP=0, wK=0, rP=0, rK=0;
       
         for (let r = 0; r < 8; r++) {
           for (let c = 0; c < 8; c++) {
@@ -3576,13 +4010,6 @@
             const isW = v.startsWith(WHITE);
             const isK = v.endsWith(KING);
             const player = isW ? WHITE : RED;
-            
-            // 🧠 ADICIONADO: Popula a contagem de peças
-            if (isW) {
-              if (isK) wK++; else wP++;
-            } else {
-              if (isK) rK++; else rP++;
-            }
       
             // guarda posição para análise de sinergia depois
             if (isW) positionsW.push([r, c, isK]);
@@ -3615,15 +4042,7 @@
       
             // Peças protegidas ganham valor extra
             if (!isK && isProtected(b, r, c, player)) {
-              // 🧠 MODIFICAÇÃO: Bônus de proteção é reduzido no final
-              // O bônus de proteção estava travando a IA no final (local maximum).
-              // Agora, ele vale muito no começo/meio (0.4) e quase nada no final (0.1),
-              // forçando a IA a buscar a promoção em vez de "campar".
-              let protectionWeight = 0.4;
-              if (phase === 'end') {
-                  protectionWeight = 0.1; // Muito menos importante no final
-              }
-              bonus += protectionWeight * (0.5 + def);
+              bonus += 0.4 * (0.5 + def);
             }
       
             // Ligeira preferência por linhas "boas"
@@ -3650,72 +4069,6 @@
             if (r === c || r + c === 7) score += isW ? 0.2 : -0.2;
           }
         }
-      
-        // 🧠 NOVA LÓGICA: "PRECISÃO DE FINALIZAÇÃO" (Sua Sugestão)
-        // Detecta se a IA (Red) tem uma vitória clara no final do jogo
-        
-        // 🚫 LÓGICA ANTIGA (REMOVIDA) - Era muito específica
-        // Cenário 1: "Caça às Damas" (Red tem mais Damas, White não tem peões)
-        // const redKingHunt = (rK > wK && wP === 0 && rP === 0); // Só Damas no tabuleiro
-        // Cenário 2: "Damas vs Peões" (Red tem Damas, White SÓ tem peões)
-        // const redPawnHunt = (rK > 0 && wK === 0 && wP > 0);
-        // O "Modo Finalizador" é ativado se qualquer um desses cenários for verdadeiro E for final de jogo
-        // const isFinisherMode = (redKingHunt || redPawnHunt) && phase === 'end';
-        
-        // 💡 NOVA LÓGICA AMPLA "MODO FINALIZADOR" (Sua Sugestão 4x2, 5x1)
-        // Agora, avaliamos a vantagem material bruta. (Dama vale 3, Pedra vale 1)
-        const materialRed = (rK * 3) + rP;
-        const materialWhite = (wK * 3) + wP;
-        const materialAdvantageRed = materialRed - materialWhite;
-
-        // O "Modo Finalizador" é ativado se a IA (Red) tiver uma vantagem material
-        // clara (ex: 3+ pontos, ou seja, uma Dama ou 3 Pedras) E for o final do jogo.
-        // O "phase === 'end'" garante que isso não ative no meio do jogo.
-        const isFinisherMode = (materialAdvantageRed > 2) && (phase === 'end');
-        // FIM DA NOVA LÓGICA
-
-        // 🧠 NOVA LÓGICA: INCENTIVO À TROCA (Simplificação para Vitória)
-        // Adicionado para que a IA valorize a vitória (simplificação)
-        // 'score' aqui é o material. < 0 = IA (RED) na frente.
-        // 'n' é o total de peças (calculado no início da função).
-        const materialAdvantage = -score; // Ex: Se score=-2 (IA ganha), advantage=2
-        const nPieces = n; 
-
-        // Peso do incentivo. Aumenta à medida que o jogo avança (menos peças).
-        // 24.0 para forçar float.
-        const tradeWeight = 0.05 + (1.0 - (nPieces / 24.0)) * 0.15; // vai de 0.05 (início) a 0.20 (final)
-
-        if (materialAdvantage > 1.0) { 
-            // **** IA ESTÁ GANHANDO ****
-            
-            // 💡 MODIFICADO: Agora checa o "Modo Finalizador"
-            if (isFinisherMode) {
-                // 💡 MODO FINALIZADOR (Aniquilar):
-                // O Bônus de Dominação é INVERTIDO.
-                // A IA é recompensada por SIMPLIFICAR (menos peças = nPieces baixo).
-                // (24 - nPieces) é o "quão vazio" o tabuleiro está.
-                const simplificationBonus = (24 - nPieces) * tradeWeight * 2.0; // * 2.0 para ser mais forte
-                
-                // score é negativo. Subtrair o bônus torna o score MAIS negativo (muito bom).
-                score -= simplificationBonus;
-                
-            } else {
-                // 💡 MODO DOMINAÇÃO (Manter Peças):
-                // (Lógica anterior que você sugeriu)
-                const dominationBonus = (nPieces) * tradeWeight;
-                const finalDominationBonus = dominationBonus * (materialAdvantage * 0.5); 
-                score -= finalDominationBonus; 
-            }
-        
-        } else if (materialAdvantage < -1.0) { 
-            // **** IA ESTÁ PERDENDO ****
-            // Queremos complexidade (mais peças).
-            // (nPieces) é o "quão cheio" o tabuleiro está.
-            // Queremos maximizar isso (fazer o score ser MENOS RUIM).
-            const complexityBonus = (nPieces) * tradeWeight * 0.5; // 0.5 para ser menos extremo
-            score -= complexityBonus; // Subtrai, tornando o score "menos positivo" (bom para IA)
-        }
-        // 🧠 FIM DA NOVA LÓGICA
       
         // Mobilidade básica (antes de sinergia)
         const wMoves = allMoves(WHITE, b).length;
@@ -3785,38 +4138,58 @@
         // Lembrando: score > 0 favorece as BRANCAS; score < 0 favorece as VERMELHAS
         score += (pairW - pairR) * pairWeight;
         score += (surroundW - surroundR) * surroundWeight;
-      
-        // --- Mobilidade (Com Lógica "King Hunt") ---
-        // 🧠 MODIFICAÇÃO: O bloco de mobilidade foi REESCRITO
-        
-        // 🧠 LÓGICA DE FINALIZAÇÃO (King Hunt)
-        // Detecta se um lado tem vantagem decisiva (Dama vs Peões, ou Dama+ vs Dama)
-        // e está "caçando" o oponente.
-        
-        // Condição de caça para a IA (Red): (Red tem mais Damas E White não tem peões) OU (Red tem Dama e White só tem peões)
-        const redIsHunting = (rK > wK && wP === 0) || (rK > 0 && wK === 0 && wP > 0);
-        
-        // Condição de caça para o Humano/IA (White):
-        const whiteIsHunting = (wK > rK && rP === 0) || (wK > 0 && rK === 0 && rP > 0);
 
-        let mobilityWeight = 0.22; // Peso normal
+        // ==========================================================
+        // 📌 PONTO 1: HEURÍSTICAS DE FIM DE JOGO (KING HUNT, EDGE PRESSURE, COMPRESSION)
+        // ==========================================================
+        if (n <= 16) { // Ativa só no meio/fim de jogo
+            let kingHuntScore = 0;
+            let edgePressureScore = 0;
+            let quadrantCompressionScore = 0;
 
-        if (phase === 'end' && (redIsHunting || whiteIsHunting)) {
-            // Se estamos no final E é uma caçada, o único
-            // objetivo é estrangular a mobilidade do oponente.
-            // Aumenta o peso drasticamente para sobrepor bônus de "conforto" (como 'center').
-            mobilityWeight = 0.6; // Peso alto para forçar a IA a focar nisso
+            // 🐞 CORRIGIDO: Removido o ': p' extra que estava a causar o SyntaxError
+            const whiteKings = positionsW.filter(p => p[2]).map(p => ({ r: p[0], c: p[1] }));
+            const redKings   = positionsR.filter(p => p[2]).map(p => ({ r: p[0], c: p[1] }));
+
+            // 1. King Hunt (Perseguição ao Rei) - Favorece quem está mais perto (IA é RED/MIN)
+            if (redKings.length > 0 && whiteKings.length > 0) {
+                for (const rK of redKings) {
+                    let minDist = 100;
+                    for (const wK of whiteKings) {
+                        // Distância de Manhattan (boa para xadrez/damas)
+                        const dist = Math.abs(rK.r - wK.r) + Math.abs(rK.c - wK.c);
+                        minDist = Math.min(minDist, dist);
+                    }
+                    // A distância mais curta é melhor (score deve diminuir para RED)
+                    kingHuntScore += (10 - minDist) * 0.15 * (1 + aggR); 
+                }
+            }
+            score -= kingHuntScore; // Menos score é melhor para RED
+
+            // 2. Edge Pressure (Peças na Borda/Canto) - Penaliza peças vulneráveis na borda
+            for (const [r, c, isK] of positionsR) { // Peças RED
+                // Penaliza peças RED na borda (r=0, r=7, c=0, c=7) a menos que sejam reis ou protegidas.
+                if (!isK && (r === 0 || r === 7 || c === 0 || c === 7)) {
+                    const isCorner = (r === 0 || r === 7) && (c === 0 || c === 7);
+                    const isProt = isProtected(b, r, c, RED);
+                    
+                    if (!isProt) {
+                        edgePressureScore += 0.3 + (isCorner ? 0.2 : 0);
+                    }
+                }
+            }
+            score += edgePressureScore; // Mais score é pior para RED
+
+            // 3. Quadrant Compression (Fechamento de Quadrante) - Empurra WHITE (MAX) para a borda (r=0)
+            let avgWhiteRow = positionsW.reduce((sum, p) => sum + p[0], 0) / Math.max(1, positionsW.length);
+            // Quanto menor avgWhiteRow, mais WHITE está encurralado perto de 0 (melhor para RED)
+            quadrantCompressionScore += (4 - avgWhiteRow) * 0.15 * (1 + aggR); // Fator de agressividade
+            
+            score -= quadrantCompressionScore; // Menos score é melhor para RED
         }
         
-        // IA (Red) é 'min', então ela quer 'wMoves' baixo (penalidade)
-        // e 'rMoves' alto (bônus).
-        score += (wMoves * mobilityWeight) - (rMoves * mobilityWeight);
-        // --- Fim da Mobilidade ---
-
-        // -----------------------------------------------------
-        // ❌ REMOVIDO (linha antiga que foi substituída pelo bloco acima)
-        // score += (wMoves - rMoves) * 0.22;
-        // -----------------------------------------------------
+        // Mobilidade (mantida)
+        score += (wMoves - rMoves) * 0.22;
       
         // Predição de armadilhas / ritmo (bloco antigo mantido)
         if (rMoves > wMoves + 4) score -= 0.3;
@@ -3826,8 +4199,21 @@
         if (rMoves < wMoves && phase === 'mid') score -= 0.15 * defR;
         if (Math.abs(wMoves - rMoves) < 2 && aggR > 0.6) score -= 0.2;
       
+        // ==========================================================
+        // 📌 PONTO 2: ANTI-LOOP (ACHATAMENTO DO SCORE)
+        // ==========================================================
+        if (repetitionCount) {
+            const hash = getZobristHash(b); // ZOBRIST Hash
+            const rep = repetitionCount.get(hash.toString()) || 0; // ZOBRIST BigInt para string
+            if (rep > 1) {
+                // Acha o fator de "achatamento" (reduz o score total)
+                const factor = 1 - Math.min(0.03 * rep, 0.25);
+                score *= factor; // Multiplica o score, forçando a IA a procurar posições com menos repetição
+            }
+        }
+        
         // Memória de padrões (hash da posição)
-        const hash = getBoardHash(b);
+        const hash = getZobristHash(b); // ZOBRIST Hash
         score += patternBias(hash, WHITE);
         score -= patternBias(hash, RED);
       
@@ -3856,12 +4242,28 @@
 
       const TT = new Map(); // Tabela de Transposição (cache)
 
+      // 💡 NOVO: Função para checar Simetria Vertical
+      function isVerticallySymmetric(b) {
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 4; c++) {
+            // Verifica se a peça em (r, c) é igual à peça em (r, 7-c)
+            if (b[r][c] !== b[r][7 - c]) return false;
+          }
+        }
+        return true;
+      }
+
       // Algoritmo Minimax
-      function minimax(b, depth, isMax, alpha, beta){
+      function minimax(b, depth, isMax, alpha, beta, zHash){
+        // 📌 PONTO 3: Contador de Repetição (usa zHash)
+        const hashKey = zHash.toString(); // ZOBRIST BigInt para string
+        const visits = (repetitionCount.get(hashKey) || 0) + 1;
+        repetitionCount.set(hashKey, visits); // <<<<< INSERIDO
+
         if (TT.size > 150000) TT.clear(); // Limpa cache se ficar muito grande
 
-        // 💡 IMPLEMENTAÇÃO 2: Usa o HASH rápido como chave do cache
-        const key = getBoardHash(b) + '|' + depth + '|' + isMax;
+        // 💡 IMPLEMENTAÇÃO 2: Usa o ZHash como chave do cache
+        const key = hashKey + '|' + depth + '|' + isMax; // Usa ZHash (BigInt -> string)
         if(TT.has(key)) return TT.get(key);
         
         const player = isMax? WHITE : RED;
@@ -3889,11 +4291,12 @@
         if(isMax){
           let best=-Infinity;
           for(const m of legal){
-            const nb=simulate(b,m);
+            // 💡 ZOBRIST: Chama o simulate que retorna o novo ZHash
+            const { board: nb, zHash: newZHash } = simulate(b, m, zHash);
             const contCaps = (m.type==='capture') ? followUpCaptures(nb, m.to[0], m.to[1], player) : [];
             const val = contCaps.length
-              ? minimax(nb, depth-1, true, alpha, beta)
-              : minimax(nb, depth-1, false, alpha, beta);
+              ? minimax(nb, depth-1, true, alpha, beta, newZHash)
+              : minimax(nb, depth-1, false, alpha, beta, newZHash);
             if(val>best) best=val;
             if(best>alpha) alpha=best;
             if(beta<=alpha) break;
@@ -3902,11 +4305,12 @@
         } else {
           let best=Infinity;
           for(const m of legal){
-            const nb=simulate(b,m);
+            // 💡 ZOBRIST: Chama o simulate que retorna o novo ZHash
+            const { board: nb, zHash: newZHash } = simulate(b, m, zHash);
             const contCaps = (m.type==='capture') ? followUpCaptures(nb, m.to[0], m.to[1], player) : [];
             const val = contCaps.length
-              ? minimax(nb, depth-1, false, alpha, beta)
-              : minimax(nb, depth-1, true, alpha, beta);
+              ? minimax(nb, depth-1, false, alpha, beta, newZHash)
+              : minimax(nb, depth-1, true, alpha, beta, newZHash);
             if(val<best) best=val;
             if(best<beta) beta=best;
             if(beta<=alpha) break;
@@ -3918,6 +4322,11 @@
       // *** GERENCIADOR DE BUSCA (onmessage) ***
       self.onmessage = (e)=>{
         const data = e.data || {};
+
+        // 💡 ZOBRIST: Recebe e inicializa as chaves (BigInt)
+        if (data.ZOBRIST_KEYS && data.ZOBRIST_KEYS.length > 0) {
+            ZOBRIST_KEYS = data.ZOBRIST_KEYS.map(s => BigInt(s));
+        }
 
         // 🔁 Carrega memória persistida de padrões (enviada pelo main-thread)
         if (data.type === 'loadPatternMemory') {
@@ -3931,22 +4340,20 @@
           return;
         }
 
-        // 💡 IMPLEMENTAÇÃO 3: Recebe o perfil completo
-        // 🐞 CORREÇÃO: Removido, agora recebemos os dois perfis
-        /*
-        if (e.data.aiProfile) {
-          self.aiProfile = e.data.aiProfile;
-        }
-        */
-        
+        // 📌 PONTO 4: Limpa o contador de repetição para uma nova busca
+        repetitionCount.clear(); // <<<<< INSERIDO
+
         // 🧠 MODIFICADO: Recebe os perfis de AMBOS os jogadores
-        // (Define perfis padrão caso não venham)
         self.aiProfile_w = e.data.aiProfile_w || {agg:0.5, def:0.5};
         self.aiProfile_r = e.data.aiProfile_r || {agg:0.5, def:0.5};
 
         // 💡 Pesos da heurística neural simples (por cor)
         self.neural_w = e.data.neural_w || null;
         self.neural_r = e.data.neural_r || null;
+        
+        // 💡 NOVO: Pesos de fim de jogo adaptativos
+        self.endgame_w = e.data.endgame_w || null;
+        self.endgame_r = e.data.endgame_r || null;
 
         // ⭐️ ADIÇÃO: Recebe a regra de captura do game-core.js
         if (e.data.captureRule) {
@@ -3958,11 +4365,13 @@
             const winner = data.winner; // 🧠 Recebe o vencedor
             for (const turn of data.history) {
                 if (turn.hash) {
+                    // ZOBRIST: Hash é agora um BigInt
+                    const hash = BigInt(turn.hash);
                     // 🧠 Memoriza para o jogador daquele turno, com o resultado final da partida
                     if (turn.player === WHITE) {
-                        memorizePattern(turn.hash, winner === WHITE ? 'win' : 'lose', WHITE);
+                        memorizePattern(hash, winner === WHITE ? 'win' : 'lose', WHITE);
                     } else if (turn.player === RED) {
-                        memorizePattern(turn.hash, winner === RED ? 'win' : 'lose', RED);
+                        memorizePattern(hash, winner === RED ? 'win' : 'lose', RED);
                     }
                 }
             }
@@ -3982,12 +4391,14 @@
         let moves = (subset || legal).slice(); // Clona a lista de lances
         
         if(!moves || !moves.length){ self.postMessage({best:null, score:0, depth:0}); return; }
+        
+        // 💡 ZOBRIST: Calcula o hash inicial
+        let zHash = getZobristHash(board);
 
         // Livro de Aberturas (ATIVADO DE VERDADE)
         const nPieces = board.flat().filter(x => x !== null).length;
 
         // Usar livro enquanto ainda estamos em fase bem inicial
-        // 24 = início absoluto; 20 ainda é começo; abaixo disso já começou troca pesada
         if (nPieces >= 20) {
           const rand = OPENINGS[Math.floor(Math.random() * OPENINGS.length)];
           if (rand && rand.reply) {
@@ -4013,17 +4424,28 @@
           }
         }
         
+        // 📌 NOVO: PODA DE SIMETRIA (Vertical)
+        const isSymmetric = isVerticallySymmetric(board);
+        
+        if (isSymmetric) {
+            // Reduz a lista de lances para a metade esquerda (colunas 0, 1, 2, 3)
+            moves = moves.filter(m => m.from[1] <= 3);
+            self.postMessage({ action: 'say', group: 'thinking', extra: 'Simetria detectada. Busca reduzida em 50%.' });
+        }
+
+        
         // 💡 IMPLEMENTAÇÃO 3: "Modo Reflexivo" (IA comenta decisões)
         // 🧠 MODIFICADO: Usa o perfil do jogador ATUAL (RED)
         const agg = self.aiProfile_r?.agg ?? 0.5;
-        const def = self.aiProfile_r?.def ?? 0.5;
-        const nPiecesTotal = board.flat().filter(x=>x!==null).length; // Renomeado para evitar conflito
+        const nPiecesTotal = board.flat().filter(x=>x!==null).length; 
         const phase = nPiecesTotal > 24 ? 'opening' : nPiecesTotal > 12 ? 'mid' : 'end';
         
         if (phase === 'mid' && agg > 0.7) {
             self.postMessage({ action: 'say', group: 'thinking', extra: 'Pressionando o centro agora.' });
-        } else if (phase === 'end' && def > 0.7) {
+        } else if (phase === 'end' && nPiecesTotal > 10) {
             self.postMessage({ action: 'say', group: 'thinking', extra: 'Foco na defesa e promoção.' });
+        } else if (phase === 'end' && nPiecesTotal <= 10) {
+            self.postMessage({ action: 'say', group: 'thinking', extra: 'Ativando protocolos de final de jogo. Movimentos forçados.' });
         }
         // Fim (Implementação 3)
 
@@ -4070,13 +4492,15 @@
           
           // Itera sobre os lances na raiz (nível 0)
           for(const m of moves){
-            const nb = simulate(board,m);
+            // 💡 ZOBRIST: Simula e obtém o novo board E o novo ZHash
+            const { board: nb, zHash: newZHash } = simulate(board, m, zHash);
+
             const contCaps = (m.type==='capture') ? followUpCaptures(nb, m.to[0], m.to[1], RED) : [];
             
-            // Chama o minimax para a profundidade 'd-1'
+            // Chama o minimax para a profundidade 'd-1', passando o novo ZHash
             const val = contCaps.length
-              ? minimax(nb, d-1, false, -Infinity, Infinity) // Continua como MIN
-              : minimax(nb, d-1, true,  -Infinity, Infinity); // Passa para MAX
+              ? minimax(nb, d-1, false, -Infinity, Infinity, newZHash) // Continua como MIN
+              : minimax(nb, d-1, true,  -Infinity, Infinity, newZHash); // Passa para MAX
               
             if(val < currentBestScoreForDepth){ 
               currentBestScoreForDepth = val; 
@@ -4097,6 +4521,30 @@
           }
         }
         // --- Fim do Aprofundamento Iterativo ---
+        
+        // 📌 PODA DE SIMETRIA: Escolha Aleatória do Espelho (para variedade)
+        if (bestMove && isSymmetric) {
+            const originalMove = bestMove;
+            const mirrorMove = {
+                from: [originalMove.from[0], 7 - originalMove.from[1]],
+                to: [originalMove.to[0], 7 - originalMove.to[1]],
+                type: originalMove.type,
+                jumped: originalMove.jumped ? [originalMove.jumped[0], 7 - originalMove.jumped[1]] : undefined
+            };
+
+            // Para escolher aleatoriamente entre o lance e seu espelho, garantimos que o espelho é legal
+            const movesToCheck = (subset || legal); 
+            const isMirrorLegal = movesToCheck.some(m => 
+                m.from[0] === mirrorMove.from[0] && m.from[1] === mirrorMove.from[1] &&
+                m.to[0] === mirrorMove.to[0] && m.to[1] === mirrorMove.to[1]
+            );
+
+            if (isMirrorLegal && Math.random() < 0.5) {
+                bestMove = mirrorMove; // Randomly choose the mirror for variety!
+                self.postMessage({ action: 'say', group: 'thinking', extra: 'Movimento espelhado escolhido para variedade.' });
+            }
+        }
+        
         // Comentários adicionais com base na avaliação final
         if (bestMove && typeof bestScore === 'number') {
           // Lógica simples: como a IA (vermelha) é o "MIN", valores bem negativos indicam vantagem
@@ -4146,5 +4594,1154 @@
   </script>
   -->
 
-  </body>
+  <script id="worker-code">
+
+// === IA Worker (Quiescence + Aspiration + TT bounds + SEE + LMR + Mini-Endgames + Telemetry) ===
+let PATTERN_WHITE = {}, PATTERN_RED = {};
+let ZOBRIST_KEYS = [];
+let ZKEYS_BIG = []; // native BigInt
+let TT = new Map();
+let TT_AGE = 0;
+let HISTORY = Object.create(null);
+let HISTORY_PIECE = Object.create(null);
+const COUNTER = Object.create(null);
+let KILLER_1 = Object.create(null);
+let KILLER_2 = Object.create(null);
+let NODES=0, QNODES=0, TTHITS=0, CUTS=0, START=0;
+const AI_FLAGS={aspiration:true, lmr:true, quiescence:true, see:true, antiloop:true, miniEG:true};
+const REP_LIMIT=2; // 3-fold repetition as draw
+const PROG_LIMIT=60; // 60 plies (~30 lances por lado)
+
+
+const WHITE='white', RED='red', KING='-king';
+const VAL_MAN=100, VAL_KING=300; // centipeças simples
+const MATE = 100000, INF=1e9;
+
+function isWhite(p){ return p && p.startsWith(WHITE); }
+function isRed(p){ return p && p.startsWith(RED); }
+function isKing(p){ return p && p.endsWith(KING); }
+function opp(color){ return color===WHITE?RED:WHITE; }
+
+function cloneBoard(b){
+  const o = Array(8);
+  for (let r=0;r<8;r++){ o[r] = b[r].slice(); }
+  return o;
+}
+
+function zobristIndex(p){
+  if (p===null) return 4;
+  if (p===WHITE) return 0;
+  if (p===RED) return 1;
+  if (p===WHITE+KING) return 2;
+  if (p===RED+KING) return 3;
+  return 4;
+}
+function hashBoard(b){
+  if (!ZKEYS_BIG.length && ZOBRIST_KEYS.length){
+    // Convert strings to BigInt if needed
+    ZKEYS_BIG = ZOBRIST_KEYS.map(x => (typeof x==='string' && x.endsWith('n')) ? BigInt(x[:-1]) : BigInt(x));
+  }
+  let h = 0n;
+  for (let r=0;r<8;r++){
+    for (let c=0;c<8;c++){
+      const p = b[r][c];
+      const idx = zobristIndex(p);
+      if (idx===4) continue;
+      const keyIndex = idx*64 + (r*8+c);
+      if (ZKEYS_BIG[keyIndex] !== undefined){
+        h ^= ZKEYS_BIG[keyIndex];
+      }
+    }
+  }
+  return h;
+}
+
+// Move helpers
+function inB(r,c){ return r>=0 && r<8 && c>=0 && c<8; }
+function simulate(b, mv){
+  const nb = cloneBoard(b);
+  const {from,to,type,jumped} = mv;
+  const t = nb[from[0]][from[1]];
+  nb[to[0]][to[1]] = t;
+  nb[from[0]][from[1]] = null;
+  if (type==='capture'){ nb[jumped[0]][jumped[1]] = null; }
+  if((t===WHITE && to[0]===0) || (t===RED && to[0]===7)){
+    if(!t.endsWith(KING)) nb[to[0]][to[1]] = t+KING;
+  }
+  return nb;
+}
+
+function generateMoves(color, b, captureRule){
+  const M=[];
+  for (let r=0;r<8;r++){
+    for (let c=0;c<8;c++){
+      const p=b[r][c];
+      if (!p || !p.startsWith(color)) continue;
+      M.push(...movesForPiece(r,c,color,b,p,captureRule));
+    }
+  }
+  // Mandatory maximum capture-chain rule
+  const caps = M.filter(m=>m.type==='capture');
+  if (caps.length===0) return M.filter(m=>m.type==='move');
+  let best=1, scored=[];
+  for (const m of caps){
+    const len = maxChainFromMove(b, color, m, captureRule);
+    scored.push({m,len});
+    if (len>best) best=len;
+  }
+  return scored.filter(s=>s.len===best).map(s=>s.m);
+}
+
+function movesForPiece(r,c,player,b,piece,captureRule){
+  const res=[]; const king = piece.endsWith(KING);
+  const oppc = opp(player);
+  const DIRS = [[-1,-1],[-1,1],[1,-1],[1,1]];
+  for (const [dr,dc] of DIRS){
+    if (king){
+      for (let i=1;i<8;i++){
+        const nr=r+dr*i, nc=c+dc*i; if(!inB(nr,nc)) break;
+        const cont=b[nr][nc];
+        if(cont===null){
+          res.push({from:[r,c],to:[nr,nc],type:'move'});
+        } else if (cont.startsWith(oppc)){
+          for (let j=i+1;j<8;j++){
+            const lr=r+dr*j, lc=c+dc*j; if(!inB(lr,lc)) break;
+            if (b[lr][lc]===null){
+              res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
+            } else break;
+          }
+          break;
+        } else break;
+      }
+    } else {
+      const forward = (player===WHITE)? -1 : 1;
+      const nr=r+dr, nc=c+dc;
+      const lr=r+dr*2, lc=c+dc*2;
+      if (dr===forward && inB(nr,nc) && b[nr][nc]===null){
+        res.push({from:[r,c],to:[nr,nc],type:'move'});
+      }
+      const allowBack = (captureRule==='sim') || (dr===forward);
+      if (allowBack && inB(nr,nc) && inB(lr,lc)){
+        const cont=b[nr][nc];
+        if (cont && cont.startsWith(oppc) && b[lr][lc]===null){
+          res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
+        }
+      }
+    }
+  }
+  return res;
+}
+
+function followUpCaptures(b, r,c, player, captureRule){
+  const piece = b[r][c];
+  if(!piece) return [];
+  return movesForPiece(r,c,player,b,piece,captureRule).filter(m=>m.type==='capture');
+}
+function maxChainFromMove(b, player, mv, captureRule){
+  let best=1;
+  const stack=[{board:simulate(b,mv), r:mv.to[0], c:mv.to[1], d:1}];
+  while(stack.length){
+    const {board:cb,r,c,d} = stack.pop();
+    const caps = followUpCaptures(cb, r,c, player, captureRule);
+    if (caps.length===0){ if (d>best) best=d; }
+    else for (const m of caps) stack.push({board:simulate(cb,m), r:m.to[0], c:m.to[1], d:d+1});
+  }
+  return best;
+}
+
+// SEE - static exchange eval (light)
+function pieceValue(p){ return !p?0:(isKing(p)?VAL_KING:VAL_MAN); }
+function seeCapture(b, mv){
+  // Simple net-gain approximation: captured - new threats (one-ply reply)
+  const victimVal = pieceValue(b[mv.jumped[0]][mv.jumped[1]]);
+  const nb = simulate(b, mv);
+    if (mv.type!=='capture' && depth<=FUT_DEPTH_MAX){ if (standPat + FUT_MARGIN <= alpha){ moveIndex++; continue; } }
+  // after capture, if the capturing piece is recaptured immediately
+  const color = nb[mv.to[0]][mv.to[1]].startsWith(WHITE)?WHITE:RED;
+  const reply = generateMoves(opp(color), nb, 'sim').filter(x=>x.type==='capture');
+  let worstReply = 0;
+  for (const rmv of reply){
+    if (rmv.jumped && rmv.jumped[0]===mv.to[0] && rmv.jumped[1]===mv.to[1]){
+      worstReply = Math.max(worstReply, pieceValue(nb[mv.to[0]][mv.to[1]]));
+    }
+  }
+  return victimVal - worstReply;
+}
+
+
+function becameKing(nb, mv, color){
+  try{
+    const piece = nb[mv.to[0]][mv.to[1]];
+    return piece && piece.endsWith('-king');
+  }catch(_){ return false; }
+}
+
+
+// /*WASM_EVAL*/ minimal wasm: weighted sum of counts (export fn ev)
+let __wasm = null;
+(async function(){
+  try{
+    const bytes = new Uint8Array([
+      0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,6,127,127,127,127,127,127,1,127,
+      3,130,128,128,128,0,1,0,7,145,128,128,128,0,1,2,101,118,0,0,10,155,128,128,128,0,1,149,128,128,128,0,0,32,0,65,100,106,32,1,65,200,106,32,2,65,100,106,32,3,65,200,106,32,4,32,5,106,106,11
+    ]);
+    const mod = await WebAssembly.compile(bytes);
+    const inst = await WebAssembly.instantiate(mod,{});
+    __wasm = inst.exports;
+  }catch(_){ __wasm = null; }
+})();
+
+// Evaluation
+function countPieces(b){
+  let w=0,r=0, wk=0,rk=0, centerW=0, centerR=0;
+  for (let i=0;i<8;i++) for(let j=0;j<8;j++){
+    const p=b[i][j]; if(!p) continue;
+    if (isWhite(p)){ w += isKing(p)?VAL_KING:VAL_MAN; if (i>=2&&i<=5&&j>=2&&j<=5) centerW++; if (isKing(p)) wk++; }
+    else { r += isKing(p)?VAL_KING:VAL_MAN; if (i>=2&&i<=5&&j>=2&&j<=5) centerR++; if (isKing(p)) rk++; }
+  }
+  return {w,r,wk,rk,centerW,centerR};
+}
+
+// Mini-endgames features
+function endgameEval(b, color, endW, endR){
+  const {w,r,wk,rk} = countPieces(b);
+  const totalPieces = Math.round((w+r)/VAL_MAN);
+  if (totalPieces>10) return 0; // only in late game
+  // simple opposition/kinging heuristics
+  const me = color===RED?'red':'white';
+  let controlDiag=0, cornering=0;
+  for (let i=0;i<8;i++)for(let j=0;j<8;j++){
+    const p=b[i][j]; if(!p) continue;
+    const mine = (me==='white')?isWhite(p):isRed(p);
+    if (mine){
+      if ((me==='white' && i>j) || (me==='red' && j>i)) controlDiag += 1;
+      if (me==='white') cornering += (7-i); else cornering += i;
+    }
+  }
+  const oppKings = me==='white'?rk:wk;
+  const oppPressure = Math.min(oppKings,2)*20;
+  const ev = (endW[0]*controlDiag + endW[2]*cornering - oppPressure);
+  return (me==='white'?ev:-ev)*0.5;
+}
+
+const BB_EVAL_ON=true;
+function evalBoard(b, color, neuralW, neuralR, endW, endR){
+  // Positive: good for WHITE; Negative: good for RED
+  const {w,r,wk,rk,centerW,centerR} = countPieces(b);
+  const base = (w-r) + (wk-rk)*20 + (centerW-centerR)*5;
+  const lateW = endgameEval(b, WHITE, endW, endR);
+  const lateR = endgameEval(b, RED, endW, endR);
+  // features weighted (light)
+  const mobilityW = generateMoves(WHITE,b,'sim').length;
+  const mobilityR = generateMoves(RED,b,'sim').length;
+  const mob = (mobilityW - mobilityR);
+  let score = base + mob;
+  score += (lateW - lateR);
+  // Tactical pressure
+  const capsW = generateMoves(WHITE,b,'sim').filter(m=>m.type==='capture').length;
+  const capsR = generateMoves(RED,b,'sim').filter(m=>m.type==='capture').length;
+  score += (capsW - capsR) * 6;
+  // Promotion distance bias
+  for (let i=0;i<8;i++) for (let j=0;j<8;j++){
+    const p=b[i][j]; if(!p) continue;
+    if (isWhite(p) && !isKing(p)) score += (7-i)*0.8; // closer to top
+    if (isRed(p) && !isKing(p)) score -= (i)*0.8;
+  }
+  if (BB_EVAL_ON){ try{
+    const bb=bbFromBoard(b);
+    const wc = bbCount(bb.wm)+2*bbCount(bb.wk);
+    const rc = bbCount(bb.rm)+2*bbCount(bb.rk);
+    score += (wc - rc) * 3; // slight material corroboration
+  }catch(_){}
+}
+try{ if (__wasm && __wasm.ev){
+  // counts: wMen,wKing,rMen,rKing, promoBiasW, promoBiasR precomputed approx
+  let wMen=0,wKing=0,rMen=0,rKing=0,pw=0,pr=0;
+  for(let i=0;i<8;i++) for(let j=0;j<8;j++){ const p=b[i][j]; if(!p) continue;
+    if (p.startsWith('white')){ if(p.endsWith('-king')) wKing++; else { wMen++; pw += (7-i); } }
+    else { if(p.endsWith('-king')) rKing++; else { rMen++; pr += i; } }
+  }
+  const wv = __wasm.ev(wMen,wKing,rMen,rKing,pw,pr);
+  score = (score*3 + (wv|0)) / 4;
+} }catch(_){}
+return score; // centipeças-ish
+}
+
+
+// /*BITBOARD*/ Lightweight 32-square mapping for eval acceleration
+const BB = {
+  // map (r,c) -> 0..31 or -1 for light squares
+  map: (function(){ let m=Array.from({length:8},()=>Array(8).fill(-1)); let idx=0;
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){ if((r+c)%2===1){ m[r][c]=idx++; } } return m; })()
+};
+function bbFromBoard(b){
+  let wm=0|0, wk=0|0, rm=0|0, rk=0|0;
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p=b[r][c]; if(!p) continue;
+    const id=BB.map[r][c]; if(id<0) continue;
+    const mask = 1<<id;
+    if (p.startsWith('white')){ if (p.endsWith('-king')) wk|=mask; else wm|=mask; }
+    else { if (p.endsWith('-king')) rk|=mask; else rm|=mask; }
+  }
+  return {wm,wk,rm,rk};
+}
+function bbCount(x){ x=(x>>>0); let n=0; while(x){ x&=x-1; n++; } return n; }
+
+// Move ordering helpers
+function mkey(depth){ return depth|0; }
+function orderMoves(b, color, moves, ttMove, depth, bookStats, randomness, prevKey){
+  // Priority: TT move, Captures by SEE, Killer, History
+  const isCapture = m=>m.type==='capture';
+  const arr = moves.slice().map((m,idx)=>{
+    let s = 0;
+    if (ttMove && m.from[0]===ttMove.from?.[0] && m.from[1]===ttMove.from?.[1] &&
+        m.to[0]===ttMove.to?.[0] && m.to[1]===ttMove.to?.[1]) s += 5000;
+    if (isCapture(m)) s += 2000 + Math.max(0, seeCapture(b,m));
+    const key = mkey(depth);
+    const k1 = KILLER_1[key], k2 = KILLER_2[key];
+    if (k1 && m.from[0]===k1.from?.[0] && m.to[0]===k1.to?.[0] && m.from[1]===k1.from?.[1] && m.to[1]===k1.to?.[1]) s += 1200;
+    if (k2 && m.from[0]===k2.from?.[0] && m.to[0]===k2.to?.[0] && m.from[1]===k2.from?.[1] && m.to[1]===k2.to?.[1]) s += 900;
+    const hkey = `${m.from}-${m.to}-${color}`;
+    s += (HISTORY[hkey]||0);
+    // Book weighting at root (depth tag used later)
+    if (bookStats && depth.globalDepth===depth.depthStart){
+      const lineKey = `${m.from[0]}${m.from[1]}-${m.to[0]}${m.to[1]}`;
+      const w = bookStats[lineKey]?.w || 0;
+      const d = bookStats[lineKey]?.d || 0;
+      const weight = w*3 + d; // bias towards win rate
+      s += weight;
+    }
+    if (randomness>0 && depth.globalDepth===depth.depthStart){
+      s += Math.random()*randomness*100;
+    }
+    return {m, s, idx};
+  });
+  arr.sort((a,b)=>b.s-a.s);
+  return arr.map(x=>x.m);
+}
+
+// Transposition Table entry flags
+const FLAG_EXACT=0, FLAG_LOWER=1, FLAG_UPPER=2;
+const FUT_MARGIN=120; const FUT_DEPTH_MAX=2;
+
+function ttStore(key, depth, value, flag, best, age){
+  const prev = TT.get(key);
+  if (!prev || depth >= prev.depth || (prev.age!==undefined && age>prev.age)){
+    TT.set(key, {depth, value, flag, best, age});
+  }
+}
+);
+  } else if (prev && age>prev.age){
+    // age-based mild replacement
+    TT.set(key, {depth, value, flag, best, age});
+  }
+}
+function ttProbe(key){ return TT.get(key); }
+
+// Quiescence: capture-only search
+function qSearch(b, color, alpha, beta, captureRule, neuralW, neuralR, endW, endR, depthCtx){
+  QNODES++;
+
+  // Repetition & no-progress checks
+  const sideKey = hashBoard(b).toString() + '|' + color;
+  rep[sideKey] = (rep[sideKey]||0) + 1;
+  if (rep[sideKey] > REP_LIMIT){ rep[sideKey]--; return 0; } // draw by repetition
+  if (prog >= PROG_LIMIT){ rep[sideKey]--; return 0; } // draw by no-progress
+
+  const stand = evalBoard(b, WHITE, neuralW, neuralR, endW, endR);
+  if (stand >= beta) { CUTS++; return beta; }
+  if (stand > alpha) alpha = stand;
+
+  const caps = generateMoves(color, b, captureRule).filter(m=>m.type==='capture');
+  // SEE-driven pruning of "bad" captures
+  caps.sort((a,b)=>seeCapture(b,b)-seeCapture(a,a));
+  for (const mv of caps){
+    if (seeCapture(b, mv) < 0) continue; // discard losing exchanges
+    const nb = simulate(b, mv);
+    if (mv.type!=='capture' && depth<=FUT_DEPTH_MAX){ if (standPat + FUT_MARGIN <= alpha){ moveIndex++; continue; } }
+    const score = -qSearch(nb, opp(color), -beta, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx);
+    if (score >= beta){ CUTS++; return beta; }
+    if (score > alpha) alpha = score;
+  }
+  return alpha;
+}
+
+
+// Mini endgames (<=4 peças): solver com memo; opcionalmente pode persistir em IDB via main thread
+const MINI_TB = new Map();
+const EG_MAP = new Map();
+const MINI_EG_LIMIT = 6;
+function pieceCount(b){ let n=0; for(let i=0;i<8;i++) for(let j=0;j<8;j++) if(b[i][j]) n++; return n; }
+function isMiniEG(b){ return pieceCount(b) <= MINI_EG_LIMIT; }
+function egKey(b, color){ return hashBoard(b).toString() + '|' + color; }
+
+function solveMiniEG(b, color, captureRule, maxPly){
+  // Simple DFS with memo; returns exact score in centipeças big magnitude for WDL-ish
+  const key = egKey(b,color);
+  if (EG_MAP.has(key)) return EG_MAP.get(key);
+  if (MINI_TB.has(key)) return MINI_TB.get(key);
+  if (maxPly<=0){
+    const v = evalBoard(b, WHITE, null, null, [1,0.4,0.3],[1,0.4,0.3]);
+    MINI_TB.set(key, v); return v;
+  }
+  const moves = generateMoves(color, b, captureRule);
+  if (moves.length===0){
+    const v = (color===WHITE ? -MATE : MATE);
+    MINI_TB.set(key, v);
+    return v;
+  }
+  let best = (color===WHITE? -INF: INF);
+  for (const mv of moves){
+    const nb = simulate(b, mv);
+    if (mv.type!=='capture' && depth<=FUT_DEPTH_MAX){ if (standPat + FUT_MARGIN <= alpha){ moveIndex++; continue; } }
+    const sc = solveMiniEG(nb, opp(color), captureRule, maxPly-1);
+    if (color===WHITE){ if (sc>best) best=sc; } else { if (sc<best) best=sc; }
+  }
+  MINI_TB.set(key, best);
+  try{ postMessage({ egSave: { key, value: best } }); }catch(_){}
+  return best;
+}
+
+// Alpha-Beta with LMR, TT, Quiescence
+function alphaBeta(b, color, depth, alpha, beta, captureRule, neuralW, neuralR, endW, endR, depthCtx, prevKey, prevKey, rep, prog){
+  NODES++;
+
+  if (isMiniEG(b)){
+    const egv = solveMiniEG(b, color, captureRule, 20);
+    return egv;
+  }
+  if (depth<=0){
+    const __qv = AI_FLAGS.quiescence ? qSearch(b, color, alpha, beta, captureRule, neuralW, neuralR, endW, endR, depthCtx) : evalBoard(b, WHITE, neuralW, neuralR, endW, endR); rep[sideKey]--; return __qv;
+  }
+
+  const key = hashBoard(b);
+  const tt = ttProbe(key);
+  if (tt && tt.depth >= depth){
+    TTHITS++;
+    if (tt.flag===FLAG_EXACT){ rep[sideKey]--; return tt.value; }
+    if (tt.flag===FLAG_LOWER && tt.value > alpha) alpha = tt.value;
+    else if (tt.flag===FLAG_UPPER && tt.value < beta) beta = tt.value;
+    if (alpha>=beta){ CUTS++; rep[sideKey]--; return tt.value; }
+  }
+
+  const moves = generateMoves(color, b, captureRule);
+  if (moves.length===0){
+    // no moves => lost; return large negative from side to move
+    const __nomove = (color===WHITE ? -MATE + depth : MATE - depth); rep[sideKey]--; return __nomove;
+  }
+
+  const ordered = orderMoves(b, color, moves, tt?.best, depthCtx, depthCtx.bookStats, depthCtx.randomness, prevKey);
+
+  let value = -INF, bestMove=null;
+  let legalCount = 0;
+  const isRoot = (depthCtx.globalDepth===depthCtx.depthStart);
+  let moveIndex = 0;
+  const standPat = evalBoard(b, WHITE, neuralW, neuralR, endW, endR);
+
+  for (const mv of ordered){
+    legalCount++;
+    const nb = simulate(b, mv);
+    if (mv.type!=='capture' && depth<=FUT_DEPTH_MAX){ if (standPat + FUT_MARGIN <= alpha){ moveIndex++; continue; } }
+
+    // Late Move Reductions (LMR) — only on quiet moves, deeper plies
+    let dRed = 0;
+    const isQuiet = mv.type!=='capture';
+    if (isQuiet && depth>=3 && moveIndex>=3){
+      dRed = 1 + (moveIndex>6 ? 1 : 0);
+    }
+
+    let score;
+    if (dRed>0){
+      score = -alphaBeta(nb, opp(color), depth-1-dRed, -alpha-1, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx, `${mv.from}-${mv.to}-${color}`, rep, (mv.type==='capture'|| becameKing(nb,mv,color))?0:(prog+1));
+      if (score>alpha){
+        // re-search on improvement
+        score = -alphaBeta(nb, opp(color), depth-1, -beta, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx, `${mv.from}-${mv.to}-${color}`, rep, (mv.type==='capture'|| becameKing(nb,mv,color))?0:(prog+1));
+      }
+    } else {
+      if (moveIndex>0){
+        // PVS null-window search
+        score = -alphaBeta(nb, opp(color), depth-1, -alpha-1, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx, `${mv.from}-${mv.to}-${color}`, rep, (mv.type==='capture'|| becameKing(nb,mv,color))?0:(prog+1));
+        if (score>alpha){
+          score = -alphaBeta(nb, opp(color), depth-1, -beta, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx, `${mv.from}-${mv.to}-${color}`, rep, (mv.type==='capture'|| becameKing(nb,mv,color))?0:(prog+1));
+        }
+      } else {
+        score = -alphaBeta(nb, opp(color), depth-1, -beta, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx, `${mv.from}-${mv.to}-${color}`, rep, (mv.type==='capture'|| becameKing(nb,mv,color))?0:(prog+1));
+      }
+    }
+
+    if (score>value){ value = score; bestMove = mv; }
+    if (score>alpha){
+      alpha = score;
+      // History heuristic bump for quiet moves
+      if (isQuiet){
+        const hkey = `${mv.from}-${mv.to}-${color}`;
+        HISTORY[hkey] = (HISTORY[hkey]||0) + depth*depth;
+        const pkey = `${color}-${mv.from[0]}${mv.from[1]}`;
+        HISTORY_PIECE[pkey] = (HISTORY_PIECE[pkey]||0) + depth;
+      }
+    }
+    if (alpha>=beta){
+      CUTS++;
+      // register countermove for prevKey
+      if (prevKey && isQuiet){ COUNTER[prevKey] = mv; }
+      // killer moves for quiet cutoffs
+      if (isQuiet){
+        const keyd = mkey(depthCtx.depthStart - depth);
+        if (!KILLER_1[keyd] || (KILLER_1[keyd].from[0]!==mv.from[0] || KILLER_1[keyd].to[0]!==mv.to[0] || KILLER_1[keyd].from[1]!==mv.from[1] || KILLER_1[keyd].to[1]!==mv.to[1])){
+          KILLER_2[keyd] = KILLER_1[keyd];
+          KILLER_1[keyd] = mv;
+        }
+      }
+      break;
+    }
+    moveIndex++;
+  }
+
+  // store in TT
+  const flag = (value<=alpha?FLAG_UPPER : value>=beta?FLAG_LOWER : FLAG_EXACT); // alpha/beta updated already
+  ttStore(key, depth, value, flag, bestMove, TT_AGE);
+
+  // at root, attach bestMove for aspiration/pv
+  if (isRoot && bestMove){
+    depthCtx.bestRoot = bestMove;
+  }
+  rep[sideKey]--; rep[sideKey]--; return value;
+}
+
+// Iterative deepening + Aspiration windows
+function searchRoot(board, legal, params){
+  const {maxDepth, captureRule, neural_w, neural_r, endgame_w, endgame_r, bookStats, randomness, aspiration} = params;
+  const color = RED; // AI is RED at root (vs humano)
+  const depthCtxBase = { depthStart: 0, globalDepth:0, bookStats, randomness, bestRoot:null };
+
+  TT_AGE++;
+  NODES=0; QNODES=0; TTHITS=0; CUTS=0; START = performance.now();
+
+  let best=null, bestScore=-INF, lastScore=0;
+  let alpha=-INF, beta=INF;
+
+  // Move ordering uses book weights at root
+  const orderedRoot = orderMoves(board, color, (legal&&legal.length?legal:generateMoves(color,board,captureRule)), null, {depthStart:0, globalDepth:0, bookStats, randomness}, bookStats, randomness, null);
+
+  for (let d=1; d<=maxDepth; d++){
+    const depthCtx = {...depthCtxBase, depthStart:d, globalDepth:d, bestRoot:null};
+    let a = -INF, b = INF;
+    if ((aspiration && AI_FLAGS.aspiration) && d>4){
+      const delta = Math.max(50, Math.min(300, Math.abs(lastScore)*0.3 + 50)); // window in centipeças
+      a = lastScore - delta; b = lastScore + delta;
+    }
+
+    let value = -INF;
+    let localBest = null;
+
+    // scan root moves in current order each depth
+    for (const mv of orderedRoot){
+      const nb = simulate(board, mv);
+      const score = -alphaBeta(nb, WHITE, d-1, -b, -a, captureRule, neural_w, neural_r, endgame_w, endgame_r, depthCtx, null, Object.create(null), 0);
+      if (score>value){ value=score; localBest=mv; }
+      if (score>a){ a = score; }
+      if (a>=b) break;
+    }
+
+    // aspiration re-search
+    if (aspiration && d>4 && (value<=a || value>=b)){
+      // widen and retry once
+      let widen = 400;
+      let a2 = value - widen, b2 = value + widen;
+      value = -INF; localBest=null;
+      for (const mv of orderedRoot){
+        const nb = simulate(board, mv);
+        const sc = -alphaBeta(nb, WHITE, d-1, -b2, -a2, captureRule, neural_w, neural_r, endgame_w, endgame_r, depthCtx, null, Object.create(null), 0);
+        if (sc>value){ value=sc; localBest=mv; }
+        if (sc>a2){ a2 = sc; }
+        if (a2>=b2) break;
+      }
+    }
+
+    if (localBest){
+      best = localBest;
+      bestScore = value;
+      lastScore = value;
+      // Optional: PV move becomes killer for depth layer 0
+      KILLER_1[0] = localBest;
+    }
+  }
+
+  const elapsed = performance.now() - START;
+  postMessage({ best: best||orderedRoot[0]||null, score: bestScore/100.0, depth: maxDepth });
+  postMessage({ telemetry: { nodes:NODES, qnodes:QNODES, tthit:TTHITS, cuts:CUTS, ms: Math.round(elapsed), depth:maxDepth } });
+}
+
+// Messages
+onmessage = (e)=>{
+  const d = e.data||{};
+
+  if (d.type === 'loadPatternMemory'){
+    // pattern mem load
+
+    PATTERN_WHITE = d.patternMemory_white || {};
+    PATTERN_RED   = d.patternMemory_red   || {};
+    ZOBRIST_KEYS  = (d.ZOBRIST_KEYS || []).slice();
+    return;
+  }
+  if (d.type === 'loadEndgameMap'){
+    try{ for (const [k,v] of Object.entries(d.map||{})) EG_MAP.set(k, v|0); }catch(_){}
+    return;
+  }
+  if (d.resetCache){
+    TT.clear(); HISTORY = Object.create(null); KILLER_1=Object.create(null); KILLER_2=Object.create(null);
+    return;
+  }
+  if (d.board){
+    try {
+      // Parameters (with sensible defaults)
+      const legal = Array.isArray(d.legal)? d.legal : null;
+      const subset = (Array.isArray(d.subset) && d.subset.length) ? d.subset : null; // guard against empty subset
+      const maxDepth = Math.max(1, d.maxDepth|0);
+      const captureRule = d.captureRule || 'sim';
+      const neural_w = Array.isArray(d.neural_w)? d.neural_w : [1,0.4,0.3,0.2];
+      const neural_r = Array.isArray(d.neural_r)? d.neural_r : [1,0.4,0.3,0.2];
+      const endgame_w = Array.isArray(d.endgame_w)? d.endgame_w : [1,0.4,0.3];
+      const endgame_r = Array.isArray(d.endgame_r)? d.endgame_r : [1,0.4,0.3];
+      const bookStats = d.bookStats || null;
+      const randomness = typeof d.randomness==='number' ? d.randomness : 0.1;
+      const aspiration = !!d.aspiration;
+
+      searchRoot(d.board, subset||legal, {maxDepth, captureRule, neural_w, neural_r, endgame_w, endgame_r, bookStats, randomness, aspiration});
+    } catch(err){
+      postMessage({ best: (d.legal&&d.legal[0])||null, score: 0, depth: 0 });
+    }
+  }
+};
+
+</script>
+
+<script>
+// === Worker Monkey-Patch: add aspiration, dynamic book weights, adaptive time, telemetry ===
+(function(){
+  if (window.__workerPatchInstalled) return;
+  window.__workerPatchInstalled = true;
+
+  // Book stats cache (from Firebase or IndexedDB/localStorage)
+  window.BOOK_STATS = JSON.parse(localStorage.getItem('BOOK_STATS')||'{}');
+
+  async function loadBookStatsFirebase(){
+    try{
+      if (window.db && window.doc && window.getDoc){
+        const snap = await window.getDoc(window.doc(window.db, "ia", "bookStats"));
+        if (snap.exists()){
+          const data = snap.data() || {};
+          window.BOOK_STATS = data;
+          localStorage.setItem('BOOK_STATS', JSON.stringify(data));
+          // save to IDB too
+          try { await idbSet('book', 'stats', data); } catch(_){}
+        } else {
+          // fallback IDB/localStorage already used
+        }
+      }
+    }catch(e){
+      // fallback to IDB if available
+      try { const data = await idbGet('book','stats'); if (data){ window.BOOK_STATS=data; } } catch(_){}
+    }
+  }
+
+  // Simple IDB wrapper
+  let __idb;
+  function idbOpen(){
+    return new Promise((resolve,reject)=>{
+      if (__idb) return resolve(__idb);
+      const req = indexedDB.open('damas-ai', 1);
+      req.onupgradeneeded = (ev)=>{
+        const db = ev.target.result;
+        if (!db.objectStoreNames.contains('book')) db.createObjectStore('book');
+      };
+      req.onsuccess = ()=>{ __idb=req.result; resolve(__idb); };
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+  async function idbSet(store, key, val){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(store,'readwrite');
+      const os = tx.objectStore(store);
+      os.put(val, key);
+      tx.oncomplete = ()=>resolve();
+      tx.onerror = ()=>reject(tx.error);
+    });
+  }
+  async function idbGet(store, key){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(store,'readonly');
+      const os = tx.objectStore(store);
+      const req = os.get(key);
+      req.onsuccess = ()=>resolve(req.result);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
+  // Telemetry sender
+  async function sendTelemetry(tel){
+    try{
+      if (window.db && window.doc && window.setDoc){
+        const ref = window.doc(window.db, "telemetry", (window.userId||'anon'));
+        const payload = { last: Date.now(), ...tel };
+        await window.setDoc(ref, payload, { merge:true });
+      }
+    }catch(_){}
+  }
+
+  // Keep last eval to adapt depth on PV swings
+  let __lastEval = 0;
+
+  function depthAdapt(baseDepth, legal, board){
+    let d = baseDepth|0;
+    try{
+      // many captures -> search deeper
+      const caps = (legal||[]).filter(m=>m && m.type==='capture').length;
+      if (caps>=3) d += 1;
+      // finals -> deeper
+      let pieces=0;
+      for (let i=0;i<8;i++) for (let j=0;j<8;j++){ if (board[i][j]) pieces++; }
+      if (pieces<=6) d += 2;
+      // PV swing -> deepen
+      if (Math.abs(__lastEval) > 0.8) d += 1;
+    }catch(_){}
+    // clamp by difficulty
+    return Math.max(2, Math.min(d, 26));
+  }
+
+  function patch(){
+    if (!window.worker || window.worker.__patched) return;
+    window.worker.__patched = true;
+
+    const origPost = worker.postMessage.bind(worker);
+    worker.postMessage = function(msg){
+      try{
+        const diff = (localStorage.getItem('difficulty')||'medium');
+        const baseDepth = msg.maxDepth||8;
+        msg.maxDepth = depthAdapt(baseDepth, msg.legal||msg.subset, msg.board);
+        msg.bookStats = (window.BookManager && window.BookManager.getStats()) || window.BOOK_STATS || null;
+        msg.aspiration = true;
+        msg.randomness = (diff==='master'? 0 : diff==='hard'? 0.04 : diff==='medium'? 0.08 : 0.12);
+      }catch(_){}
+      return origPost(msg);
+    };
+
+    worker.addEventListener('message', (e)=>{
+      const d = e.data||{};
+      if (d.telemetry){ sendTelemetry(d.telemetry); }
+      if (typeof d.score === 'number'){ __lastEval = d.score; }
+    }, false);
+  }
+
+  // Try to attach periodically
+  setInterval(patch, 300);
+  // Load book weights early
+  setTimeout(loadBookStatsFirebase, 800);
+})();
+</script>
+
+
+<script>
+// Ensure modal analysis never blocks UI thread: schedule via microtask/timeout
+(function(){
+  if (window.__analysisScheduledGuard) return; 
+  window.__analysisScheduledGuard = true;
+  const _openAnalysisModal = window.openAnalysisModal;
+  window.openAnalysisModal = function(feedback, tone){
+    setTimeout(function(){ try{ _openAnalysisModal(feedback, tone); }catch(e){} }, 0);
+  };
+})();
+</script>
+
+
+<script>
+// === Root-split WorkerPool (cancelable) ===
+(function(){
+  if (window.__poolInstalled) return;
+  window.__poolInstalled = true;
+
+  function makeWorkerFromInline(){
+    const el = document.getElementById('worker-code');
+    const blob = new Blob([el.textContent||el.innerText||""], {type:'text/javascript'});
+    const url = URL.createObjectURL(blob);
+    return new Worker(url);
+  }
+
+  const MAX_POOL = Math.max(1, Math.min((navigator.hardwareConcurrency||4)-1, 4));
+  let pool = [];
+  let currentJob = null;
+
+  function ensurePool(){
+    if (pool.length>0) return;
+    for (let i=0;i<MAX_POOL;i++){
+      try{
+        const w = makeWorkerFromInline();
+        w.onmessage = (e)=>{
+          if (!currentJob) return;
+          const id = w.__id;
+          const data = e.data||{};
+          if (data.telemetry){
+            // forward telemetry but also tag worker id
+            try{
+              const tel = {...data.telemetry, wid:id};
+              if (window.db && window.doc && window.setDoc){
+                const ref = window.doc(window.db, "telemetry", (window.userId||'anon'));
+                window.setDoc(ref, { last:Date.now(), ...tel }, {merge:true});
+              }
+            }catch(_){}
+            return;
+          }
+          if (data.best){
+            currentJob.results.push({move: data.best, score:data.score, depth:data.depth, wid:id});
+          }
+          // Decide if all done
+          currentJob.doneCount++;
+          if (currentJob.doneCount >= currentJob.expect){
+            finalizeJob();
+          }
+        };
+        w.__id = i+1;
+        pool.push(w);
+      }catch(_){}
+    }
+    if (pool.length===0){
+      // fallback: keep single global 'worker' usage
+      console.warn('[Pool] fallback to single worker');
+    }
+  }
+
+  function finalizeJob(){
+    if (!currentJob) return;
+    const job = currentJob; currentJob = null;
+    // pick best result by score
+    let bestR = null;
+    for (const r of job.results){
+      if (!bestR || (r.score>bestR.score)) bestR = r;
+    }
+    if (!bestR && job.legal && job.legal[0]){
+      bestR = { move: job.legal[0], score: 0, depth: 0 };
+    }
+    try{ job.resolve(bestR ? bestR.move : null); }catch(_){}
+  }
+
+  function cancelJob(){
+    currentJob = null;
+  }
+
+  // Public API to dispatch a root search with split
+  window.dispatchRootSearch = function(msg){
+    ensurePool();
+    const legal = (msg.legal && msg.legal.length) ? msg.legal : null;
+    if (!legal || pool.length===0){
+      // Single worker path
+      return new Promise((resolve)=>{
+        const handler = (e)=>{
+          const d = e.data||{};
+          if (d.best){ resolve(d.best); worker.removeEventListener('message', handler); }
+        };
+        worker.addEventListener('message', handler);
+        worker.postMessage(msg);
+      });
+    }
+    // Split legal equally
+    const N = Math.min(pool.length, legal.length);
+    const chunks = [];
+    for (let i=0;i<N;i++) chunks.push([]);
+    for (let i=0;i<legal.length;i++){ chunks[i%N].push(legal[i]); }
+
+    // Prime workers with pattern mem & zobrist (if available)
+    const memW = JSON.parse(localStorage.getItem('patternMemory_white')||'{}');
+    const memR = JSON.parse(localStorage.getItem('patternMemory_red')||'{}');
+    const zkeys = (window.ZOBRIST_KEYS||[]).map(String);
+
+    return new Promise((resolve)=>{
+      currentJob = { resolve, results:[], doneCount:0, expect:N, legal };
+      for (let i=0;i<N;i++){
+        const w = pool[i];
+        try{
+          w.postMessage({ type:'loadPatternMemory', patternMemory_white: memW, patternMemory_red: memR, ZOBRIST_KEYS: zkeys });
+        }catch(_){}
+        const sub = {...msg, subset: chunks[i]};
+        try{ w.postMessage(sub); }catch(_){ currentJob.doneCount++; }
+      }
+    });
+  };
+
+  // Hook into existing path that sends worker.postMessage for AI move
+  const __oldAIMove = window.requestAIMove;
+  window.requestAIMove = async function(msg){
+    try{
+      const best = await window.dispatchRootSearch(msg);
+      return best;
+    }catch(e){
+      console.warn('[Pool] fallback single move', e);
+      return await (__oldAIMove ? __oldAIMove(msg) : new Promise((resolve)=>{
+        const handler = (e)=>{ const d=e.data||{}; if (d.best){ resolve(d.best); worker.removeEventListener('message', handler);} };
+        worker.addEventListener('message', handler); worker.postMessage(msg);
+      }));
+    }
+  };
+})();
+</script>
+
+
+<script>
+// ==== Opening Book Manager (Firebase + IDB + procedural fallback) ====
+(function(){
+  if (window.__bookManagerInstalled) return; window.__bookManagerInstalled = true;
+
+  window.BOOK_STATS = JSON.parse(localStorage.getItem('BOOK_STATS')||'{}');
+
+  // IndexedDB helpers
+  let __idb;
+  function idbOpen(){
+    return new Promise((resolve,reject)=>{
+      if (__idb) return resolve(__idb);
+      const req = indexedDB.open('damas-ai', 2);
+      req.onupgradeneeded = (ev)=>{
+        const db = ev.target.result;
+        if (!db.objectStoreNames.contains('book')) db.createObjectStore('book');
+        if (!db.objectStoreNames.contains('endgame')) db.createObjectStore('endgame');
+      };
+      req.onsuccess = ()=>{ __idb=req.result; resolve(__idb); };
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+  async function idbSet(store, key, val){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(store,'readwrite');
+      tx.objectStore(store).put(val, key);
+      tx.oncomplete = ()=>resolve();
+      tx.onerror = ()=>reject(tx.error);
+    });
+  }
+  async function idbGet(store, key){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(store,'readonly');
+      const req = tx.objectStore(store).get(key);
+      req.onsuccess = ()=>resolve(req.result);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+  async function idbGetAll(store){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(store,'readonly');
+      const req = tx.objectStore(store).getAll();
+      req.onsuccess = ()=>resolve(req.result||[]);
+      req.onerror = ()=>reject(tx.error);
+    });
+  }
+
+  // Merge BOOK_STATS with multiple Firebase docs if exist
+  async function loadBookFirebase(){
+    try{
+      if (!(window.db && window.doc && window.getDoc)) return false;
+      const targets = [
+        ['ia','bookStats'],
+        ['opening_book','lines'],   // opcional: mapa {hash:{ fromTo:{w,d} }}
+        ['ia','bookStats2']         // opcional extra
+      ];
+      let changed=false;
+      for (const [col,docId] of targets){
+        try{
+          const snap = await window.getDoc(window.doc(window.db, col, docId));
+          if (snap.exists()){
+            const data = snap.data()||{};
+            window.BOOK_STATS = Object.assign(window.BOOK_STATS, data);
+            changed = true;
+          }
+        }catch(_){}
+      }
+      if (changed){
+        localStorage.setItem('BOOK_STATS', JSON.stringify(window.BOOK_STATS));
+        try{ await idbSet('book','stats', window.BOOK_STATS); }catch(_){}
+      } else {
+        // fallback: try IDB
+        try{ const cached = await idbGet('book','stats'); if (cached){ window.BOOK_STATS = cached; changed=true; } }catch(_){}
+      }
+      return changed;
+    }catch(_){ return false; }
+  }
+
+  // Procedural bias for early plies (quando não há book)
+  function openingBias(board, color){
+    // prefere desenvolver peças das colunas centrais e avançar controle do centro
+    try{
+      let bias = {};
+      for (let r=0;r<8;r++) for (let c=0;c<8;c++){
+        const p = board[r][c];
+        if (!p || !p.startsWith(color)) continue;
+        const drs = [[-1,-1],[-1,1],[1,-1],[1,1]];
+        for (const [dr,dc] of drs){
+          const nr=r+dr, nc=c+dc;
+          if (nr>=0&&nr<8&&nc>=0&&nc<8 && !board[nr][nc]){
+            const key = `${r}${c}-${nr}${nc}`;
+            const center = (nr>=2&&nr<=5&&nc>=2&&nc<=5)?1:0;
+            bias[key] = (bias[key]||0) + (center?3:1);
+          }
+        }
+      }
+      // guarda como BOOK_STATS session-only (não polui storage)
+      for (const k in bias){ if (!window.BOOK_STATS[k]) window.BOOK_STATS[k] = { w:0, d:0, p:bias[k] }; }
+    }catch(_){}
+  }
+
+  // Exponho API para o engine patch consumir
+  window.BookManager = {
+    async init(){ await loadBookFirebase(); },
+    getStats(){ return window.BOOK_STATS||{}; },
+    openingBias
+  };
+
+  // Inicializa cedo
+  setTimeout(()=>{ window.BookManager.init(); }, 500);
+})();
+</script>
+
+
+<script>
+// ==== Endgame Cache Manager (IDB + Firebase opcional) ====
+(function(){
+  if (window.__egManagerInstalled) return; window.__egManagerInstalled = true;
+
+  let __idb;
+  function idbOpen(){
+    return new Promise((resolve,reject)=>{
+      if (__idb) return resolve(__idb);
+      const req = indexedDB.open('damas-ai', 2);
+      req.onupgradeneeded = (ev)=>{
+        const db = ev.target.result;
+        if (!db.objectStoreNames.contains('endgame')) db.createObjectStore('endgame');
+        if (!db.objectStoreNames.contains('book')) db.createObjectStore('book');
+      };
+      req.onsuccess = ()=>{ __idb=req.result; resolve(__idb); };
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+  async function idbSet(store, key, val){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(store,'readwrite');
+      tx.objectStore(store).put(val, key);
+      tx.oncomplete = ()=>resolve();
+      tx.onerror = ()=>reject(tx.error);
+    });
+  }
+  async function idbGetAll(store){
+    const db = await idbOpen();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(store,'readonly');
+      const req = tx.objectStore(store).getAll();
+      req.onsuccess = ()=>resolve(req.result||[]);
+      req.onerror = ()=>reject(tx.error);
+    });
+  }
+
+  // Preload a small map into the worker when reaching late game
+  async function preloadToWorker(){
+    if (!window.worker) return;
+    try{
+      const list = await idbGetAll('endgame');
+      const map = {};
+      for (const it of list){
+        if (it && it.key) map[it.key] = it.value;
+      }
+      worker.postMessage({ type:'loadEndgameMap', map });
+    }catch(_){}
+  }
+
+  // Listen for worker mini-eg saves
+  function attach(){
+    if (!window.worker || window.worker.__egAttached) return;
+    window.worker.__egAttached = true;
+    worker.addEventListener('message', (e)=>{
+      const d = e.data||{};
+      if (d.egSave && d.egSave.key){
+        idbSet('endgame', d.egSave.key, d.egSave);
+      }
+    });
+  }
+
+  setInterval(attach, 500);
+  // Preload early (harmless)
+  setTimeout(preloadToWorker, 1200);
+  window.__preloadEndgames = preloadToWorker;
+})();
+</script>
+
+
+<script>
+(function(){
+  function mirrorKey(k){
+    const m = /^(\d)(\d)-(\d)(\d)$/.exec(k); if(!m) return null;
+    const r1=+m[1], c1=+m[2], r2=+m[3], c2=+m[4];
+    const H = `${r1}${7-c1}-${r2}${7-c2}`;
+    const V = `${7-r1}${c1}-${7-r2}${c2}`;
+    const D = `${7-r1}${7-c1}-${7-r2}${7-c2}`;
+    return [H,V,D];
+  }
+  async function symmetrizeBook(){
+    try{
+      const B = (window.BookManager && window.BookManager.getStats && window.BookManager.getStats()) || window.BOOK_STATS || {};
+      let added=0;
+      for (const k of Object.keys(B)){
+        const mirrors = mirrorKey(k); if (!mirrors) continue;
+        for (const mk of mirrors){ if (!B[mk]){ B[mk] = {...B[k]}; added++; } }
+      }
+      if (added>0){
+        window.BOOK_STATS = B;
+        localStorage.setItem('BOOK_STATS', JSON.stringify(B));
+      }
+    }catch(_){}
+  }
+  setTimeout(symmetrizeBook, 1500);
+})();
+</script>
+
+<script>
+// === Online Guard: auto-resubscribe + resync snapshot ===
+(function(){
+  if (window.__onlineGuardInstalled) return; window.__onlineGuardInstalled = true;
+  const hasFS = ()=> !!(window.db && window.doc && window.getDoc && window.onSnapshot && window.setDoc && window.collection);
+  let _unsub = null, _room = null, _role = null;
+
+  async function resubscribe(){
+    try{
+      if (!hasFS() || !_room) return;
+      if (_unsub) try{ _unsub(); }catch(_){}
+      // Try to re-subscribe using your own subscribe function if available
+      if (window.subscribeRoom) {
+        _unsub = await window.subscribeRoom(_room, _role);
+      } else {
+        // Fallback: attach a generic onSnapshot to the main game doc
+        const ref = window.doc(window.db, "rooms", _room);
+        _unsub = window.onSnapshot(ref, (snap)=>{
+          const data = snap.data()||{};
+          if (window.applyRemoteState) window.applyRemoteState(data);
+        });
+      }
+      // Ask host for a fresh snapshot (control message)
+      if (_role === 'guest' && hasFS()){
+        try{
+          const ref = window.doc(window.db, "rooms", _room, "control", "resync");
+          await window.setDoc(ref, { t: Date.now(), type: "resync_request" });
+        }catch(_){}
+      }
+    }catch(_){}
+  }
+  window.OnlineGuard = {
+    start(roomId, role){ _room=roomId; _role=role; resubscribe(); },
+    stop(){ if (_unsub) try{ _unsub(); }catch(_){} _unsub=null; }
+  };
+  window.addEventListener('online', resubscribe);
+  document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') resubscribe(); });
+})();
+</script>
+
+</body>
   </html>
