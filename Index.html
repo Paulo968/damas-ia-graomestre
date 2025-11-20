@@ -2284,13 +2284,16 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         if(isOnline) return; // IA não joga online
         if(!worker) return;
         const subset = movesToConsider || null;
-        
+
         // 💡 IMPLEMENTAÇÃO 6: Rosto muda *antes* de pensar
         updateFaceState(); 
         // 🔁 Não fala 'thinking' se for modo treino (polui muito)
         if (!trainingMode) say('thinking'); // Helper de UI
 
         // 🎚️ PASSO 2: Envia a profundidade conforme dificuldade
+        const depth = getDepthByDifficulty();
+        const useMonteCarlo = (depth >= 16); // Usa Monte Carlo apenas nos níveis mais altos
+
         // ⭐️ MODIFICADO: Envia também a regra de captura para a IA
         // 🧠 MODIFICADO: Envia AMBOS os perfis + pesos neurais + pesos de fim de jogo
         worker.postMessage({ 
@@ -2303,10 +2306,12 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           neural_r: getNeuralWeights(RED),   
           endgame_w: getEndgameWeights(WHITE), // NOVO: Pesos de fim de jogo
           endgame_r: getEndgameWeights(RED),   // NOVO: Pesos de fim de jogo
-          maxDepth: getDepthByDifficulty(), 
-          captureRule: getCaptureRule() 
+          maxDepth: depth, 
+          captureRule: getCaptureRule(),
+          useMonteCarlo 
         });
       }
+
 
       function handleAIResult(best, score, depth){
         // 🔒 Se o jogo já acabou ou não veio jogada válida do worker, ignora a resposta
@@ -4465,7 +4470,87 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           }
         }
 
-        // --- Início do Aprofundamento Iterativo (IDS) ---
+        
+        // --- Monte Carlo Leve (Refinamento Opcional) ---
+        // Faz playouts aleatórios curtos a partir de um lance candidato
+        function randomPlayoutFromMove(initialBoard, firstMove, pliesLimit){
+          // Clona o tabuleiro e aplica o primeiro lance da IA (vermelha)
+          let b = cloneBoard(initialBoard);
+          let current = RED;
+
+          try {
+            const sim = simulate(b, firstMove, BigInt(0));
+            b = sim.board;
+            current = WHITE; // após a jogada da vermelha, é a vez das brancas
+          } catch (e) {
+            return evalBoard(initialBoard); // fallback seguro
+          }
+
+          let ply = 0;
+          while (ply < pliesLimit){
+            // Se o jogo acabou para o jogador atual, encerra
+            if (isGameOver(b, current)) break;
+
+            const all = allMoves(current, b);
+            const legal = filterMandatoryWithMaxChain(b, current, all);
+            if (!legal.length) break;
+
+            const mv = legal[Math.floor(Math.random() * legal.length)];
+            try {
+              const sim2 = simulate(b, mv, BigInt(0));
+              b = sim2.board;
+            } catch (e) {
+              break;
+            }
+            current = (current === WHITE ? RED : WHITE);
+            ply++;
+          }
+
+          // Usa a mesma heurística global para avaliar o resultado do playout
+          return evalBoard(b);
+        }
+
+        function refineWithMonteCarlo(board, moves, bestMove, bestScore){
+          // Usa Monte Carlo apenas se houver mais de uma opção interessante
+          if (!bestMove || !moves || moves.length < 2) {
+            return { move: bestMove, score: bestScore };
+          }
+
+          // Seleciona até 3 candidatos: o melhor da busca + outros aleatórios
+          const candidates = [];
+          candidates.push(bestMove);
+          while (candidates.length < Math.min(3, moves.length)) {
+            const m = moves[Math.floor(Math.random() * moves.length)];
+            if (!candidates.includes(m)) candidates.push(m);
+          }
+
+          const pliesLimit = 18;        // profundidade máxima de cada playout
+          const playoutsPerMove = 10;   // quantidade de simulações por lance
+
+          let mcBestMove = bestMove;
+          let mcBestScore = bestScore;
+
+          for (const cand of candidates) {
+            let acc = 0;
+            let count = 0;
+            for (let k = 0; k < playoutsPerMove; k++) {
+              const s = randomPlayoutFromMove(board, cand, pliesLimit);
+              acc += s;
+              count++;
+            }
+            const avg = acc / Math.max(1, count);
+
+            // Lembrando: score positivo favorece as brancas, negativo favorece a vermelha (nossa IA é MIN)
+            if (avg < mcBestScore) {
+              mcBestScore = avg;
+              mcBestMove = cand;
+            }
+          }
+
+          return { move: mcBestMove, score: mcBestScore };
+        }
+
+// --- Início do Aprofundamento Iterativo (IDS) ---
         const startTime = performance.now();
         const timeLimit = adaptiveTimeLimit(board); // tempo adaptativo de pensamento
         
@@ -4524,6 +4609,21 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           }
         }
         // --- Fim do Aprofundamento Iterativo ---
+
+        // --- Refinamento Monte Carlo (opcional, níveis altos) ---
+        if (e.data.useMonteCarlo && bestMove && moves && moves.length > 1) {
+          try {
+            const mcResult = refineWithMonteCarlo(board, moves, bestMove, bestScore);
+            if (mcResult && mcResult.move) {
+              bestMove = mcResult.move;
+              bestScore = mcResult.score;
+              self.postMessage({ action: 'say', group: 'thinking', extra: 'Simulações Monte Carlo concluídas.' });
+            }
+          } catch (err) {
+            // Falha silenciosa: se algo der errado, mantemos o resultado da busca clássica
+          }
+        }
+
         
         // 📌 PODA DE SIMETRIA: Escolha Aleatória do Espelho (para variedade)
         if (bestMove && isSymmetric) {
