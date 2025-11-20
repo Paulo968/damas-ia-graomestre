@@ -645,77 +645,42 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
     <!-- ============ BLOCO 1: FIREBASE (firebase.js) ========= -->
     <!-- ====================================================== -->
     <script type="module">
-      // --- firebase.js ---
-      // (Inicialização e funções de sala)
-      
-      // NOTA: Estas importações podem precisar de URLs atualizadas dependendo da versão do Firebase
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-      import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-      // 🐞 CORREÇÃO: Importar signInWithCustomToken
-      import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-      
-      // Configuração global do Firebase (use as variáveis de ambiente __firebase_config se disponível)
-      // ✏️ PASSO 2 (HTML) - Bloco substituído conforme pedido
-      const firebaseConfig = {
-        apiKey: "AIzaSyA6G1M1oUzQ-A-NkFYyrAjMwBRJEhLG3sI",
-        authDomain: "meu-jogo-damas.firebaseapp.com",
-        projectId: "meu-jogo-damas",
-        storageBucket: "meu-jogo-damas.appspot.com",
-        messagingSenderId: "583407551751",
-        appId: "1:583407551751:web:0f610a1494f40d59c7b1a2"
-      };
-      
-      // ID da Aplicação (use a variável de ambiente __app_id se disponível)
-      // ✏️ Modificado para não depender do __app_id
-      const appId = 'default-app-id';
-      let db, auth, userId;
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
-      // 💡 PASSO 2 (CORREÇÃO): Envolvido em IIFE assíncrona para evitar erro de 'await'
-      (async () => {
-        try {
-          // 🚀 Inicializa o Firebase
-          const app = initializeApp(firebaseConfig);
-          db = getFirestore(app);
-          auth = getAuth(app);
-          
-          // 🐞 CORREÇÃO: Autenticar com o token customizado do Canvas, ou anonimamente como fallback.
-          // O token customizado é necessário para permissões de escrita/leitura.
-          // ✏️ MODIFICADO: Como uma configuração manual do Firebase está sendo usada,
-          // não podemos usar o __initial_auth_token (que é para outro projeto).
-          // Forçamos a autenticação anônima para este projeto.
-          await signInAnonymously(auth);
-          
-          // Removido o bloco 'if' que causava o erro 'auth/custom-token-mismatch'
-          /*
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(auth, __initial_auth_token);
-          } else {
-            await signInAnonymously(auth);
-          }
-          */
-          userId = auth.currentUser ? auth.currentUser.uid : 'anon-' + Math.random().toString(36).substring(2, 9);
-          
-          // 💡 PASSO 2 (CORREÇÃO): Mensagem de log pedida pelo usuário
-          console.log("Firebase inicializado:", userId);
+const firebaseConfig = {
+  apiKey: "AIzaSyA6G1M1oUzQ-A-NkFYyrAjMwBRJEhLG3sI",
+  authDomain: "meu-jogo-damas.firebaseapp.com",
+  projectId: "meu-jogo-damas",
+  storageBucket: "meu-jogo-damas.firebasestorage.app",
+  messagingSenderId: "583407551751",
+  appId: "1:583407551751:web:0f610a1494f40d59c7b1a2"
+};
 
-          // 🔄 Deixa visível pro código principal (game-core.js)
-          window.db = db;
-          window.doc = doc;
-          window.setDoc = setDoc;
-          window.getDoc = getDoc;
-          window.onSnapshot = onSnapshot;
-          window.updateDoc = updateDoc;
-          window.appId = appId; // Disponibiliza o appId
-          window.userId = userId; // Disponibiliza o userId
+window.firebaseReady = new Promise(async (resolve, reject) => {
+  try {
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    await signInAnonymously(auth);
+    const db = getFirestore(app);
 
-        } catch (error) {
-          console.error("Falha ao inicializar o Firebase:", error);
-          // Informa ao usuário que o modo online não funcionará
-          // (Você pode querer usar um modal customizado aqui)
-          alert("Erro ao conectar ao servidor. O modo online não funcionará.");
-        }
-      })(); // 💡 Fim do IIFE
-    </script>
+    window.db = db;
+    window.doc = doc;
+    window.setDoc = setDoc;
+    window.getDoc = getDoc;
+    window.onSnapshot = onSnapshot;
+    window.updateDoc = updateDoc;
+    window.userId = auth.currentUser.uid;
+
+    console.log("🔥 Firebase pronto:", window.userId);
+    resolve(true);
+  } catch (err) {
+    console.error("Erro Firebase:", err);
+    reject(err);
+  }
+});
+</script>
 
     <!-- ====================================================== -->
     <!-- ========== BLOCO 2: LÓGICA (game-core.js) ============ -->
