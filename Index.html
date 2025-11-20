@@ -727,6 +727,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       let onlineUnsubscribe = null; // 🌐 Função para parar de ouvir o Firestore
       let worker; // Referência ao Web Worker
       let gameEnded = false; // 🔒 Travamento de interação pós-jogo
+      let isReturningToMenu = false; // 🔄 Evita travar ao voltar ao menu depois de desistir
       
       // Rastreia timeouts para limpar no fim de jogo/início
       (function(){
@@ -2199,15 +2200,15 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
 
   switch (diff) {
     case 'easy':
-      return 4;   // pensa bem rasinho
+      return 4;   // mais rápido, focado em respostas imediatas
     case 'medium':
-      return 12;  // intermediário
+      return 8;   // equilíbrio entre força e velocidade
     case 'hard':
-      return 22;  // bem mais profundo
+      return 12;  // mais profundo sem travar em máquinas medianas
     case 'master':
-      return 36;  // modo brutal
+      return 16;  // modo avançado, mas respeitando o limite de tempo do worker
     default:
-      return 12;
+      return 8;
   }
 }
 
@@ -2308,6 +2309,9 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       }
 
       function handleAIResult(best, score, depth){
+        // 🔒 Se o jogo já acabou ou não veio jogada válida do worker, ignora a resposta
+        if (gameEnded || !best) return;
+
         // 💡 IMPLEMENTAÇÃO 6: "Expressões e emoção dinâmica"
         // score < 0 é bom para IA (RED). score > 0 é bom para HUMANO (WHITE)
         // 🔁 Desativado no modo treino
@@ -3012,9 +3016,24 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       
       // 🌐 Função helper para voltar ao menu (usada em múltiplos lugares)
       function returnToMenu() {
-          gameEnded = true; lockInteraction(true); clearAllTimeouts();
+          // ⛔ Evita rodar duas vezes ao mesmo tempo
+          if (isReturningToMenu) return;
+          isReturningToMenu = true;
+
+          // Marca o jogo como encerrado e bloqueia interação no tabuleiro
+          gameEnded = true; 
+          lockInteraction(true); 
+          clearAllTimeouts();
+
+          // Garante que qualquer overlay de mensagem seja escondido
+          try { showOverlay("", false, true); } catch(_) {}
+
         // 🌐 Lógica de retorno ao menu ATUALIZADA
-          document.getElementById('menuContainer').style.display = 'block'; // Mostra o container
+          const menuEl = document.getElementById('menuContainer'); // Mostra o container
+          if (menuEl) {
+            menuEl.style.display = 'block';
+            menuEl.style.pointerEvents = 'auto'; // Reabilita cliques no menu
+          }
           document.getElementById('mainMenuScreen').classList.remove('hidden'); // Mostra a tela principal
           document.getElementById('onlineMenuScreen').classList.add('hidden'); // Garante que a online esteja oculta
           document.getElementById('createRoomScreen').classList.add('hidden'); // Garante que esteja oculta
@@ -3039,7 +3058,10 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           showOptionsButton(false);
           
           // Limpa o tabuleiro
-          elBoard.innerHTML = '';
+          if (elBoard) elBoard.innerHTML = '';
+
+          // Libera a flag para próximas voltas ao menu
+          isReturningToMenu = false;
       }
 
       // 🔙 4️⃣ Adiciona listener para Voltar ao Menu (Modal de Análise)
@@ -3056,6 +3078,14 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       
       // 🎯 Lógica de Desistência (Refatorada para ser uma função)
       function handleDesistir() {
+          // Se já estamos voltando para o menu, ignore cliques extras em 'Desistir'
+          if (isReturningToMenu) return;
+
+          // 🔒 Marca o jogo como encerrado imediatamente para não deixar IA nem jogador agir
+          gameEnded = true;
+          lockInteraction(true);
+          clearAllTimeouts();
+
           if (sDesist) sDesist.play().catch(()=>{}); // Toca o som de desistência
           else if (closeSound) closeSound.play().catch(()=>{}); // Fallback
           
@@ -4426,11 +4456,12 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         function adaptiveTimeLimit(board){
           try {
             const pieces = board.flat().filter(x => x !== null).length;
-            if (pieces <= 8) return 1700;   // final crítico
-            if (pieces <= 16) return 1400;  // meio-jogo tenso
-            return 900;                     // abertura / posições simples
+            // valores um pouco menores para manter a IA forte, porém mais responsiva
+            if (pieces <= 8) return 1400;   // final crítico
+            if (pieces <= 16) return 1100;  // meio-jogo tenso
+            return 800;                     // abertura / posições simples
           } catch (e) {
-            return 1000; // fallback seguro
+            return 900; // fallback seguro
           }
         }
 
