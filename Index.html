@@ -3026,14 +3026,22 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           isReturningToMenu = true;
 
           // Marca o jogo como encerrado e bloqueia interação no tabuleiro
-          gameEnded = true; 
-          lockInteraction(true); 
+          gameEnded = true;
+          lockInteraction(true);
           clearAllTimeouts();
 
-          // Garante que qualquer overlay de mensagem seja escondido
+          // Garante que qualquer overlay de mensagem seja escondido (helper)
           try { showOverlay("", false, true); } catch(_) {}
 
-        // 🌐 Lógica de retorno ao menu ATUALIZADA
+          // Garante que o overlay não bloqueie o menu
+          const overlay = document.getElementById('overlay');
+          if (overlay) {
+            overlay.classList.remove('show');
+            overlay.style.pointerEvents = 'none';
+            overlay.style.opacity = 0;
+          }
+
+          // 🌐 Lógica de retorno ao menu ATUALIZADA
           const menuEl = document.getElementById('menuContainer'); // Mostra o container
           if (menuEl) {
             menuEl.style.display = 'block';
@@ -3045,10 +3053,10 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           document.getElementById('joinRoomScreen').classList.add('hidden'); // Garante que esteja oculta
           // 🧠 ADIÇÃO: Garante que a tela de treino seja oculta
           document.getElementById('trainingMenuScreen').classList.add('hidden');
-          
+
           // 💡 Reset do fundo ao voltar ao menu
           document.body.style.background = '#0f172a';
-          
+
           // 🌐 Para de ouvir a sala e reseta estado
           if (onlineUnsubscribe) {
             onlineUnsubscribe();
@@ -3058,10 +3066,10 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           trainingMode = false; // 🔁 Garante que sai do modo treino
           setPlayerColor('white');
           currentRoom = null;
-          
+
           // 🧠 Esconde o botão de opções (⋮) com fade
           showOptionsButton(false);
-          
+
           // Limpa o tabuleiro
           if (elBoard) elBoard.innerHTML = '';
 
