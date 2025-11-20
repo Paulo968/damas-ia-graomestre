@@ -2195,15 +2195,22 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       
       // 🎚️ PASSO 1: Define a profundidade máxima de busca conforme a dificuldade
       function getDepthByDifficulty() {
-        const diff = localStorage.getItem('difficulty') || 'medium';
-        switch (diff) {
-          case 'easy': return 4;     // IA pensa pouco
-          case 'medium': return 8;   // equilíbrio
-          case 'hard': return 14;    // pensa mais fundo
-          case 'master': return 22;  // profundidade máxima (modo Grão-Mestre)
-          default: return 8;
-        }
-      }
+  const diff = localStorage.getItem('difficulty') || 'medium';
+
+  switch (diff) {
+    case 'easy':
+      return 4;   // pensa bem rasinho
+    case 'medium':
+      return 12;  // intermediário
+    case 'hard':
+      return 22;  // bem mais profundo
+    case 'master':
+      return 36;  // modo brutal
+    default:
+      return 12;
+  }
+}
+
       
       function initWorker(){
         // MODIFICADO: Lê o código do worker a partir do DOM
@@ -5273,7 +5280,7 @@ onmessage = (e)=>{
       if (Math.abs(__lastEval) > 0.8) d += 1;
     }catch(_){}
     // clamp by difficulty
-    return Math.max(2, Math.min(d, 26));
+    return Math.max(2, Math.min(d, 36));
   }
 
   function patch(){
