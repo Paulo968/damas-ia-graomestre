@@ -4923,7 +4923,7 @@ function qSearch(b, color, alpha, beta, captureRule, neuralW, neuralR, endW, end
   for (const mv of caps){
     if (seeCapture(b, mv) < 0) continue; // discard losing exchanges
     const nb = simulate(b, mv);
-    if (mv.type!=='capture' && depth<=FUT_DEPTH_MAX){ if (standPat + FUT_MARGIN <= alpha){ moveIndex++; continue; } }
+    
     const score = -qSearch(nb, opp(color), -beta, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx);
     if (score >= beta){ CUTS++; return beta; }
     if (score > alpha) alpha = score;
@@ -4958,7 +4958,7 @@ function solveMiniEG(b, color, captureRule, maxPly){
   let best = (color===WHITE? -INF: INF);
   for (const mv of moves){
     const nb = simulate(b, mv);
-    if (mv.type!=='capture' && depth<=FUT_DEPTH_MAX){ if (standPat + FUT_MARGIN <= alpha){ moveIndex++; continue; } }
+    
     const sc = solveMiniEG(nb, opp(color), captureRule, maxPly-1);
     if (color===WHITE){ if (sc>best) best=sc; } else { if (sc<best) best=sc; }
   }
@@ -5006,7 +5006,7 @@ function alphaBeta(b, color, depth, alpha, beta, captureRule, neuralW, neuralR, 
   for (const mv of ordered){
     legalCount++;
     const nb = simulate(b, mv);
-    if (mv.type!=='capture' && depth<=FUT_DEPTH_MAX){ if (standPat + FUT_MARGIN <= alpha){ moveIndex++; continue; } }
+    
 
     // Late Move Reductions (LMR) — only on quiet moves, deeper plies
     let dRed = 0;
