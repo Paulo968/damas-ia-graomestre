@@ -384,18 +384,65 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           </select>
         </div>
 
-        <!-- Botão de iniciar treino (movido do menu principal) -->
+        <!-- Painel de diagnóstico da IA -->
+<!-- Botão de iniciar treino (movido do menu principal) -->
         <button id="btnTraining" 
           class="bg-emerald-600 hover:bg-emerald-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-4 transition w-60">
           ⚡ Iniciar Treino
+        </button>        <button id="openAiDebugScreen" type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-4 transition w-60">
+          📊 Diagnóstico da IA
         </button>
-        
-        <!-- Novo Botão "Voltar" -->
+
+<!-- Novo Botão "Voltar" -->
         <button id="btnVoltarTreino" 
           class="mt-4 bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded-lg shadow-md border border-slate-600 w-60">
           ⬅️ Voltar ao Menu
         </button>
       </div>
+      <!-- Tela de diagnóstico detalhado da IA (apenas testes) -->
+      <div id="aiDebugScreen" class="hidden min-h-screen flex flex-col items-center justify-start bg-slate-950 text-slate-100 px-4 pb-10">
+        <div class="w-full max-w-xl mt-10 bg-slate-900/80 rounded-2xl border border-emerald-400/40 p-5">
+          <h2 class="text-xl font-semibold text-emerald-300 mb-2">📊 Diagnóstico da IA</h2>
+          <p class="text-xs text-slate-400 mb-4">
+            Informações internas da IA vermelha (apenas para testes e análise).
+          </p>
+
+          <p class="text-slate-400 mb-1">Avaliação atual (do ponto de vista das peças vermelhas):</p>
+          <div class="flex items-baseline gap-2 mb-3">
+            <span id="aiEvalValue" class="text-2xl font-bold text-emerald-400">--</span>
+            <span class="text-xs text-slate-500">valores negativos = posição boa para vermelho</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <div>
+              <p class="text-slate-400 text-xs mb-1">Pesos neurais (IA vermelha):</p>
+              <pre id="aiNeuralWeights" class="bg-slate-800/80 rounded-lg p-2 text-[11px] overflow-x-auto">--</pre>
+            </div>
+            <div>
+              <p class="text-slate-400 text-xs mb-1">Pesos de fim de jogo (IA vermelha):</p>
+              <pre id="aiEndgameWeights" class="bg-slate-800/80 rounded-lg p-2 text-[11px] overflow-x-auto">--</pre>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <p class="text-slate-400 text-xs mb-1">Padrões salvos (Pattern Memory vermelha):</p>
+              <span id="aiPatternCountRed" class="text-base font-semibold text-emerald-300">--</span>
+            </div>
+            <div>
+              <p class="text-slate-400 text-xs mb-1">Padrões totais (unificados):</p>
+              <span id="aiPatternCountTotal" class="text-base font-semibold text-emerald-300">--</span>
+            </div>
+          </div>
+
+          <button id="btnAiDebugBack"
+            class="mt-2 w-full py-2 rounded-xl bg-slate-800 text-slate-100 hover:bg-slate-700 text-sm flex items-center justify-center gap-2">
+            <span>⬅ Voltar ao Modo Treino (IA vs IA)</span>
+          </button>
+        </div>
+      </div>
+
+
       <!-- Fim da Tela de Treino -->
 
 
@@ -645,77 +692,42 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
     <!-- ============ BLOCO 1: FIREBASE (firebase.js) ========= -->
     <!-- ====================================================== -->
     <script type="module">
-      // --- firebase.js ---
-      // (Inicialização e funções de sala)
-      
-      // NOTA: Estas importações podem precisar de URLs atualizadas dependendo da versão do Firebase
-      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-      import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-      // 🐞 CORREÇÃO: Importar signInWithCustomToken
-      import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
-      
-      // Configuração global do Firebase (use as variáveis de ambiente __firebase_config se disponível)
-      // ✏️ PASSO 2 (HTML) - Bloco substituído conforme pedido
-      const firebaseConfig = {
-        apiKey: "AIzaSyA6G1M1oUzQ-A-NkFYyrAjMwBRJEhLG3sI",
-        authDomain: "meu-jogo-damas.firebaseapp.com",
-        projectId: "meu-jogo-damas",
-        storageBucket: "meu-jogo-damas.firebasestorage.app",
-        messagingSenderId: "583407551751",
-        appId: "1:583407551751:web:0f610a1494f40d59c7b1a2"
-      };
-      
-      // ID da Aplicação (use a variável de ambiente __app_id se disponível)
-      // ✏️ Modificado para não depender do __app_id
-      const appId = 'default-app-id';
-      let db, auth, userId;
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
-      // 💡 PASSO 2 (CORREÇÃO): Envolvido em IIFE assíncrona para evitar erro de 'await'
-      (async () => {
-        try {
-          // 🚀 Inicializa o Firebase
-          const app = initializeApp(firebaseConfig);
-          db = getFirestore(app);
-          auth = getAuth(app);
-          
-          // 🐞 CORREÇÃO: Autenticar com o token customizado do Canvas, ou anonimamente como fallback.
-          // O token customizado é necessário para permissões de escrita/leitura.
-          // ✏️ MODIFICADO: Como uma configuração manual do Firebase está sendo usada,
-          // não podemos usar o __initial_auth_token (que é para outro projeto).
-          // Forçamos a autenticação anônima para este projeto.
-          await signInAnonymously(auth);
-          
-          // Removido o bloco 'if' que causava o erro 'auth/custom-token-mismatch'
-          /*
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            await signInWithCustomToken(auth, __initial_auth_token);
-          } else {
-            await signInAnonymously(auth);
-          }
-          */
-          userId = auth.currentUser ? auth.currentUser.uid : 'anon-' + Math.random().toString(36).substring(2, 9);
-          
-          // 💡 PASSO 2 (CORREÇÃO): Mensagem de log pedida pelo usuário
-          console.log("Firebase inicializado:", userId);
+const firebaseConfig = {
+  apiKey: "AIzaSyA6G1M1oUzQ-A-NkFYyrAjMwBRJEhLG3sI",
+  authDomain: "meu-jogo-damas.firebaseapp.com",
+  projectId: "meu-jogo-damas",
+  storageBucket: "meu-jogo-damas.firebasestorage.app",
+  messagingSenderId: "583407551751",
+  appId: "1:583407551751:web:0f610a1494f40d59c7b1a2"
+};
 
-          // 🔄 Deixa visível pro código principal (game-core.js)
-          window.db = db;
-          window.doc = doc;
-          window.setDoc = setDoc;
-          window.getDoc = getDoc;
-          window.onSnapshot = onSnapshot;
-          window.updateDoc = updateDoc;
-          window.appId = appId; // Disponibiliza o appId
-          window.userId = userId; // Disponibiliza o userId
+window.firebaseReady = new Promise(async (resolve, reject) => {
+  try {
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    await signInAnonymously(auth);
+    const db = getFirestore(app);
 
-        } catch (error) {
-          console.error("Falha ao inicializar o Firebase:", error);
-          // Informa ao usuário que o modo online não funcionará
-          // (Você pode querer usar um modal customizado aqui)
-          alert("Erro ao conectar ao servidor. O modo online não funcionará.");
-        }
-      })(); // 💡 Fim do IIFE
-    </script>
+    window.db = db;
+    window.doc = doc;
+    window.setDoc = setDoc;
+    window.getDoc = getDoc;
+    window.onSnapshot = onSnapshot;
+    window.updateDoc = updateDoc;
+    window.userId = auth.currentUser.uid;
+
+    console.log("🔥 Firebase pronto:", window.userId);
+    resolve(true);
+  } catch (err) {
+    console.error("Erro Firebase:", err);
+    reject(err);
+  }
+});
+</script>
 
     <!-- ====================================================== -->
     <!-- ========== BLOCO 2: LÓGICA (game-core.js) ============ -->
@@ -762,6 +774,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
       let onlineUnsubscribe = null; // 🌐 Função para parar de ouvir o Firestore
       let worker; // Referência ao Web Worker
       let gameEnded = false; // 🔒 Travamento de interação pós-jogo
+      let isReturningToMenu = false; // 🔄 Evita travar ao voltar ao menu depois de desistir
       
       // Rastreia timeouts para limpar no fim de jogo/início
       (function(){
@@ -1659,7 +1672,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
 
       // 🌐 Funções de Sala (chamadas pela UI)
       async function criarSalaFirebase(codigo, jogador1_uid) {
-          if (!window.db || !window.doc || !window.setDoc || !window.appId) {
+          if (!window.db || !window.doc || !window.setDoc) {
             showOverlayError("Erro de conexão (DB1). O modo online não funcionará.");
             return;
           }
@@ -1683,7 +1696,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         }
         
       async function entrarSalaFirebase(codigo, jogador2_uid) {
-        if (!window.db || !window.doc || !window.getDoc || !window.updateDoc || !window.appId) {
+        if (!window.db || !window.doc || !window.getDoc || !window.updateDoc) {
           showOverlayError("Erro de conexão (DB2). O modo online não funcionará.");
           return false;
         }
@@ -1921,6 +1934,32 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
       // ✅ FUNÇÃO ONGAMEOVER (MODIFICADA PARA CHAMAR ANÁLISE)
       function onGameOver(winner){
         gameEnded = true; lockInteraction(true); clearAllTimeouts(); current = null;
+
+        // 🔁 Modo TREINO (IA vs IA): fluxo simplificado, sem deboche nem análise
+        if (trainingMode) {
+          // Esconde opções e menu flutuante
+          showOptionsButton(false);
+          if (typeof showMenuFlutuante === 'function') {
+            showMenuFlutuante(false);
+          }
+
+          // Mensagem simples de fim de treino
+          showOverlay(`<div class="text-lg font-bold text-slate-200">🏁 Treino IA vs IA concluído.</div>`, true);
+
+          setTimeout(() => {
+            showOverlay("", false);
+            // Volta especificamente para o menu de treino
+            if (typeof returnToTrainingMenu === 'function') {
+              returnToTrainingMenu();
+            } else {
+              // fallback: volta para o menu principal
+              returnToMenu();
+            }
+          }, 2000);
+
+          return;
+        }
+
         // 🌐 Se for online, envia o resultado (só o host/branco)
         if (isOnline && getPlayerColor() === WHITE) {
           enviarFimDeJogoFirebase(winner);
@@ -2230,15 +2269,16 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
       
       // 🎚️ PASSO 1: Define a profundidade máxima de busca conforme a dificuldade
       function getDepthByDifficulty() {
-        const diff = localStorage.getItem('difficulty') || 'medium';
-        switch (diff) {
-          case 'easy': return 4;     // IA pensa pouco
-          case 'medium': return 8;   // equilíbrio
-          case 'hard': return 14;    // pensa mais fundo
-          case 'master': return 22;  // profundidade máxima (modo Grão-Mestre)
-          default: return 8;
-        }
-      }
+  const diff = localStorage.getItem('difficulty') || 'medium';
+  switch (diff) {
+    case 'easy':   return 4;  // Fácil
+    case 'medium': return 6;  // Médio
+    case 'hard':   return 8;  // Difícil
+    case 'master': return 16; // Mestre / Implacável
+    default:       return 6;
+  }
+}
+
       
       function initWorker(){
         // MODIFICADO: Lê o código do worker a partir do DOM
@@ -2311,13 +2351,16 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         if(isOnline) return; // IA não joga online
         if(!worker) return;
         const subset = movesToConsider || null;
-        
+
         // 💡 IMPLEMENTAÇÃO 6: Rosto muda *antes* de pensar
         updateFaceState(); 
         // 🔁 Não fala 'thinking' se for modo treino (polui muito)
         if (!trainingMode) say('thinking'); // Helper de UI
 
         // 🎚️ PASSO 2: Envia a profundidade conforme dificuldade
+        const depth = getDepthByDifficulty();
+        const useMonteCarlo = false; // IA implacável: sem Monte Carlo (zero aleatoriedade na decisão)
+
         // ⭐️ MODIFICADO: Envia também a regra de captura para a IA
         // 🧠 MODIFICADO: Envia AMBOS os perfis + pesos neurais + pesos de fim de jogo
         worker.postMessage({ 
@@ -2330,12 +2373,17 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           neural_r: getNeuralWeights(RED),   
           endgame_w: getEndgameWeights(WHITE), // NOVO: Pesos de fim de jogo
           endgame_r: getEndgameWeights(RED),   // NOVO: Pesos de fim de jogo
-          maxDepth: getDepthByDifficulty(), 
-          captureRule: getCaptureRule() 
+          maxDepth: depth, 
+          captureRule: getCaptureRule(),
+          useMonteCarlo 
         });
       }
 
+
       function handleAIResult(best, score, depth){
+        // 🔒 Se o jogo já acabou ou não veio jogada válida do worker, ignora a resposta
+        if (gameEnded || !best) return;
+
         // 💡 IMPLEMENTAÇÃO 6: "Expressões e emoção dinâmica"
         // score < 0 é bom para IA (RED). score > 0 é bom para HUMANO (WHITE)
         // 🔁 Desativado no modo treino
@@ -3040,9 +3088,24 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
       
       // 🌐 Função helper para voltar ao menu (usada em múltiplos lugares)
       function returnToMenu() {
-          gameEnded = true; lockInteraction(true); clearAllTimeouts();
+          // ⛔ Evita rodar duas vezes ao mesmo tempo
+          if (isReturningToMenu) return;
+          isReturningToMenu = true;
+
+          // Marca o jogo como encerrado e bloqueia interação no tabuleiro
+          gameEnded = true; 
+          lockInteraction(true); 
+          clearAllTimeouts();
+
+          // Garante que qualquer overlay de mensagem seja escondido
+          try { showOverlay("", false, true); } catch(_) {}
+
         // 🌐 Lógica de retorno ao menu ATUALIZADA
-          document.getElementById('menuContainer').style.display = 'block'; // Mostra o container
+          const menuEl = document.getElementById('menuContainer'); // Mostra o container
+          if (menuEl) {
+            menuEl.style.display = 'block';
+            menuEl.style.pointerEvents = 'auto'; // Reabilita cliques no menu
+          }
           document.getElementById('mainMenuScreen').classList.remove('hidden'); // Mostra a tela principal
           document.getElementById('onlineMenuScreen').classList.add('hidden'); // Garante que a online esteja oculta
           document.getElementById('createRoomScreen').classList.add('hidden'); // Garante que esteja oculta
@@ -3067,7 +3130,64 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           showOptionsButton(false);
           
           // Limpa o tabuleiro
-          elBoard.innerHTML = '';
+          if (elBoard) elBoard.innerHTML = '';
+
+          // Libera a flag para próximas voltas ao menu
+          isReturningToMenu = false;
+      }
+
+      // 🔁 Novo helper: voltar para o menu DE TREINO (IA vs IA)
+      function returnToTrainingMenu() {
+        // Evita concorrência de múltiplas transições
+        if (isReturningToMenu) return;
+        isReturningToMenu = true;
+
+        // Marca o jogo como encerrado e bloqueia interação
+        gameEnded = true;
+        lockInteraction(true);
+        clearAllTimeouts();
+
+        // Limpa qualquer overlay visível
+        try { showOverlay("", false, true); } catch(_) {}
+
+        const menuEl = document.getElementById('menuContainer');
+        if (menuEl) {
+          menuEl.style.display = 'block';
+          menuEl.style.pointerEvents = 'auto';
+        }
+
+        const mainMenuScreen   = document.getElementById('mainMenuScreen');
+        const onlineMenuScreen = document.getElementById('onlineMenuScreen');
+        const createRoomScreen = document.getElementById('createRoomScreen');
+        const joinRoomScreen   = document.getElementById('joinRoomScreen');
+        const trainingScreen   = document.getElementById('trainingMenuScreen');
+
+        if (mainMenuScreen)   mainMenuScreen.classList.add('hidden');
+        if (onlineMenuScreen) onlineMenuScreen.classList.add('hidden');
+        if (createRoomScreen) createRoomScreen.classList.add('hidden');
+        if (joinRoomScreen)   joinRoomScreen.classList.add('hidden');
+        if (trainingScreen)   trainingScreen.classList.remove('hidden');
+
+        // Fundo padrão do menu
+        document.body.style.background = '#0f172a';
+
+        // Garante que não há mais ouvintes online ativos
+        if (onlineUnsubscribe) {
+          onlineUnsubscribe();
+          onlineUnsubscribe = null;
+        }
+        isOnline = false;
+        trainingMode = false; // Sai da PARTIDA de treino, mas permanece no contexto visual de treino
+        setPlayerColor('white');
+        currentRoom = null;
+
+        const elBoard = document.getElementById('board');
+        if (elBoard) elBoard.innerHTML = '';
+
+        showOptionsButton(false);
+
+        // Libera a flag
+        isReturningToMenu = false;
       }
 
       // 🔙 4️⃣ Adiciona listener para Voltar ao Menu (Modal de Análise)
@@ -3084,6 +3204,14 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
       
       // 🎯 Lógica de Desistência (Refatorada para ser uma função)
       function handleDesistir() {
+          // Se já estamos voltando para o menu, ignore cliques extras em 'Desistir'
+          if (isReturningToMenu) return;
+
+          // 🔒 Marca o jogo como encerrado imediatamente para não deixar IA nem jogador agir
+          gameEnded = true;
+          lockInteraction(true);
+          clearAllTimeouts();
+
           if (sDesist) sDesist.play().catch(()=>{}); // Toca o som de desistência
           else if (closeSound) closeSound.play().catch(()=>{}); // Fallback
           
@@ -3098,7 +3226,12 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
               showOptionsButton(false);
               setTimeout(() => {
                   showOverlay("", false);
-                  returnToMenu(); // Chama a função helper
+                  // Agora volta para o MENU DE TREINO, não para o menu principal
+                  if (typeof returnToTrainingMenu === 'function') {
+                    returnToTrainingMenu();
+                  } else {
+                    returnToMenu();
+                  }
               }, 2000);
               return; // 🔁 Termina aqui para modo treino
             }
@@ -4454,15 +4587,96 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         function adaptiveTimeLimit(board){
           try {
             const pieces = board.flat().filter(x => x !== null).length;
-            if (pieces <= 8) return 1700;   // final crítico
-            if (pieces <= 16) return 1400;  // meio-jogo tenso
-            return 900;                     // abertura / posições simples
+            // valores um pouco menores para manter a IA forte, porém mais responsiva
+            if (pieces <= 8) return 1400;   // final crítico
+            if (pieces <= 16) return 1100;  // meio-jogo tenso
+            return 800;                     // abertura / posições simples
           } catch (e) {
-            return 1000; // fallback seguro
+            return 900; // fallback seguro
           }
         }
 
-        // --- Início do Aprofundamento Iterativo (IDS) ---
+        
+        // --- Monte Carlo Leve (Refinamento Opcional) ---
+        // Faz playouts aleatórios curtos a partir de um lance candidato
+        function randomPlayoutFromMove(initialBoard, firstMove, pliesLimit){
+          // Clona o tabuleiro e aplica o primeiro lance da IA (vermelha)
+          let b = cloneBoard(initialBoard);
+          let current = RED;
+
+          try {
+            const sim = simulate(b, firstMove, BigInt(0));
+            b = sim.board;
+            current = WHITE; // após a jogada da vermelha, é a vez das brancas
+          } catch (e) {
+            return evalBoard(initialBoard); // fallback seguro
+          }
+
+          let ply = 0;
+          while (ply < pliesLimit){
+            // Se o jogo acabou para o jogador atual, encerra
+            if (isGameOver(b, current)) break;
+
+            const all = allMoves(current, b);
+            const legal = filterMandatoryWithMaxChain(b, current, all);
+            if (!legal.length) break;
+
+            const mv = legal[Math.floor(Math.random() * legal.length)];
+            try {
+              const sim2 = simulate(b, mv, BigInt(0));
+              b = sim2.board;
+            } catch (e) {
+              break;
+            }
+            current = (current === WHITE ? RED : WHITE);
+            ply++;
+          }
+
+          // Usa a mesma heurística global para avaliar o resultado do playout
+          return evalBoard(b);
+        }
+
+        function refineWithMonteCarlo(board, moves, bestMove, bestScore){
+          // Usa Monte Carlo apenas se houver mais de uma opção interessante
+          if (!bestMove || !moves || moves.length < 2) {
+            return { move: bestMove, score: bestScore };
+          }
+
+          // Seleciona até 3 candidatos: o melhor da busca + outros aleatórios
+          const candidates = [];
+          candidates.push(bestMove);
+          while (candidates.length < Math.min(3, moves.length)) {
+            const m = moves[Math.floor(Math.random() * moves.length)];
+            if (!candidates.includes(m)) candidates.push(m);
+          }
+
+          const pliesLimit = 18;        // profundidade máxima de cada playout
+          const playoutsPerMove = 10;   // quantidade de simulações por lance
+
+          let mcBestMove = bestMove;
+          let mcBestScore = bestScore;
+
+          for (const cand of candidates) {
+            let acc = 0;
+            let count = 0;
+            for (let k = 0; k < playoutsPerMove; k++) {
+              const s = randomPlayoutFromMove(board, cand, pliesLimit);
+              acc += s;
+              count++;
+            }
+            const avg = acc / Math.max(1, count);
+
+            // Lembrando: score positivo favorece as brancas, negativo favorece a vermelha (nossa IA é MIN)
+            if (avg < mcBestScore) {
+              mcBestScore = avg;
+              mcBestMove = cand;
+            }
+          }
+
+          return { move: mcBestMove, score: mcBestScore };
+        }
+
+// --- Início do Aprofundamento Iterativo (IDS) ---
         const startTime = performance.now();
         const timeLimit = adaptiveTimeLimit(board); // tempo adaptativo de pensamento
         
@@ -4521,6 +4735,21 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           }
         }
         // --- Fim do Aprofundamento Iterativo ---
+
+        // --- Refinamento Monte Carlo (opcional, níveis altos) ---
+        if (e.data.useMonteCarlo && bestMove && moves && moves.length > 1) {
+          try {
+            const mcResult = refineWithMonteCarlo(board, moves, bestMove, bestScore);
+            if (mcResult && mcResult.move) {
+              bestMove = mcResult.move;
+              bestScore = mcResult.score;
+              self.postMessage({ action: 'say', group: 'thinking', extra: 'Simulações Monte Carlo concluídas.' });
+            }
+          } catch (err) {
+            // Falha silenciosa: se algo der errado, mantemos o resultado da busca clássica
+          }
+        }
+
         
         // 📌 PODA DE SIMETRIA: Escolha Aleatória do Espelho (para variedade)
         if (bestMove && isSymmetric) {
@@ -4594,627 +4823,11 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
   </script>
   -->
 
-  <script id="worker-code">
+  
 
-// === IA Worker (Quiescence + Aspiration + TT bounds + SEE + LMR + Mini-Endgames + Telemetry) ===
-let PATTERN_WHITE = {}, PATTERN_RED = {};
-let ZOBRIST_KEYS = [];
-let ZKEYS_BIG = []; // native BigInt
-let TT = new Map();
-let TT_AGE = 0;
-let HISTORY = Object.create(null);
-let HISTORY_PIECE = Object.create(null);
-const COUNTER = Object.create(null);
-let KILLER_1 = Object.create(null);
-let KILLER_2 = Object.create(null);
-let NODES=0, QNODES=0, TTHITS=0, CUTS=0, START=0;
-const AI_FLAGS={aspiration:true, lmr:true, quiescence:true, see:true, antiloop:true, miniEG:true};
-const REP_LIMIT=2; // 3-fold repetition as draw
-const PROG_LIMIT=60; // 60 plies (~30 lances por lado)
+<!-- script worker duplicado removido: versão antiga do worker -->
 
 
-const WHITE='white', RED='red', KING='-king';
-const VAL_MAN=100, VAL_KING=300; // centipeças simples
-const MATE = 100000, INF=1e9;
-
-function isWhite(p){ return p && p.startsWith(WHITE); }
-function isRed(p){ return p && p.startsWith(RED); }
-function isKing(p){ return p && p.endsWith(KING); }
-function opp(color){ return color===WHITE?RED:WHITE; }
-
-function cloneBoard(b){
-  const o = Array(8);
-  for (let r=0;r<8;r++){ o[r] = b[r].slice(); }
-  return o;
-}
-
-function zobristIndex(p){
-  if (p===null) return 4;
-  if (p===WHITE) return 0;
-  if (p===RED) return 1;
-  if (p===WHITE+KING) return 2;
-  if (p===RED+KING) return 3;
-  return 4;
-}
-function hashBoard(b){
-  if (!ZKEYS_BIG.length && ZOBRIST_KEYS.length){
-    // Convert strings to BigInt if needed
-    ZKEYS_BIG = ZOBRIST_KEYS.map(x => (typeof x==='string' && x.endsWith('n')) ? BigInt(x[:-1]) : BigInt(x));
-  }
-  let h = 0n;
-  for (let r=0;r<8;r++){
-    for (let c=0;c<8;c++){
-      const p = b[r][c];
-      const idx = zobristIndex(p);
-      if (idx===4) continue;
-      const keyIndex = idx*64 + (r*8+c);
-      if (ZKEYS_BIG[keyIndex] !== undefined){
-        h ^= ZKEYS_BIG[keyIndex];
-      }
-    }
-  }
-  return h;
-}
-
-// Move helpers
-function inB(r,c){ return r>=0 && r<8 && c>=0 && c<8; }
-function simulate(b, mv){
-  const nb = cloneBoard(b);
-  const {from,to,type,jumped} = mv;
-  const t = nb[from[0]][from[1]];
-  nb[to[0]][to[1]] = t;
-  nb[from[0]][from[1]] = null;
-  if (type==='capture'){ nb[jumped[0]][jumped[1]] = null; }
-  if((t===WHITE && to[0]===0) || (t===RED && to[0]===7)){
-    if(!t.endsWith(KING)) nb[to[0]][to[1]] = t+KING;
-  }
-  return nb;
-}
-
-function generateMoves(color, b, captureRule){
-  const M=[];
-  for (let r=0;r<8;r++){
-    for (let c=0;c<8;c++){
-      const p=b[r][c];
-      if (!p || !p.startsWith(color)) continue;
-      M.push(...movesForPiece(r,c,color,b,p,captureRule));
-    }
-  }
-  // Mandatory maximum capture-chain rule
-  const caps = M.filter(m=>m.type==='capture');
-  if (caps.length===0) return M.filter(m=>m.type==='move');
-  let best=1, scored=[];
-  for (const m of caps){
-    const len = maxChainFromMove(b, color, m, captureRule);
-    scored.push({m,len});
-    if (len>best) best=len;
-  }
-  return scored.filter(s=>s.len===best).map(s=>s.m);
-}
-
-function movesForPiece(r,c,player,b,piece,captureRule){
-  const res=[]; const king = piece.endsWith(KING);
-  const oppc = opp(player);
-  const DIRS = [[-1,-1],[-1,1],[1,-1],[1,1]];
-  for (const [dr,dc] of DIRS){
-    if (king){
-      for (let i=1;i<8;i++){
-        const nr=r+dr*i, nc=c+dc*i; if(!inB(nr,nc)) break;
-        const cont=b[nr][nc];
-        if(cont===null){
-          res.push({from:[r,c],to:[nr,nc],type:'move'});
-        } else if (cont.startsWith(oppc)){
-          for (let j=i+1;j<8;j++){
-            const lr=r+dr*j, lc=c+dc*j; if(!inB(lr,lc)) break;
-            if (b[lr][lc]===null){
-              res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
-            } else break;
-          }
-          break;
-        } else break;
-      }
-    } else {
-      const forward = (player===WHITE)? -1 : 1;
-      const nr=r+dr, nc=c+dc;
-      const lr=r+dr*2, lc=c+dc*2;
-      if (dr===forward && inB(nr,nc) && b[nr][nc]===null){
-        res.push({from:[r,c],to:[nr,nc],type:'move'});
-      }
-      const allowBack = (captureRule==='sim') || (dr===forward);
-      if (allowBack && inB(nr,nc) && inB(lr,lc)){
-        const cont=b[nr][nc];
-        if (cont && cont.startsWith(oppc) && b[lr][lc]===null){
-          res.push({from:[r,c],to:[lr,lc],type:'capture',jumped:[nr,nc]});
-        }
-      }
-    }
-  }
-  return res;
-}
-
-function followUpCaptures(b, r,c, player, captureRule){
-  const piece = b[r][c];
-  if(!piece) return [];
-  return movesForPiece(r,c,player,b,piece,captureRule).filter(m=>m.type==='capture');
-}
-function maxChainFromMove(b, player, mv, captureRule){
-  let best=1;
-  const stack=[{board:simulate(b,mv), r:mv.to[0], c:mv.to[1], d:1}];
-  while(stack.length){
-    const {board:cb,r,c,d} = stack.pop();
-    const caps = followUpCaptures(cb, r,c, player, captureRule);
-    if (caps.length===0){ if (d>best) best=d; }
-    else for (const m of caps) stack.push({board:simulate(cb,m), r:m.to[0], c:m.to[1], d:d+1});
-  }
-  return best;
-}
-
-// SEE - static exchange eval (light)
-function pieceValue(p){ return !p?0:(isKing(p)?VAL_KING:VAL_MAN); }
-function seeCapture(b, mv){
-  // Simple net-gain approximation: captured - new threats (one-ply reply)
-  const victimVal = pieceValue(b[mv.jumped[0]][mv.jumped[1]]);
-  const nb = simulate(b, mv);
-    if (mv.type!=='capture' && depth<=FUT_DEPTH_MAX){ if (standPat + FUT_MARGIN <= alpha){ moveIndex++; continue; } }
-  // after capture, if the capturing piece is recaptured immediately
-  const color = nb[mv.to[0]][mv.to[1]].startsWith(WHITE)?WHITE:RED;
-  const reply = generateMoves(opp(color), nb, 'sim').filter(x=>x.type==='capture');
-  let worstReply = 0;
-  for (const rmv of reply){
-    if (rmv.jumped && rmv.jumped[0]===mv.to[0] && rmv.jumped[1]===mv.to[1]){
-      worstReply = Math.max(worstReply, pieceValue(nb[mv.to[0]][mv.to[1]]));
-    }
-  }
-  return victimVal - worstReply;
-}
-
-
-function becameKing(nb, mv, color){
-  try{
-    const piece = nb[mv.to[0]][mv.to[1]];
-    return piece && piece.endsWith('-king');
-  }catch(_){ return false; }
-}
-
-
-// /*WASM_EVAL*/ minimal wasm: weighted sum of counts (export fn ev)
-let __wasm = null;
-(async function(){
-  try{
-    const bytes = new Uint8Array([
-      0,97,115,109,1,0,0,0,1,133,128,128,128,0,1,96,6,127,127,127,127,127,127,1,127,
-      3,130,128,128,128,0,1,0,7,145,128,128,128,0,1,2,101,118,0,0,10,155,128,128,128,0,1,149,128,128,128,0,0,32,0,65,100,106,32,1,65,200,106,32,2,65,100,106,32,3,65,200,106,32,4,32,5,106,106,11
-    ]);
-    const mod = await WebAssembly.compile(bytes);
-    const inst = await WebAssembly.instantiate(mod,{});
-    __wasm = inst.exports;
-  }catch(_){ __wasm = null; }
-})();
-
-// Evaluation
-function countPieces(b){
-  let w=0,r=0, wk=0,rk=0, centerW=0, centerR=0;
-  for (let i=0;i<8;i++) for(let j=0;j<8;j++){
-    const p=b[i][j]; if(!p) continue;
-    if (isWhite(p)){ w += isKing(p)?VAL_KING:VAL_MAN; if (i>=2&&i<=5&&j>=2&&j<=5) centerW++; if (isKing(p)) wk++; }
-    else { r += isKing(p)?VAL_KING:VAL_MAN; if (i>=2&&i<=5&&j>=2&&j<=5) centerR++; if (isKing(p)) rk++; }
-  }
-  return {w,r,wk,rk,centerW,centerR};
-}
-
-// Mini-endgames features
-function endgameEval(b, color, endW, endR){
-  const {w,r,wk,rk} = countPieces(b);
-  const totalPieces = Math.round((w+r)/VAL_MAN);
-  if (totalPieces>10) return 0; // only in late game
-  // simple opposition/kinging heuristics
-  const me = color===RED?'red':'white';
-  let controlDiag=0, cornering=0;
-  for (let i=0;i<8;i++)for(let j=0;j<8;j++){
-    const p=b[i][j]; if(!p) continue;
-    const mine = (me==='white')?isWhite(p):isRed(p);
-    if (mine){
-      if ((me==='white' && i>j) || (me==='red' && j>i)) controlDiag += 1;
-      if (me==='white') cornering += (7-i); else cornering += i;
-    }
-  }
-  const oppKings = me==='white'?rk:wk;
-  const oppPressure = Math.min(oppKings,2)*20;
-  const ev = (endW[0]*controlDiag + endW[2]*cornering - oppPressure);
-  return (me==='white'?ev:-ev)*0.5;
-}
-
-const BB_EVAL_ON=true;
-function evalBoard(b, color, neuralW, neuralR, endW, endR){
-  // Positive: good for WHITE; Negative: good for RED
-  const {w,r,wk,rk,centerW,centerR} = countPieces(b);
-  const base = (w-r) + (wk-rk)*20 + (centerW-centerR)*5;
-  const lateW = endgameEval(b, WHITE, endW, endR);
-  const lateR = endgameEval(b, RED, endW, endR);
-  // features weighted (light)
-  const mobilityW = generateMoves(WHITE,b,'sim').length;
-  const mobilityR = generateMoves(RED,b,'sim').length;
-  const mob = (mobilityW - mobilityR);
-  let score = base + mob;
-  score += (lateW - lateR);
-  // Tactical pressure
-  const capsW = generateMoves(WHITE,b,'sim').filter(m=>m.type==='capture').length;
-  const capsR = generateMoves(RED,b,'sim').filter(m=>m.type==='capture').length;
-  score += (capsW - capsR) * 6;
-  // Promotion distance bias
-  for (let i=0;i<8;i++) for (let j=0;j<8;j++){
-    const p=b[i][j]; if(!p) continue;
-    if (isWhite(p) && !isKing(p)) score += (7-i)*0.8; // closer to top
-    if (isRed(p) && !isKing(p)) score -= (i)*0.8;
-  }
-  if (BB_EVAL_ON){ try{
-    const bb=bbFromBoard(b);
-    const wc = bbCount(bb.wm)+2*bbCount(bb.wk);
-    const rc = bbCount(bb.rm)+2*bbCount(bb.rk);
-    score += (wc - rc) * 3; // slight material corroboration
-  }catch(_){}
-}
-try{ if (__wasm && __wasm.ev){
-  // counts: wMen,wKing,rMen,rKing, promoBiasW, promoBiasR precomputed approx
-  let wMen=0,wKing=0,rMen=0,rKing=0,pw=0,pr=0;
-  for(let i=0;i<8;i++) for(let j=0;j<8;j++){ const p=b[i][j]; if(!p) continue;
-    if (p.startsWith('white')){ if(p.endsWith('-king')) wKing++; else { wMen++; pw += (7-i); } }
-    else { if(p.endsWith('-king')) rKing++; else { rMen++; pr += i; } }
-  }
-  const wv = __wasm.ev(wMen,wKing,rMen,rKing,pw,pr);
-  score = (score*3 + (wv|0)) / 4;
-} }catch(_){}
-return score; // centipeças-ish
-}
-
-
-// /*BITBOARD*/ Lightweight 32-square mapping for eval acceleration
-const BB = {
-  // map (r,c) -> 0..31 or -1 for light squares
-  map: (function(){ let m=Array.from({length:8},()=>Array(8).fill(-1)); let idx=0;
-    for(let r=0;r<8;r++) for(let c=0;c<8;c++){ if((r+c)%2===1){ m[r][c]=idx++; } } return m; })()
-};
-function bbFromBoard(b){
-  let wm=0|0, wk=0|0, rm=0|0, rk=0|0;
-  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
-    const p=b[r][c]; if(!p) continue;
-    const id=BB.map[r][c]; if(id<0) continue;
-    const mask = 1<<id;
-    if (p.startsWith('white')){ if (p.endsWith('-king')) wk|=mask; else wm|=mask; }
-    else { if (p.endsWith('-king')) rk|=mask; else rm|=mask; }
-  }
-  return {wm,wk,rm,rk};
-}
-function bbCount(x){ x=(x>>>0); let n=0; while(x){ x&=x-1; n++; } return n; }
-
-// Move ordering helpers
-function mkey(depth){ return depth|0; }
-function orderMoves(b, color, moves, ttMove, depth, bookStats, randomness, prevKey){
-  // Priority: TT move, Captures by SEE, Killer, History
-  const isCapture = m=>m.type==='capture';
-  const arr = moves.slice().map((m,idx)=>{
-    let s = 0;
-    if (ttMove && m.from[0]===ttMove.from?.[0] && m.from[1]===ttMove.from?.[1] &&
-        m.to[0]===ttMove.to?.[0] && m.to[1]===ttMove.to?.[1]) s += 5000;
-    if (isCapture(m)) s += 2000 + Math.max(0, seeCapture(b,m));
-    const key = mkey(depth);
-    const k1 = KILLER_1[key], k2 = KILLER_2[key];
-    if (k1 && m.from[0]===k1.from?.[0] && m.to[0]===k1.to?.[0] && m.from[1]===k1.from?.[1] && m.to[1]===k1.to?.[1]) s += 1200;
-    if (k2 && m.from[0]===k2.from?.[0] && m.to[0]===k2.to?.[0] && m.from[1]===k2.from?.[1] && m.to[1]===k2.to?.[1]) s += 900;
-    const hkey = `${m.from}-${m.to}-${color}`;
-    s += (HISTORY[hkey]||0);
-    // Book weighting at root (depth tag used later)
-    if (bookStats && depth.globalDepth===depth.depthStart){
-      const lineKey = `${m.from[0]}${m.from[1]}-${m.to[0]}${m.to[1]}`;
-      const w = bookStats[lineKey]?.w || 0;
-      const d = bookStats[lineKey]?.d || 0;
-      const weight = w*3 + d; // bias towards win rate
-      s += weight;
-    }
-    if (randomness>0 && depth.globalDepth===depth.depthStart){
-      s += Math.random()*randomness*100;
-    }
-    return {m, s, idx};
-  });
-  arr.sort((a,b)=>b.s-a.s);
-  return arr.map(x=>x.m);
-}
-
-// Transposition Table entry flags
-const FLAG_EXACT=0, FLAG_LOWER=1, FLAG_UPPER=2;
-const FUT_MARGIN=120; const FUT_DEPTH_MAX=2;
-
-function ttStore(key, depth, value, flag, best, age){
-  const prev = TT.get(key);
-  if (!prev || depth >= prev.depth || (prev.age!==undefined && age>prev.age)){
-    TT.set(key, {depth, value, flag, best, age});
-  }
-}
-);
-  } else if (prev && age>prev.age){
-    // age-based mild replacement
-    TT.set(key, {depth, value, flag, best, age});
-  }
-}
-function ttProbe(key){ return TT.get(key); }
-
-// Quiescence: capture-only search
-function qSearch(b, color, alpha, beta, captureRule, neuralW, neuralR, endW, endR, depthCtx){
-  QNODES++;
-
-  // Repetition & no-progress checks
-  const sideKey = hashBoard(b).toString() + '|' + color;
-  rep[sideKey] = (rep[sideKey]||0) + 1;
-  if (rep[sideKey] > REP_LIMIT){ rep[sideKey]--; return 0; } // draw by repetition
-  if (prog >= PROG_LIMIT){ rep[sideKey]--; return 0; } // draw by no-progress
-
-  const stand = evalBoard(b, WHITE, neuralW, neuralR, endW, endR);
-  if (stand >= beta) { CUTS++; return beta; }
-  if (stand > alpha) alpha = stand;
-
-  const caps = generateMoves(color, b, captureRule).filter(m=>m.type==='capture');
-  // SEE-driven pruning of "bad" captures
-  caps.sort((a,b)=>seeCapture(b,b)-seeCapture(a,a));
-  for (const mv of caps){
-    if (seeCapture(b, mv) < 0) continue; // discard losing exchanges
-    const nb = simulate(b, mv);
-    if (mv.type!=='capture' && depth<=FUT_DEPTH_MAX){ if (standPat + FUT_MARGIN <= alpha){ moveIndex++; continue; } }
-    const score = -qSearch(nb, opp(color), -beta, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx);
-    if (score >= beta){ CUTS++; return beta; }
-    if (score > alpha) alpha = score;
-  }
-  return alpha;
-}
-
-
-// Mini endgames (<=4 peças): solver com memo; opcionalmente pode persistir em IDB via main thread
-const MINI_TB = new Map();
-const EG_MAP = new Map();
-const MINI_EG_LIMIT = 6;
-function pieceCount(b){ let n=0; for(let i=0;i<8;i++) for(let j=0;j<8;j++) if(b[i][j]) n++; return n; }
-function isMiniEG(b){ return pieceCount(b) <= MINI_EG_LIMIT; }
-function egKey(b, color){ return hashBoard(b).toString() + '|' + color; }
-
-function solveMiniEG(b, color, captureRule, maxPly){
-  // Simple DFS with memo; returns exact score in centipeças big magnitude for WDL-ish
-  const key = egKey(b,color);
-  if (EG_MAP.has(key)) return EG_MAP.get(key);
-  if (MINI_TB.has(key)) return MINI_TB.get(key);
-  if (maxPly<=0){
-    const v = evalBoard(b, WHITE, null, null, [1,0.4,0.3],[1,0.4,0.3]);
-    MINI_TB.set(key, v); return v;
-  }
-  const moves = generateMoves(color, b, captureRule);
-  if (moves.length===0){
-    const v = (color===WHITE ? -MATE : MATE);
-    MINI_TB.set(key, v);
-    return v;
-  }
-  let best = (color===WHITE? -INF: INF);
-  for (const mv of moves){
-    const nb = simulate(b, mv);
-    if (mv.type!=='capture' && depth<=FUT_DEPTH_MAX){ if (standPat + FUT_MARGIN <= alpha){ moveIndex++; continue; } }
-    const sc = solveMiniEG(nb, opp(color), captureRule, maxPly-1);
-    if (color===WHITE){ if (sc>best) best=sc; } else { if (sc<best) best=sc; }
-  }
-  MINI_TB.set(key, best);
-  try{ postMessage({ egSave: { key, value: best } }); }catch(_){}
-  return best;
-}
-
-// Alpha-Beta with LMR, TT, Quiescence
-function alphaBeta(b, color, depth, alpha, beta, captureRule, neuralW, neuralR, endW, endR, depthCtx, prevKey, prevKey, rep, prog){
-  NODES++;
-
-  if (isMiniEG(b)){
-    const egv = solveMiniEG(b, color, captureRule, 20);
-    return egv;
-  }
-  if (depth<=0){
-    const __qv = AI_FLAGS.quiescence ? qSearch(b, color, alpha, beta, captureRule, neuralW, neuralR, endW, endR, depthCtx) : evalBoard(b, WHITE, neuralW, neuralR, endW, endR); rep[sideKey]--; return __qv;
-  }
-
-  const key = hashBoard(b);
-  const tt = ttProbe(key);
-  if (tt && tt.depth >= depth){
-    TTHITS++;
-    if (tt.flag===FLAG_EXACT){ rep[sideKey]--; return tt.value; }
-    if (tt.flag===FLAG_LOWER && tt.value > alpha) alpha = tt.value;
-    else if (tt.flag===FLAG_UPPER && tt.value < beta) beta = tt.value;
-    if (alpha>=beta){ CUTS++; rep[sideKey]--; return tt.value; }
-  }
-
-  const moves = generateMoves(color, b, captureRule);
-  if (moves.length===0){
-    // no moves => lost; return large negative from side to move
-    const __nomove = (color===WHITE ? -MATE + depth : MATE - depth); rep[sideKey]--; return __nomove;
-  }
-
-  const ordered = orderMoves(b, color, moves, tt?.best, depthCtx, depthCtx.bookStats, depthCtx.randomness, prevKey);
-
-  let value = -INF, bestMove=null;
-  let legalCount = 0;
-  const isRoot = (depthCtx.globalDepth===depthCtx.depthStart);
-  let moveIndex = 0;
-  const standPat = evalBoard(b, WHITE, neuralW, neuralR, endW, endR);
-
-  for (const mv of ordered){
-    legalCount++;
-    const nb = simulate(b, mv);
-    if (mv.type!=='capture' && depth<=FUT_DEPTH_MAX){ if (standPat + FUT_MARGIN <= alpha){ moveIndex++; continue; } }
-
-    // Late Move Reductions (LMR) — only on quiet moves, deeper plies
-    let dRed = 0;
-    const isQuiet = mv.type!=='capture';
-    if (isQuiet && depth>=3 && moveIndex>=3){
-      dRed = 1 + (moveIndex>6 ? 1 : 0);
-    }
-
-    let score;
-    if (dRed>0){
-      score = -alphaBeta(nb, opp(color), depth-1-dRed, -alpha-1, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx, `${mv.from}-${mv.to}-${color}`, rep, (mv.type==='capture'|| becameKing(nb,mv,color))?0:(prog+1));
-      if (score>alpha){
-        // re-search on improvement
-        score = -alphaBeta(nb, opp(color), depth-1, -beta, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx, `${mv.from}-${mv.to}-${color}`, rep, (mv.type==='capture'|| becameKing(nb,mv,color))?0:(prog+1));
-      }
-    } else {
-      if (moveIndex>0){
-        // PVS null-window search
-        score = -alphaBeta(nb, opp(color), depth-1, -alpha-1, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx, `${mv.from}-${mv.to}-${color}`, rep, (mv.type==='capture'|| becameKing(nb,mv,color))?0:(prog+1));
-        if (score>alpha){
-          score = -alphaBeta(nb, opp(color), depth-1, -beta, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx, `${mv.from}-${mv.to}-${color}`, rep, (mv.type==='capture'|| becameKing(nb,mv,color))?0:(prog+1));
-        }
-      } else {
-        score = -alphaBeta(nb, opp(color), depth-1, -beta, -alpha, captureRule, neuralW, neuralR, endW, endR, depthCtx, `${mv.from}-${mv.to}-${color}`, rep, (mv.type==='capture'|| becameKing(nb,mv,color))?0:(prog+1));
-      }
-    }
-
-    if (score>value){ value = score; bestMove = mv; }
-    if (score>alpha){
-      alpha = score;
-      // History heuristic bump for quiet moves
-      if (isQuiet){
-        const hkey = `${mv.from}-${mv.to}-${color}`;
-        HISTORY[hkey] = (HISTORY[hkey]||0) + depth*depth;
-        const pkey = `${color}-${mv.from[0]}${mv.from[1]}`;
-        HISTORY_PIECE[pkey] = (HISTORY_PIECE[pkey]||0) + depth;
-      }
-    }
-    if (alpha>=beta){
-      CUTS++;
-      // register countermove for prevKey
-      if (prevKey && isQuiet){ COUNTER[prevKey] = mv; }
-      // killer moves for quiet cutoffs
-      if (isQuiet){
-        const keyd = mkey(depthCtx.depthStart - depth);
-        if (!KILLER_1[keyd] || (KILLER_1[keyd].from[0]!==mv.from[0] || KILLER_1[keyd].to[0]!==mv.to[0] || KILLER_1[keyd].from[1]!==mv.from[1] || KILLER_1[keyd].to[1]!==mv.to[1])){
-          KILLER_2[keyd] = KILLER_1[keyd];
-          KILLER_1[keyd] = mv;
-        }
-      }
-      break;
-    }
-    moveIndex++;
-  }
-
-  // store in TT
-  const flag = (value<=alpha?FLAG_UPPER : value>=beta?FLAG_LOWER : FLAG_EXACT); // alpha/beta updated already
-  ttStore(key, depth, value, flag, bestMove, TT_AGE);
-
-  // at root, attach bestMove for aspiration/pv
-  if (isRoot && bestMove){
-    depthCtx.bestRoot = bestMove;
-  }
-  rep[sideKey]--; rep[sideKey]--; return value;
-}
-
-// Iterative deepening + Aspiration windows
-function searchRoot(board, legal, params){
-  const {maxDepth, captureRule, neural_w, neural_r, endgame_w, endgame_r, bookStats, randomness, aspiration} = params;
-  const color = RED; // AI is RED at root (vs humano)
-  const depthCtxBase = { depthStart: 0, globalDepth:0, bookStats, randomness, bestRoot:null };
-
-  TT_AGE++;
-  NODES=0; QNODES=0; TTHITS=0; CUTS=0; START = performance.now();
-
-  let best=null, bestScore=-INF, lastScore=0;
-  let alpha=-INF, beta=INF;
-
-  // Move ordering uses book weights at root
-  const orderedRoot = orderMoves(board, color, (legal&&legal.length?legal:generateMoves(color,board,captureRule)), null, {depthStart:0, globalDepth:0, bookStats, randomness}, bookStats, randomness, null);
-
-  for (let d=1; d<=maxDepth; d++){
-    const depthCtx = {...depthCtxBase, depthStart:d, globalDepth:d, bestRoot:null};
-    let a = -INF, b = INF;
-    if ((aspiration && AI_FLAGS.aspiration) && d>4){
-      const delta = Math.max(50, Math.min(300, Math.abs(lastScore)*0.3 + 50)); // window in centipeças
-      a = lastScore - delta; b = lastScore + delta;
-    }
-
-    let value = -INF;
-    let localBest = null;
-
-    // scan root moves in current order each depth
-    for (const mv of orderedRoot){
-      const nb = simulate(board, mv);
-      const score = -alphaBeta(nb, WHITE, d-1, -b, -a, captureRule, neural_w, neural_r, endgame_w, endgame_r, depthCtx, null, Object.create(null), 0);
-      if (score>value){ value=score; localBest=mv; }
-      if (score>a){ a = score; }
-      if (a>=b) break;
-    }
-
-    // aspiration re-search
-    if (aspiration && d>4 && (value<=a || value>=b)){
-      // widen and retry once
-      let widen = 400;
-      let a2 = value - widen, b2 = value + widen;
-      value = -INF; localBest=null;
-      for (const mv of orderedRoot){
-        const nb = simulate(board, mv);
-        const sc = -alphaBeta(nb, WHITE, d-1, -b2, -a2, captureRule, neural_w, neural_r, endgame_w, endgame_r, depthCtx, null, Object.create(null), 0);
-        if (sc>value){ value=sc; localBest=mv; }
-        if (sc>a2){ a2 = sc; }
-        if (a2>=b2) break;
-      }
-    }
-
-    if (localBest){
-      best = localBest;
-      bestScore = value;
-      lastScore = value;
-      // Optional: PV move becomes killer for depth layer 0
-      KILLER_1[0] = localBest;
-    }
-  }
-
-  const elapsed = performance.now() - START;
-  postMessage({ best: best||orderedRoot[0]||null, score: bestScore/100.0, depth: maxDepth });
-  postMessage({ telemetry: { nodes:NODES, qnodes:QNODES, tthit:TTHITS, cuts:CUTS, ms: Math.round(elapsed), depth:maxDepth } });
-}
-
-// Messages
-onmessage = (e)=>{
-  const d = e.data||{};
-
-  if (d.type === 'loadPatternMemory'){
-    // pattern mem load
-
-    PATTERN_WHITE = d.patternMemory_white || {};
-    PATTERN_RED   = d.patternMemory_red   || {};
-    ZOBRIST_KEYS  = (d.ZOBRIST_KEYS || []).slice();
-    return;
-  }
-  if (d.type === 'loadEndgameMap'){
-    try{ for (const [k,v] of Object.entries(d.map||{})) EG_MAP.set(k, v|0); }catch(_){}
-    return;
-  }
-  if (d.resetCache){
-    TT.clear(); HISTORY = Object.create(null); KILLER_1=Object.create(null); KILLER_2=Object.create(null);
-    return;
-  }
-  if (d.board){
-    try {
-      // Parameters (with sensible defaults)
-      const legal = Array.isArray(d.legal)? d.legal : null;
-      const subset = (Array.isArray(d.subset) && d.subset.length) ? d.subset : null; // guard against empty subset
-      const maxDepth = Math.max(1, d.maxDepth|0);
-      const captureRule = d.captureRule || 'sim';
-      const neural_w = Array.isArray(d.neural_w)? d.neural_w : [1,0.4,0.3,0.2];
-      const neural_r = Array.isArray(d.neural_r)? d.neural_r : [1,0.4,0.3,0.2];
-      const endgame_w = Array.isArray(d.endgame_w)? d.endgame_w : [1,0.4,0.3];
-      const endgame_r = Array.isArray(d.endgame_r)? d.endgame_r : [1,0.4,0.3];
-      const bookStats = d.bookStats || null;
-      const randomness = typeof d.randomness==='number' ? d.randomness : 0.1;
-      const aspiration = !!d.aspiration;
-
-      searchRoot(d.board, subset||legal, {maxDepth, captureRule, neural_w, neural_r, endgame_w, endgame_r, bookStats, randomness, aspiration});
-    } catch(err){
-      postMessage({ best: (d.legal&&d.legal[0])||null, score: 0, depth: 0 });
-    }
-  }
-};
-
-</script>
 
 <script>
 // === Worker Monkey-Patch: add aspiration, dynamic book weights, adaptive time, telemetry ===
@@ -5308,7 +4921,7 @@ onmessage = (e)=>{
       if (Math.abs(__lastEval) > 0.8) d += 1;
     }catch(_){}
     // clamp by difficulty
-    return Math.max(2, Math.min(d, 26));
+    return Math.max(2, Math.min(d, 36));
   }
 
   function patch(){
@@ -5740,6 +5353,219 @@ onmessage = (e)=>{
   };
   window.addEventListener('online', resubscribe);
   document.addEventListener('visibilitychange', ()=>{ if (document.visibilityState==='visible') resubscribe(); });
+})();
+</script>
+
+
+<script>
+// 🔧 Patch: consolidar aprendizado do modo treino na IA VERMELHA
+(function(){
+  try {
+    // Garante que os helpers existam antes de patchar
+    if (typeof updateAIProfile === 'function' && typeof updateSingleAIProfile === 'function') {
+      const __orig_updateAIProfile = updateAIProfile;
+      updateAIProfile = async function(winner) {
+        try {
+          // No modo treino, tudo que a IA aprende vai para o perfil da IA vermelha
+          if (window.trainingMode) {
+            const isRedWinner = (winner === RED);
+            await updateSingleAIProfile('red', isRedWinner);
+          } else {
+            await __orig_updateAIProfile(winner);
+          }
+        } catch (e) {
+          console.error('updateAIProfile patch error', e);
+        }
+      };
+    }
+
+    // Consolida pesos neurais (white + red) em um perfil focado na VERMELHA durante o treino
+    if (typeof adjustNeuralWeights === 'function' && typeof getNeuralWeights === 'function' && typeof saveNeuralWeights === 'function') {
+      const __orig_adjustNeuralWeights = adjustNeuralWeights;
+      adjustNeuralWeights = function(winner) {
+        __orig_adjustNeuralWeights(winner);
+        if (!window.trainingMode) return;
+        try {
+          const wW = getNeuralWeights(WHITE).slice();
+          const rW = getNeuralWeights(RED).slice();
+          if (!wW || !rW || !wW.length || wW.length !== rW.length) return;
+          // merge simples (média) para consolidar conhecimento
+          const merged = rW.map((v,i) => (v + wW[i]) / 2);
+          saveNeuralWeights('red', merged);
+          saveNeuralWeights('white', merged);
+          if (getNeuralWeights.cache) {
+            getNeuralWeights.cache.white = merged;
+            getNeuralWeights.cache.red = merged;
+          }
+        } catch(e){
+          console.error('adjustNeuralWeights patch error', e);
+        }
+      };
+    }
+
+    // Consolida pesos de fim de jogo (white + red) focando na IA vermelha durante o treino
+    if (typeof adjustEndgameWeights === 'function' && typeof getEndgameWeights === 'function' && typeof saveEndgameWeights === 'function') {
+      const __orig_adjustEndgameWeights = adjustEndgameWeights;
+      adjustEndgameWeights = function(winner) {
+        __orig_adjustEndgameWeights(winner);
+        if (!window.trainingMode) return;
+        try {
+          const wW = getEndgameWeights(WHITE).slice();
+          const rW = getEndgameWeights(RED).slice();
+          if (!wW || !rW || !wW.length || wW.length !== rW.length) return;
+          const merged = rW.map((v,i) => (v + wW[i]) / 2);
+          saveEndgameWeights('red', merged);
+          saveEndgameWeights('white', merged);
+          if (getEndgameWeights.cache) {
+            getEndgameWeights.cache.white = merged;
+            getEndgameWeights.cache.red = merged;
+          }
+        } catch(e){
+          console.error('adjustEndgameWeights patch error', e);
+        }
+      };
+    }
+
+    // Após cada fim de jogo em modo treino, mescla patternMemory_white em patternMemory_red
+    if (typeof onGameOver === 'function') {
+      const __orig_onGameOver = onGameOver;
+      onGameOver = function(winner) {
+        __orig_onGameOver(winner);
+        if (!window.trainingMode) return;
+        try {
+          const memW = JSON.parse(localStorage.getItem('patternMemory_white') || '{}');
+          const memR = JSON.parse(localStorage.getItem('patternMemory_red') || '{}');
+          const merged = Object.assign({}, memR, memW);
+          localStorage.setItem('patternMemory_red', JSON.stringify(merged));
+          localStorage.setItem('patternMemory_white', JSON.stringify(merged));
+        } catch(e){
+          console.error('patternMemory merge error', e);
+        }
+      };
+    }
+
+  } catch (err) {
+    console.error('Treino IA patch fatal error:', err);
+  }
+})();
+</script>
+<script>
+// 🔍 Painel de diagnóstico da IA no menu de treino
+(function(){
+  function getPatternMemoryCounts() {
+    let redCount = 0, whiteCount = 0, total = 0;
+    try {
+      const memR = JSON.parse(localStorage.getItem('patternMemory_red') || '{}');
+      const memW = JSON.parse(localStorage.getItem('patternMemory_white') || '{}');
+      const keysR = memR && typeof memR === 'object' ? Object.keys(memR) : [];
+      const keysW = memW && typeof memW === 'object' ? Object.keys(memW) : [];
+      redCount = keysR.length;
+      const merged = new Set([...keysR, ...keysW]);
+      total = merged.size;
+    } catch(e) {
+      console.warn('Erro ao ler patternMemory:', e);
+    }
+    return { redCount, total };
+  }
+
+  window.updateAiDebugPanel = function updateAiDebugPanel(){
+    const evalEl   = document.getElementById('aiEvalValue');
+    const neuralEl = document.getElementById('aiNeuralWeights');
+    const endEl    = document.getElementById('aiEndgameWeights');
+    const patR     = document.getElementById('aiPatternCountRed');
+    const patT     = document.getElementById('aiPatternCountTotal');
+
+    if (!evalEl || !neuralEl || !endEl || !patR || !patT) return;
+
+    try {
+      let neuralW = null, neuralR = null, endW = null, endR = null;
+
+      if (typeof getNeuralWeights === 'function') {
+        try { neuralW = getNeuralWeights(WHITE); } catch(_){}
+        try { neuralR = getNeuralWeights(RED); } catch(_){}
+      }
+      if (typeof getEndgameWeights === 'function') {
+        try { endW = getEndgameWeights(WHITE); } catch(_){}
+        try { endR = getEndgameWeights(RED); } catch(_){}
+      }
+
+      // Avaliação da posição atual
+      let scoreStr = '--';
+      if (typeof evalBoard === 'function' && Array.isArray(window.board)) {
+        const s = evalBoard(window.board, WHITE, neuralW || [], neuralR || [], endW || [], endR || []);
+        if (typeof s === 'number' && isFinite(s)) {
+          scoreStr = s.toFixed(1);
+        }
+      }
+      evalEl.textContent = scoreStr;
+
+      // Pesos neurais / fim de jogo da IA vermelha
+      if (Array.isArray(neuralR)) {
+        const arr = neuralR.map(v => (typeof v === 'number' ? Number(v.toFixed(3)) : v));
+        neuralEl.textContent = JSON.stringify(arr, null, 2);
+      } else {
+        neuralEl.textContent = '--';
+      }
+
+      if (Array.isArray(endR)) {
+        const arrE = endR.map(v => (typeof v === 'number' ? Number(v.toFixed(3)) : v));
+        endEl.textContent = JSON.stringify(arrE, null, 2);
+      } else {
+        endEl.textContent = '--';
+      }
+
+      // Contagem de padrões salvos
+      const counts = getPatternMemoryCounts();
+      patR.textContent = String(counts.redCount);
+      patT.textContent = String(counts.total);
+    } catch (e) {
+      console.warn('Erro ao atualizar painel de IA:', e);
+    }
+  };
+
+  // Atualização automática enquanto o menu de treino estiver aberto
+  let aiDebugTimer = null;
+  function startAiDebugLoop(){
+    window.updateAiDebugPanel();
+    if (aiDebugTimer) clearInterval(aiDebugTimer);
+    aiDebugTimer = setInterval(window.updateAiDebugPanel, 2000);
+  }
+  function stopAiDebugLoop(){
+    if (aiDebugTimer) {
+      clearInterval(aiDebugTimer);
+      aiDebugTimer = null;
+    }
+  }
+
+  window.addEventListener('load', () => {
+    const trainingMenuScreen = document.getElementById('trainingMenuScreen');
+    const aiDebugScreen      = document.getElementById('aiDebugScreen');
+    const openDebugBtn       = document.getElementById('openAiDebugScreen');
+    const btnDebugBack       = document.getElementById('btnAiDebugBack');
+    const btnVoltarTreino    = document.getElementById('btnVoltarTreino');
+
+    if (openDebugBtn && trainingMenuScreen && aiDebugScreen) {
+      openDebugBtn.addEventListener('click', () => {
+        trainingMenuScreen.classList.add('hidden');
+        aiDebugScreen.classList.remove('hidden');
+        startAiDebugLoop();
+      });
+    }
+
+    if (btnDebugBack && trainingMenuScreen && aiDebugScreen) {
+      btnDebugBack.addEventListener('click', () => {
+        aiDebugScreen.classList.add('hidden');
+        trainingMenuScreen.classList.remove('hidden');
+        stopAiDebugLoop();
+      });
+    }
+
+    if (btnVoltarTreino) {
+      btnVoltarTreino.addEventListener('click', () => {
+        stopAiDebugLoop();
+      });
+    }
+  });
 })();
 </script>
 
