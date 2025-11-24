@@ -1667,7 +1667,13 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         // 🧠 Mostra o botão de opções (⋮) com fade (Função de UI)
         showOptionsButton(true);
         // 🧠 ETAPA 1 (Reset): Reinicia histórico da partida
-        gameHistory = []; 
+        gameHistory = [];
+        // 🔄 Reseta contador de jogadas sem captura (empate técnico)
+        window.noCaptureCount = 0;
+        // 🔁 Reseta histórico de repetição de posição (empate por 3x)
+        window.positionRepetition = {};
+        // 🧊 Limpa motivo de empate forçado
+        window.drawReason = null; 
         // 5️⃣ Limpeza de cache entre partidas
         if (worker) worker.postMessage({ resetCache: true });
 
@@ -2046,6 +2052,15 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           say('capture'); // Helper de UI
         }
 
+        // 🔄 Contador de jogadas sem captura (para detectar empate técnico)
+        if (typeof window.noCaptureCount !== 'number') window.noCaptureCount = 0;
+        // Zera se houve captura OU promoção (sem progresso não conta)
+        if (type === 'capture' || promotedThisMove) {
+          window.noCaptureCount = 0;
+        } else {
+          window.noCaptureCount++;
+        }
+
         // 🧠 ETAPA 2: Registrar jogada no histórico (ATUALIZADO)
         const { w, r } = countPieces();
         gameHistory.push({
@@ -2129,6 +2144,55 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         current = (current === WHITE) ? RED : WHITE;
         computeLegal();
 
+        // === REGRAS DE EMPATE (somente modo local/treino) ===
+        if (!isOnline) {
+          try {
+            // 3️⃣ Empate por material insuficiente: apenas 1 dama branca vs 1 dama vermelha
+            const { w, r } = countPieces();
+            if (w === 1 && r === 1) {
+              let whiteKings = 0, redKings = 0, normals = 0;
+              for (let i = 0; i < 8; i++) {
+                for (let j = 0; j < 8; j++) {
+                  const v = board[i][j];
+                  if (!v) continue;
+                  if (v === WHITE || v === RED) normals++;
+                  if (v === WHITE + KING) whiteKings++;
+                  if (v === RED + KING) redKings++;
+                }
+              }
+              if (normals === 0 && whiteKings === 1 && redKings === 1) {
+                window.drawReason = 'material';
+                onGameOver(null);
+                return;
+              }
+            }
+
+            // 2️⃣ Empate por repetição de posição (3x mesma posição + vez de jogar)
+            if (typeof getBoardHash === 'function') {
+              const hash = getBoardHash(board);
+              const key = hash.toString() + '|' + current;
+              if (!window.positionRepetition) window.positionRepetition = {};
+              const prev = window.positionRepetition[key] || 0;
+              const next = prev + 1;
+              window.positionRepetition[key] = next;
+              if (next >= 3) {
+                window.drawReason = 'repetition';
+                onGameOver(null);
+                return;
+              }
+            }
+
+            // 1️⃣ Empate por 20 lances de cada lado (40 movimentos) sem captura/promoção
+            if (typeof window.noCaptureCount === 'number' && window.noCaptureCount >= 40) {
+              window.drawReason = 'noProgress';
+              onGameOver(null);
+              return;
+            }
+          } catch (e) {
+            console.warn('Empate técnico: falha leve ignorada.', e);
+          }
+        }
+
         if (isOnline) {
           // 🌐 Lógica Online
           const myColor = getPlayerColor();
@@ -2170,6 +2234,50 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
 
       // ✅ FUNÇÃO ONGAMEOVER (MODIFICADA PARA CHAMAR ANÁLISE)
       function onGameOver(winner){
+
+// === EMPATE PROFISSIONAL: Regras avançadas (painel) ===
+if (window.drawReason) {
+        // Marca fim de jogo
+        gameEnded = true;
+        lockInteraction(true);
+        clearAllTimeouts();
+        current = null;
+
+        // Esconde menus flutuantes
+        showOptionsButton(false);
+        if (typeof showMenuFlutuante === 'function') {
+          showMenuFlutuante(false);
+        }
+
+        // Mensagem de empate em overlay profissional
+        let overlayMsg = "🤝 EMPATE!<br/>Partida encerrada sem vencedor.";
+        if (window.drawReason === 'noProgress') {
+          overlayMsg = "🤝 EMPATE TÉCNICO<br/>20 lances de cada lado sem capturas nem promoções.<br/><span style='font-size:11px;opacity:.8'>Nenhum dos dois arriscou além do limite. Equilíbrio total.</span>";
+        } else if (window.drawReason === 'repetition') {
+          overlayMsg = "🤝 EMPATE POR REPETIÇÃO<br/>A mesma posição se repetiu 3 vezes com a mesma vez de jogar.<br/><span style='font-size:11px;opacity:.8'>Loop detectado. Sistema encerrou a partida com justiça.</span>";
+        } else if (window.drawReason === 'material') {
+          overlayMsg = "🤝 EMPATE POR MATERIAL INSUFICIENTE<br/>Apenas uma dama branca contra uma dama vermelha.<br/><span style='font-size:11px;opacity:.8'>Matematicamente empatado. Só venceria com erro grosseiro.</span>";
+        }
+
+        // Exibe painel de fim de jogo (overlay)
+        showOverlay(overlayMsg, true);
+
+        // Opcional: fala leve da IA (apenas modo IA local)
+        if (!isOnline && !trainingMode && typeof say === 'function') {
+          setTimeout(() => {
+            say([
+              "Equilíbrio absoluto. Ninguém cedeu.",
+              "Empate justo — controle total dos dois lados.",
+              "Partida tensa. Às vezes, não perder também é vitória."
+            ]);
+          }, 1500);
+        }
+
+        // Limpa motivo para futuros jogos
+        window.drawReason = null;
+        return;
+}
+
         gameEnded = true; lockInteraction(true); clearAllTimeouts(); current = null;
 
         // 🔁 Modo TREINO (IA vs IA): fluxo focado em estatísticas e looping opcional
