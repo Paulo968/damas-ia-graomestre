@@ -3776,7 +3776,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         btnToggleMute.addEventListener('click', () => {
           toggleMute();
           // feedback visual sonoro só quando ligando som
-          if (!isMuted && openSound) { try { SFX.playSync('open'); } catch (e) {} }
+          if (!isMuted && openSound) { try { SFX.playSync('open'); } catch(e){ console.warn('Falha leve na IA (ignorado).'); } }
         });
       }
 
@@ -4859,6 +4859,49 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
             score -= quadrantCompressionScore; // Menos score é melhor para RED
         }
         
+        // 🔍 NOVO: padrões táticos extras (corrida para dama + base defensiva)
+        {
+          // 1) Corrida desigual para Dama (promoção)
+          let minDistW = 99, minDistR = 99;
+          for (const [r, c, isK] of positionsW) {
+            if (!isK) {
+              // Brancas promovem perto da linha 0
+              minDistW = Math.min(minDistW, r);
+            }
+          }
+          for (const [r, c, isK] of positionsR) {
+            if (!isK) {
+              // Vermelhas promovem perto da linha 7
+              minDistR = Math.min(minDistR, 7 - r);
+            }
+          }
+          if (minDistW < 99 && minDistR < 99) {
+            // Se as brancas chegam mais rápido, isso é bom para elas; se as vermelhas chegam mais rápido, é ruim para elas.
+            const raceDiff = (minDistR - minDistW);
+            score += raceDiff * 0.12; // peso leve para não distorcer o resto
+          }
+
+          // 2) Vulnerabilidade da base defensiva
+          let backRowWhite = 0, backRowRed = 0;
+          for (const [r, c, isK] of positionsW) {
+            if (!isK && r === 7) backRowWhite++;
+          }
+          for (const [r, c, isK] of positionsR) {
+            if (!isK && r === 0) backRowRed++;
+          }
+
+          // Se a base RED está completamente vazia enquanto ainda há muitas peças, isso abre corredores de ataque.
+          if (backRowRed === 0 && positionsR.length >= 4) {
+            score += 0.4 * (1 + aggR); // bom para WHITE, péssimo para RED
+          }
+
+          // Se a base WHITE está vazia cedo demais, isso é perigoso para elas.
+          if (backRowWhite === 0 && positionsW.length >= 4) {
+            score -= 0.35; // ligeira punição para WHITE abrir demais a retaguarda
+          }
+        }
+
+
         // Mobilidade (mantida)
         score += (wMoves - rMoves) * 0.22;
       
@@ -5504,7 +5547,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
   window.__analysisScheduledGuard = true;
   const _openAnalysisModal = window.openAnalysisModal;
   window.openAnalysisModal = function(feedback, tone){
-    setTimeout(function(){ try{ _openAnalysisModal(feedback, tone); }catch(e){} }, 0);
+    setTimeout(function(){ try{ _openAnalysisModal(feedback, tone); } catch(e){ console.warn('Falha leve na IA (ignorado).'); } }, 0);
   };
 })();
 </script>
@@ -5914,9 +5957,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           } else {
             await __orig_updateAIProfile(winner);
           }
-        } catch (e) {
-          console.error('updateAIProfile patch error', e);
-        } finally {
+        } catch(e){ console.warn('Falha leve na IA (ignorado).'); } finally {
           // Sempre tenta espelhar o perfil no Firestore em background
           try {
             if (typeof forceSyncAIProfiles === 'function') {
@@ -5937,17 +5978,28 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           const wW = getNeuralWeights(WHITE).slice();
           const rW = getNeuralWeights(RED).slice();
           if (!wW || !rW || !wW.length || wW.length !== rW.length) return;
-          // merge simples (média) para consolidar conhecimento
-          const merged = rW.map((v,i) => (v + wW[i]) / 2);
+
+          // 🧬 Evolução genética leve + fusão 70/30:
+          // - Se a vermelha venceu, ela domina (70%) mas ainda absorve 30% da branca.
+          // - Se a branca venceu, ela domina (70%) mas ainda preserva 30% da vermelha.
+          let merged;
+          if (winner === RED) {
+            merged = rW.map((rVal, i) => rVal * 0.7 + wW[i] * 0.3);
+          } else if (winner === WHITE) {
+            merged = wW.map((wVal, i) => wVal * 0.7 + rW[i] * 0.3);
+          } else {
+            // fallback de segurança
+            merged = rW.map((v, i) => (v + wW[i]) / 2);
+          }
+
+          // Perfil final sempre consolidado na IA VERMELHA (vs humanos)
           saveNeuralWeights('red', merged);
           saveNeuralWeights('white', merged);
           if (getNeuralWeights.cache) {
             getNeuralWeights.cache.white = merged;
             getNeuralWeights.cache.red = merged;
           }
-        } catch(e){
-          console.error('adjustNeuralWeights patch error', e);
-        }
+        } catch(e){ console.warn('Falha leve na IA (ignorado).'); }
       };
     }
 
@@ -5961,15 +6013,27 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           const wW = getEndgameWeights(WHITE).slice();
           const rW = getEndgameWeights(RED).slice();
           if (!wW || !rW || !wW.length || wW.length !== rW.length) return;
-          const merged = rW.map((v,i) => (v + wW[i]) / 2);
+
+          // 🧬 Evolução genética leve + fusão 70/30 também para fim de jogo
+          let merged;
+          if (winner === RED) {
+            merged = rW.map((rVal, i) => rVal * 0.7 + wW[i] * 0.3);
+          } else if (winner === WHITE) {
+            merged = wW.map((wVal, i) => wVal * 0.7 + rW[i] * 0.3);
+          } else {
+            merged = rW.map((v, i) => (v + wW[i]) / 2);
+          }
+
           saveEndgameWeights('red', merged);
           saveEndgameWeights('white', merged);
           if (getEndgameWeights.cache) {
             getEndgameWeights.cache.white = merged;
             getEndgameWeights.cache.red = merged;
           }
-        } catch(e){
-          console.error('adjustEndgameWeights patch error', e);
+        } catch(e){ console.warn('Falha leve na IA (ignorado).'); }
+      };
+    }
+
         }
       };
     }
@@ -5983,10 +6047,22 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         try {
           const memW = JSON.parse(localStorage.getItem('patternMemory_white') || '{}');
           const memR = JSON.parse(localStorage.getItem('patternMemory_red') || '{}');
-          const merged = Object.assign({}, memR, memW);
+
+          // 🧠 Padrões táticos: quem venceu domina o "dicionário" de padrões.
+          let base = memR;
+          let other = memW;
+          if (winner === WHITE) {
+            base = memW;
+            other = memR;
+          }
+
+          // Começa pelos padrões do perdedor, mas deixa o vencedor sobrescrever (prioridade)
+          const merged = Object.assign({}, other, base);
+
           localStorage.setItem('patternMemory_red', JSON.stringify(merged));
           localStorage.setItem('patternMemory_white', JSON.stringify(merged));
-        } catch(e){
+
+} catch(e){
           console.error('patternMemory merge error', e);
         }
       };
