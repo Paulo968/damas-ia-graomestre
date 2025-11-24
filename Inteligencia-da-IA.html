@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Damas vs IA // Arquivos do Sistema v3.5 (Guide Added)</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617;
+            color: #e2e8f0;
+            margin: 0;
+            overflow: hidden;
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: fadeIn 0.5s ease-out forwards; }
+
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }
+        .float { animation: float 3s ease-in-out infinite; }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body>
+    <div id="root" class="h-screen w-screen flex flex-col"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- ÍCONES SVG ---
+        const Icons = {
+            Brain: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>,
+            Activity: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+            Database: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s 9-1.34 9-3V5"/></svg>,
+            GitBranch: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>,
+            Hash: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>,
+            Eye: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+            Crosshair: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>,
+            RefreshCw: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>,
+            Terminal: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>,
+            ChevronLeft: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6"/></svg>,
+            Circle: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>,
+            User: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+            Code2: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>,
+            History: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>,
+            Cpu: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y2="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>,
+            Zap: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+            Lightbulb: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2.4 1.5-3.8 0-3.2-2.8-5.7-6-5.7s-6 2.5-6 5.7c0 1.4.5 2.8 1.5 3.8.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>,
+            Network: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg>,
+            ArrowRight: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>,
+            Target: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+            BarChart: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>,
+            Layers: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
+            MessageSquare: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+            AlertCircle: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        };
+
+        const Icon = ({ name, size = 24, className, style }) => {
+            const IconComponent = Icons[name];
+            return IconComponent ? <IconComponent width={size} height={size} className={className} style={style} /> : null;
+        };
+
+        // --- TYPEWRITER LOG ---
+        const TypewriterLog = ({ lines, active }) => {
+            const [displayLines, setDisplayLines] = useState([]);
+            useEffect(() => {
+                if (!active) return;
+                let isMounted = true; setDisplayLines([]);
+                let lineIndex = 0; let charIndex = 0; let currentText = ""; let timeoutId;
+                const typeChar = () => {
+                    if (!isMounted) return;
+                    if (lineIndex >= lines.length) return;
+                    const currentLine = lines[lineIndex];
+                    currentText = currentLine.substring(0, charIndex + 1);
+                    setDisplayLines(prev => { const newLines = [...prev]; newLines[lineIndex] = currentText; return newLines; });
+                    charIndex++;
+                    if (charIndex > currentLine.length) { lineIndex++; charIndex = 0; currentText = ""; timeoutId = setTimeout(typeChar, 200); }
+                    else { timeoutId = setTimeout(typeChar, 20); }
+                };
+                typeChar();
+                return () => { isMounted = false; clearTimeout(timeoutId); };
+            }, [active, lines]);
+            return (
+                <div className="space-y-1 font-mono text-xs opacity-90 text-emerald-400">
+                    {displayLines.map((line, i) => <div key={i} className="break-words">{line}</div>)}
+                    <span className="inline-block w-2 h-4 bg-emerald-500 align-middle animate-pulse"></span>
+                </div>
+            );
+        };
+
+        // --- DADOS DO SISTEMA (DEEP LORE & ORIGINS - FIXED STATUS) ---
+        // Garantimos que todos os módulos tenham status: 'ONLINE' ou 'AUTO' para a luz verde aparecer.
+        const modules = [
+            {
+                id: 'status_guide',
+                title: 'GUIA DE STATUS',
+                type: 'PROTOCOLO DE SINALIZAÇÃO',
+                iconName: 'AlertCircle',
+                color: 'emerald', // Cor base
+                status: 'ONLINE', // 🟢
+                complexity: 5, 
+                creator: { 
+                    name: 'UX Systems', 
+                    role: 'Interface Design', 
+                    year: '2025', 
+                    reason: 'A incerteza sobre o estado da máquina gera desconfiança. Um sistema visual instantâneo elimina a necessidade de ler logs técnicos.',
+                    usage: 'Define o significado das luzes nos cards: Verde = Operacional; Ciano = Adaptando/Pensando; Âmbar = Sistema/Debug.' 
+                },
+                langs: ['Visual Protocol', 'UI Feedback'], 
+                lore: 'O código de cores que traduz o pulso da máquina. Uma linguagem universal que informa, num piscar de olhos, se a IA está estável, a pensar ou em manutenção.', 
+                tech: { 
+                    green: 'ONLINE (Estável)', 
+                    cyan: 'AUTO (Dinâmico)', 
+                    amber: 'SYSTEM (Crítico)' 
+                }, 
+                logs: ['> Carregando protocolos visuais...', '> LED Verde: Normalidade confirmada.', '> LED Ciano: Heurística ativa.', '> LED Âmbar: Acesso restrito.']
+            },
+            {
+                id: 'mindmap',
+                title: 'TOPOLOGIA NEURAL',
+                type: 'VISUALIZAÇÃO DE SISTEMA',
+                iconName: 'Network',
+                color: 'blue',
+                status: 'ONLINE', // 🟢
+                complexity: 10, 
+                creator: { 
+                    name: 'System Architect', 
+                    role: 'Observability', 
+                    year: '2025', 
+                    reason: 'A invisibilidade é o maior risco de sistemas distribuídos. Quando você não vê o fluxo de dados, o debug de estados complexos (como Workers e Firebase) torna-se impossível.',
+                    usage: 'Renderiza um grafo SVG reativo. A cada `postMessage` ou evento `onSnapshot`, os nós pulsam, provando que o "sangue" digital está circulando entre os módulos.' 
+                },
+                langs: ['SVG Vector', 'React State'], 
+                lore: 'O mapa holográfico do cérebro digital. Visualiza as 12 áreas corticais e o fluxo de dados entre o cliente, os workers e a nuvem.', 
+                tech: { render: 'SVG Vector', nodes: '13 Active', update: 'Real-time Listener' }, 
+                logs: ['> Inicializando nós...', '> Hive Mind: Sincronizado.', '> Telemetria: Link estável.', '> Topologia expandida.']
+            },
+            {
+                id: 'multicore',
+                title: 'HIVE MIND (MULTICORE)',
+                type: 'PROCESSAMENTO PARALELO',
+                iconName: 'Cpu',
+                color: 'indigo',
+                status: 'ONLINE', // 🟢
+                complexity: 95,
+                creator: {
+                    name: 'Gene Amdahl',
+                    role: 'Lei de Amdahl',
+                    year: '1967',
+                    reason: 'A Lei de Moore estagnou para núcleos individuais. A única forma de ganhar performance exponencial hoje é o paralelismo horizontal, dividindo o problema em fatias menores.',
+                    usage: 'Acessa `navigator.hardwareConcurrency` para spawnar Workers reais. Usa o padrão "Root Splitting" para dividir os lances iniciais (raiz da árvore) entre os núcleos disponíveis, evitando travar a UI principal.'
+                },
+                langs: ['Worker Pool', 'Root Splitting'],
+                lore: 'A colmeia digital. Fragmenta a realidade do tabuleiro em múltiplos universos paralelos. Usa "Root Splitting" para distribuir a carga inicial entre os núcleos disponíveis.',
+                tech: { model: 'Worker Pool Pattern', strategy: 'Equal Chunking', max_pool: 'Hardware - 1' },
+                logs: ['> Detectando núcleos: 8.', '> Spawnando workers...', '> Chunk 1 -> Worker 1.', '> Chunk 2 -> Worker 2.', '> Aggregating results...']
+            },
+            {
+                id: 'core',
+                title: 'NEXUS CORE',
+                type: 'MOTOR MINIMAX',
+                iconName: 'Brain',
+                color: 'cyan',
+                status: 'ONLINE', // 🟢
+                complexity: 90, 
+                creator: {
+                    name: 'Alan Turing',
+                    role: 'Game Theory',
+                    year: '1950',
+                    reason: 'Redes Neurais podem "alucinar". Em jogos de informação perfeita (xadrez/damas), a busca em árvore (Minimax) oferece a única verdade matemática absoluta e livre de erros.',
+                    usage: 'Implementa Minimax com Poda Alpha-Beta (para cortar ramos inúteis da árvore) e Iterative Deepening (IDS) para garantir que sempre tenhamos uma resposta válida, mesmo se o tempo acabar.'
+                },
+                langs: ['JS Worker', 'Typed Arrays'],
+                lore: 'O maestro da orquestra. Coordena a busca em profundidade, gerencia o tempo e aplica cortes na árvore de decisão.',
+                tech: { engine: 'Minimax IDS', pruning: 'Alpha-Beta', tt_size: '150k Entries' },
+                logs: ['> Horizonte de busca: 18 ply.', '> Zobrist Hash calculado.', '> TT Cache Hit.', '> Alpha-Beta Cutoff.']
+            },
+            {
+                id: 'coach',
+                title: 'COACH DE PARTIDA',
+                type: 'ANÁLISE SEMÂNTICA',
+                iconName: 'Lightbulb',
+                color: 'yellow',
+                status: 'ONLINE', // 🟢
+                complexity: 35,
+                creator: {
+                    name: 'Grandmaster Module',
+                    role: 'Pedagogia Cibernética',
+                    year: '2025',
+                    reason: 'Dados brutos não geram aprendizado. O cérebro humano precisa de narrativa ("Storytelling") e contexto ("Ponto de Virada") para absorver o erro e não repeti-lo.',
+                    usage: 'Analisa o array `gameHistory` pós-jogo. Detecta grandes oscilações na avaliação (swing > 2) e classifica isso como um "Erro Crítico", gerando texto explicativo em vez de apenas números.'
+                },
+                langs: ['Heuristic Analysis', 'NLP Gen'],
+                lore: 'Um analista digital que observa cada movimento. Detecta oscilações de vantagem e traduz erros táticos em conselhos práticos.',
+                tech: { input: 'GameHistory', metric: 'Advantage Swing', trigger: 'Swing >= 2' },
+                logs: ['> Analisando histórico...', '> Ponto de Virada: Lance 14.', '> Vantagem IA: +2.4.', '> Gerando dica: "Cuidado com trocas."']
+            },
+            {
+                id: 'telemetry',
+                title: 'TELEMETRIA CLOUD',
+                type: 'CÉREBRO DE MÉTRICAS',
+                iconName: 'BarChart',
+                color: 'orange',
+                status: 'ONLINE', // 🟢
+                complexity: 60,
+                creator: {
+                    name: 'Data Ops',
+                    role: 'Crowd Learning',
+                    year: '2025',
+                    reason: 'Uma IA isolada sofre de "overfitting" (aprende apenas os vícios locais). A verdadeira robustez nasce da exposição a milhares de humanos imprevisíveis na nuvem.',
+                    usage: 'Agrega estatísticas de performance (nós por segundo, profundidade média) de todos os clientes via Firestore. Permite ajustar a dificuldade globalmente sem atualizar o código.'
+                },
+                langs: ['Firestore NoSQL', 'Async Msg'],
+                lore: 'O sistema nervoso periférico. Conecta cada instância de jogo a uma mente coletiva na nuvem, permitindo ajustes de balanceamento baseados em dados reais.',
+                tech: { db: 'Firestore', path: 'telemetry/{uid}', metrics: 'Depth/Score/Time' },
+                logs: ['> Worker msg recebida.', '> Telemetria formatada.', '> Uploading to Cloud...', '> Ack received.']
+            },
+            {
+                id: 'depth_adapt',
+                title: 'PROFUNDIDADE ELÁSTICA',
+                type: 'GESTÃO DE HORIZONTE',
+                iconName: 'Zap',
+                color: 'cyan',
+                status: 'AUTO', // 🔵 (Ciano pulsante, pois é 'AUTO')
+                complexity: 40,
+                creator: {
+                    name: 'Heuristic Engine',
+                    role: 'Explosão Combinatória',
+                    year: '2025',
+                    reason: 'O "Horizon Effect". Posições táticas instáveis exigem visão longa; posições mortas são desperdício de CPU. Tratar ambas igual é ineficiência computacional.',
+                    usage: 'No worker, detecta "turbulência" (capturas disponíveis, poucas peças). Se turbulento, injeta +2 ou +4 na profundidade de busca (Ply) dinamicamente para resolver a tática.'
+                },
+                langs: ['Dynamic Config', 'Monkey Patch'],
+                lore: 'O foco variável da IA. Dilata o horizonte de busca em momentos de caos tático ou finais críticos, economizando energia em posições tranquilas.',
+                tech: { triggers: 'Caps>=3 | End<=6', bonus: '+1 / +2 Ply', limit: 'Max 36' },
+                logs: ['> Tabuleiro turbulento.', '> Capturas detectadas.', '> Depth boost: 8 -> 10.', '> Foco máximo.']
+            },
+            {
+                id: 'time_adapt',
+                title: 'CRONOS ADAPTATIVO',
+                type: 'GESTÃO TEMPORAL',
+                iconName: 'History',
+                color: 'blue',
+                status: 'ONLINE', // 🟢
+                complexity: 30,
+                creator: {
+                    name: 'Resource Manager',
+                    role: 'Time Management',
+                    year: '2025',
+                    reason: 'Em jogos competitivos, o tempo é uma peça. Gastar 2 segundos em um lance óbvio rouba o tempo necessário para calcular um mate complexo no final.',
+                    usage: 'Calcula um "orçamento" (budget) de milissegundos baseado na fase do jogo. Finais complexos recebem até 2000ms; aberturas recebem apenas 300ms.'
+                },
+                langs: ['Time Allocation', 'Perf.now()'],
+                lore: 'O guardião do relógio. Aloca milissegundos preciosos onde eles fazem a diferença: nos finais complexos e meios-jogos tensos.',
+                tech: { logic: 'Piece Count Inv', tiers: '1400ms/1100ms/800ms', scale: 'Difficulty' },
+                logs: ['> Peças restantes: 7.', '> Fase: Final Crítico.', '> Orçamento tempo: 1400ms.', '> Timer set.']
+            },
+            {
+                id: 'symmetry',
+                title: 'ESPELHO DE SIMETRIA',
+                type: 'OTIMIZAÇÃO GEOMÉTRICA',
+                iconName: 'Crosshair',
+                color: 'emerald',
+                status: 'ONLINE', // 🟢
+                complexity: 20,
+                creator: {
+                    name: 'Geometry Engine',
+                    role: 'Redundância Matemática',
+                    year: '2025',
+                    reason: 'Se o tabuleiro é um espelho perfeito, o lance da esquerda é matematicamente idêntico ao da direita. Calcular ambos é desperdício puro de entropia.',
+                    usage: 'Verifica `isVerticallySymmetric`. Se true, descarta todos os lances das colunas 4 a 7. Reduz o "Branching Factor" pela metade, dobrando a velocidade de busca.'
+                },
+                langs: ['Bitwise Check', 'Tree Pruning'],
+                lore: 'O prisma redutor. Detecta simetria perfeita no eixo vertical e ignora metade do universo de busca, duplicando a eficiência.',
+                tech: { check: 'Vertical Mirror', gain: '50% Speedup', filter: 'Col <= 3' },
+                logs: ['> Checando simetria...', '> Eixo vertical perfeito.', '> Poda ativa: Ignorando colunas 4-7.', '> Speedup: 2x.']
+            },
+            {
+                id: 'context_speech',
+                title: 'FALA CONTEXTUAL',
+                type: 'FEEDBACK NARRATIVO',
+                iconName: 'MessageSquare',
+                color: 'pink',
+                status: 'ONLINE', // 🟢
+                complexity: 25,
+                creator: {
+                    name: 'UX Narrative',
+                    role: 'Antropomorfização',
+                    year: '2025',
+                    reason: 'Humanos toleram melhor a derrota quando percebem "intenção" e "personalidade" na máquina. O silêncio da IA é interpretado como frieza ou erro.',
+                    usage: 'Máquina de estados que monitora `fase` e `agressividade`. Se a IA decide atacar o centro, ela "anuncia" isso via texto, criando uma narrativa de duelo.'
+                },
+                langs: ['Context Awareness', 'String Gen'],
+                lore: 'A voz da máquina. Uma camada de tradução que verbaliza as intenções táticas (Ataque, Defesa, Promoção) baseada no estado interno do motor.',
+                tech: { triggers: 'Mid+Agg / End', output: 'Dynamic Strings', channel: 'Worker Msg' },
+                logs: ['> Fase: Meio-jogo.', '> Agressividade: Alta.', '> Gerando taunt...', '> "Pressionando o centro."']
+            },
+            {
+                id: 'consolidation',
+                title: 'MEMÓRIA UNIFICADA',
+                type: 'FUSÃO DE PESOS',
+                iconName: 'Layers',
+                color: 'purple',
+                status: 'ONLINE', // 🟢
+                complexity: 80,
+                creator: {
+                    name: 'Deep Learning Ops',
+                    role: 'Ensemble Learning',
+                    year: '2025',
+                    reason: 'Para evitar o "Esquecimento Catastrófico". Se a IA treina apenas com um lado, ela esquece como defender o outro. A fusão garante equilíbrio.',
+                    usage: 'Pós-treino, aplica uma média aritmética `(WhiteWeights + RedWeights) / 2` nos vetores neurais. Salva o resultado híbrido no localStorage para a próxima sessão.'
+                },
+                langs: ['Weight Averaging', 'Profile Merge'],
+                lore: 'O processo de assimilação. Funde as experiências das IAs Branca e Vermelha em uma única matriz de pesos otimizada após cada partida de treino.',
+                tech: { method: 'Average Merge', target: 'Red Profile', sync: 'Bi-directional' },
+                logs: ['> Treino finalizado.', '> Lendo pesos W/R.', '> Calculando média...', '> Consciência unificada salva.']
+            },
+            {
+                id: 'debug_profile',
+                title: 'BIOFEEDBACK (DEBUG)',
+                type: 'MONITORAMENTO INTERNO',
+                iconName: 'Activity',
+                color: 'red',
+                status: 'DEV ONLY', // 🟡 (Âmbar)
+                complexity: 15,
+                creator: {
+                    name: 'Dev Tools',
+                    role: 'Problema da Caixa Preta',
+                    year: '2025',
+                    reason: 'Sem visibilidade interna, é impossível distinguir "Sorte" de "Competência Algorítmica". Precisamos ver os números mudando para confiar na evolução.',
+                    usage: 'Loop de polling (`setInterval`) que lê variáveis globais da IA a cada 2s e atualiza o DOM, funcionando como um monitor cardíaco do processo de aprendizado.'
+                },
+                langs: ['Polling Loop', 'DOM Update'],
+                lore: 'O painel de diagnósticos. Um eletrocardiograma do aprendizado da IA, mostrando a evolução dos pesos e a "personalidade" tática em tempo real.',
+                tech: { rate: '2000ms', metrics: 'Eval/Weights/Patt', display: 'HUD Overlay' },
+                logs: ['> Polling status...', '> Score: -1.4.', '> Agg: 0.72.', '> Updating Debug DOM.']
+            },
+            {
+                id: 'smart_reset',
+                title: 'TABULA RASA',
+                type: 'CICLO DE VIDA',
+                iconName: 'RefreshCw',
+                color: 'blue',
+                status: 'SYSTEM', // 🟡 (Âmbar)
+                complexity: 10,
+                creator: {
+                    name: 'Sys Admin',
+                    role: 'Mínimos Locais',
+                    year: '2025',
+                    reason: 'Otimização presa em mínimos locais. Às vezes, a IA aprende um vício errado que funciona contra iniciantes, mas falha contra mestres. A única cura é a morte do modelo.',
+                    usage: 'Limpeza destrutiva de chaves específicas no `localStorage` e reset de documentos no Firestore, forçando a regeneração dos pesos aleatórios iniciais.'
+                },
+                langs: ['Storage Clear', 'Default Payload'],
+                lore: 'O protocolo de renascimento. Apaga memórias viciadas e restaura a IA para suas configurações de fábrica, pronta para reaprender do zero.',
+                tech: { action: 'Wipe Storage', scope: 'Local + Cloud', target: 'All Prefixes' },
+                logs: ['> Iniciando purga...', '> Deletando padrões...', '> Restaurando pesos padrão.', '> IA renascida.']
+            }
+        ];
+
+        // --- VISUALIZADOR DE MAPA MENTAL VIVO ---
+        const MindMapView = ({ onBack }) => {
+            const [activeNodeId, setActiveNodeId] = useState(null);
+
+            const getNodeData = (id) => {
+                const mod = modules.find(m => m.id === id);
+                return mod ? { ...mod, label: mod.title.split(' ')[0] } : null;
+            };
+
+            const topologyData = {
+                nodes: {
+                    multicore: { x: 400, y: 100, ...getNodeData('multicore') },
+                    core: { x: 400, y: 300, ...getNodeData('core') },
+                    telemetry: { x: 600, y: 300, ...getNodeData('telemetry') },
+                    coach: { x: 400, y: 500, ...getNodeData('coach') },
+                    depth: { x: 200, y: 300, ...getNodeData('depth_adapt') },
+                    time: { x: 200, y: 150, ...getNodeData('time_adapt') },
+                    context: { x: 600, y: 150, ...getNodeData('context_speech') },
+                    symmetry: { x: 150, y: 450, ...getNodeData('symmetry') },
+                    consolidation: { x: 650, y: 450, ...getNodeData('consolidation') }
+                },
+                connections: [
+                    { from: 'multicore', to: 'core', desc: 'Distribuição de Chunks' },
+                    { from: 'core', to: 'telemetry', desc: 'Envio de Métricas' },
+                    { from: 'core', to: 'depth', desc: 'Ajuste de Horizonte' },
+                    { from: 'core', to: 'time', desc: 'Orçamento de Tempo' },
+                    { from: 'telemetry', to: 'coach', desc: 'Dados de Partida' },
+                    { from: 'core', to: 'context', desc: 'Estado -> Narrativa' },
+                    { from: 'core', to: 'symmetry', desc: 'Filtro Geométrico' },
+                    { from: 'multicore', to: 'consolidation', desc: 'Merge de Treino' }
+                ]
+            };
+
+            const activeConnections = useMemo(() => {
+                if (!activeNodeId) return [];
+                return topologyData.connections.filter(c => c.from === activeNodeId || c.to === activeNodeId);
+            }, [activeNodeId]);
+
+            const handleNodeClick = (id) => setActiveNodeId(id === activeNodeId ? null : id);
+
+            const handleBack = () => {
+                if (activeNodeId) {
+                    setActiveNodeId(null);
+                } else {
+                    onBack();
+                }
+            };
+
+            // Background Grid Animations
+            const bgStyle = {
+                backgroundSize: '50px 50px',
+                backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                                  linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px)`,
+            };
+
+            return (
+                <div className="fixed inset-0 z-50 bg-[#050a10] flex flex-col animate-in">
+                    <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-start z-50 pointer-events-none">
+                        <button onClick={handleBack} className="pointer-events-auto flex items-center gap-2 text-white bg-slate-900/80 backdrop-blur px-4 py-2 rounded-full border border-slate-700 hover:border-cyan-500 transition-all shadow-lg">
+                            <Icon name="ChevronLeft" size={20} />
+                            <span className="text-xs font-bold tracking-widest">{activeNodeId ? "VOLTAR AO MAPA" : "VOLTAR AO HUB"}</span>
+                        </button>
+                        <div className="bg-slate-900/80 backdrop-blur px-4 py-2 rounded-full border border-slate-700 text-blue-400 flex items-center gap-2 shadow-lg"><Icon name="Network" size={18} /><span className="text-xs font-bold tracking-widest">TOPOLOGIA VIVA v3.5</span></div>
+                    </div>
+                    <div className="w-full h-full relative flex" style={bgStyle}>
+                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-900/5 to-transparent pointer-events-none"></div>
+                         <div className="flex-1 relative" onClick={() => activeNodeId && setActiveNodeId(null)}>
+                             <svg className="w-full h-full" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+                                <defs>
+                                    <filter id="glow-strong" x="-50%" y="-50%" width="200%" height="200%">
+                                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                                        <feMerge>
+                                            <feMergeNode in="coloredBlur"/>
+                                            <feMergeNode in="SourceGraphic"/>
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+
+                                {/* Connections */}
+                                {topologyData.connections.map((conn, i) => {
+                                    const start = topologyData.nodes[conn.from];
+                                    const end = topologyData.nodes[conn.to];
+                                    if(!start || !end) return null; // Safety check
+                                    const isActive = activeNodeId && (conn.from === activeNodeId || conn.to === activeNodeId);
+                                    const isDimmed = activeNodeId && !isActive;
+                                    const hexColor = { cyan: '#22d3ee', emerald: '#34d399', orange: '#fb923c', purple: '#c084fc', red: '#f87171', yellow: '#facc15', pink: '#f472b6', indigo: '#818cf8', blue: '#60a5fa' }[start.color] || '#94a3b8';
+
+                                    return (<g key={i} className="transition-all duration-500" style={{opacity: isDimmed ? 0.1 : 1}}>
+                                        {/* Base Line */}
+                                        <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke="#1e293b" strokeWidth={isActive ? 4 : 2} />
+
+                                        {/* Traffic Packet Animation */}
+                                        <circle r={isActive ? 3 : 2} fill={hexColor} filter="url(#glow-strong)">
+                                            <animateMotion 
+                                                dur={`${1 + Math.random()}s`} 
+                                                repeatCount="indefinite" 
+                                                path={`M${start.x},${start.y} L${end.x},${end.y}`} 
+                                                calcMode="linear"
+                                            />
+                                        </circle>
+                                    </g>);
+                                })}
+
+                                {/* Nodes */}
+                                {Object.entries(topologyData.nodes).map(([key, node]) => {
+                                    if(!node) return null;
+                                    const isActive = activeNodeId === key;
+                                    const isDimmed = activeNodeId && !isActive && !activeConnections.some(c => c.from === key || c.to === key);
+                                    const hexColor = { cyan: '#22d3ee', emerald: '#34d399', orange: '#fb923c', purple: '#c084fc', red: '#f87171', yellow: '#facc15', pink: '#f472b6', indigo: '#818cf8', blue: '#60a5fa' }[node.color] || '#94a3b8';
+
+                                    return (
+                                        <g key={key} onClick={(e) => { e.stopPropagation(); handleNodeClick(key); }} className="cursor-pointer transition-all duration-300" style={{opacity: isDimmed ? 0.2 : 1}}>
+                                            {/* Pulse Effect */}
+                                            <circle cx={node.x} cy={node.y} r="50" fill={hexColor} opacity="0">
+                                                <animate attributeName="opacity" values="0;0.15;0" dur="2s" repeatCount="indefinite" begin={`${Math.random()}s`} />
+                                                <animate attributeName="r" values="35;55;35" dur="2s" repeatCount="indefinite" begin={`${Math.random()}s`} />
+                                            </circle>
+
+                                            {/* Core Node */}
+                                            <circle cx={node.x} cy={node.y} r={isActive ? 40 : 35} fill="#0f172a" stroke={hexColor} strokeWidth={isActive ? 3 : 2} filter="url(#glow-strong)" />
+
+                                            <foreignObject x={node.x - 15} y={node.y - 15} width="30" height="30">
+                                                <div className="text-white flex justify-center items-center h-full pointer-events-none">
+                                                    <Icon name={node.iconName} size={30} className="drop-shadow-lg" style={{color: isActive ? '#fff' : hexColor}} />
+                                                </div>
+                                            </foreignObject>
+
+                                            <text x={node.x} y={node.y + 60} textAnchor="middle" fill={isActive ? "#fff" : hexColor} fontSize="12" fontWeight="bold" letterSpacing="1" style={{textShadow: `0 0 15px ${hexColor}`}}>{node.label}</text>
+                                        </g>
+                                    );
+                                })}
+                             </svg>
+                         </div>
+                         {activeNodeId && (
+                             <div className="absolute right-0 top-0 bottom-0 w-full md:w-96 bg-slate-900/95 border-l border-slate-800 p-6 overflow-y-auto backdrop-blur-md shadow-2xl animate-[fadeIn_0.3s_ease-out] pt-24 md:pt-24 z-40 custom-scrollbar">
+                                <div className="mb-6 pb-4 border-b border-slate-800">
+                                    <h3 className="text-sm text-slate-500 font-mono uppercase mb-1">Nó Selecionado</h3>
+                                    <h2 className="text-2xl font-black text-white" style={{color: topologyData.nodes[activeNodeId].color}}>{topologyData.nodes[activeNodeId].title}</h2>
+                                    <p className="text-xs text-slate-400 mt-1">{topologyData.nodes[activeNodeId].creator.role}</p>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>Fluxo de Dados Ativo</div>
+                                    {activeConnections.map((conn, idx) => {
+                                        const isOutgoing = conn.from === activeNodeId;
+                                        const targetNode = topologyData.nodes[isOutgoing ? conn.to : conn.from];
+                                        const targetColor = { cyan: 'text-cyan-400', emerald: 'text-emerald-400', orange: 'text-orange-400', purple: 'text-purple-400', red: 'text-red-400', yellow: 'text-yellow-400', pink: 'text-pink-400', indigo: 'text-indigo-400', blue: 'text-blue-400' }[targetNode.color];
+
+                                        return (
+                                            <div key={idx} className="bg-slate-950 border border-slate-800 rounded-lg p-4 hover:border-slate-600 transition-colors">
+                                                <div className="flex items-center justify-between mb-2"><span className={`text-[10px] font-bold px-2 py-1 rounded ${isOutgoing ? 'bg-blue-500/10 text-blue-400' : 'bg-purple-500/10 text-purple-400'}`}>{isOutgoing ? 'ENVIANDO PARA' : 'RECEBENDO DE'}</span><Icon name="ArrowRight" size={14} className="text-slate-600" /></div>
+                                                <div className="flex items-center gap-3 mb-2"><div className={`p-1.5 rounded bg-slate-900 border border-slate-700 ${targetColor}`}><Icon name={targetNode.iconName} size={16} /></div><span className="font-bold text-sm text-slate-200">{targetNode.title}</span></div>
+                                                <p className="text-xs text-slate-400 leading-relaxed border-t border-slate-900 pt-2">"{conn.desc}"</p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                             </div>
+                         )}
+                    </div>
+                </div>
+            );
+        };
+
+        // --- CARD PRINCIPAL (SCROLL FIXO) ---
+        const DetailView = ({ module, onBack }) => {
+            if (!module) return null;
+            const themeColors = { cyan: 'text-cyan-400 border-cyan-500 from-cyan-500/20 bg-cyan-500/10', emerald: 'text-emerald-400 border-emerald-500 from-emerald-500/20 bg-emerald-500/10', orange: 'text-orange-400 border-orange-500 from-orange-500/20 bg-orange-500/10', purple: 'text-purple-400 border-purple-500 from-purple-500/20 bg-purple-500/10', red: 'text-red-400 border-red-500 from-red-500/20 bg-red-500/10', yellow: 'text-yellow-400 border-yellow-500 from-yellow-500/20 bg-yellow-500/10', pink: 'text-pink-400 border-pink-500 from-pink-500/20 bg-pink-500/10', indigo: 'text-indigo-400 border-indigo-500 from-indigo-500/20 bg-indigo-500/10', blue: 'text-blue-400 border-blue-500 from-blue-500/20 bg-blue-500/10', slate: 'text-slate-400 border-slate-500 from-slate-500/20 bg-slate-500/10' };
+            const colorClass = themeColors[module.color] || themeColors.cyan;
+            const baseColor = colorClass.split(' ')[0]; 
+
+            // 🌟 Adiciona o Guia de Luzes no detalhe do card GUIA DE STATUS
+            const isStatusGuide = module.id === 'status_guide';
+
+            return (
+                <div className="animate-in h-full flex flex-col relative overflow-hidden"> 
+                    <div className="shrink-0 flex items-center justify-between mb-4 border-b border-slate-800 pb-4">
+                        <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors group px-3 py-2 rounded hover:bg-slate-900"><Icon name="ChevronLeft" className="group-hover:-translate-x-1 transition-transform" size={20} /><span className="text-xs font-mono uppercase tracking-widest">Voltar ao Hub</span></button>
+                        <div className="hidden md:flex gap-2"><span className="text-[10px] font-mono text-slate-600 uppercase self-center mr-2">Secure Connection</span><div className="w-2 h-2 bg-green-500 rounded-full self-center animate-pulse"></div></div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto pb-32 pr-2 custom-scrollbar">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                            <div className="lg:col-span-8 space-y-6">
+                                <div className="flex flex-col sm:flex-row items-start gap-6">
+                                    <div className={`p-6 rounded-2xl bg-slate-900 border-2 ${colorClass.split(' ')[1]} shadow-[0_0_40px_-10px_rgba(0,0,0,0.5)] shrink-0`}><Icon name={module.iconName} size={56} className={baseColor} /></div>
+                                    <div className="flex-1">
+                                        <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tight mb-2 leading-none">{module.title}</h2>
+                                        <div className="flex flex-wrap items-center gap-3 mb-4">
+                                            <span className={`px-2 py-1 rounded bg-slate-950 border border-slate-800 text-[10px] font-bold uppercase tracking-widest ${baseColor}`}>{module.type}</span>
+                                            <span className="flex items-center gap-1 text-[10px] font-mono text-slate-500 uppercase"><Icon name="Circle" size={6} className={module.status === 'ONLINE' ? 'fill-green-500 text-green-500' : module.status === 'AUTO' ? 'fill-cyan-500 text-cyan-500' : 'fill-amber-500 text-amber-500'} /> Status: {module.status}</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">{module.langs.map((lang, idx) => <span key={idx} className="px-2 py-1 rounded bg-slate-950 border border-slate-800 text-[10px] font-mono text-slate-400 flex items-center gap-1"><Icon name="Code2" size={10} /> {lang}</span>)}</div>
+                                    </div>
+                                </div>
+                                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 md:p-8 relative overflow-hidden group">
+                                    <div className={`absolute inset-0 bg-gradient-to-br ${colorClass.split(' ')[2]} to-transparent opacity-20 pointer-events-none`}></div>
+                                    <div className="relative z-10">
+                                        <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2"><Icon name="History" size={16} className={baseColor} /> Arquivo de Sistema</h3>
+                                        <p className="text-slate-300 leading-relaxed font-light text-sm md:text-base">{module.lore}</p>
+                                        
+                                        {/* 🌟 VISUALIZAÇÃO ESPECIAL DO GUIA DE STATUS */}
+                                        {isStatusGuide && (
+                                            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                <div className="bg-slate-950/50 p-3 rounded border border-green-900/30 flex items-center gap-3">
+                                                    <div className="w-3 h-3 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e] animate-pulse"></div>
+                                                    <div><div className="text-xs font-bold text-green-400">VERDE</div><div className="text-[10px] text-slate-400">Operacional / Estável</div></div>
+                                                </div>
+                                                <div className="bg-slate-950/50 p-3 rounded border border-cyan-900/30 flex items-center gap-3">
+                                                    <div className="w-3 h-3 bg-cyan-500 rounded-full shadow-[0_0_8px_#06b6d4] animate-pulse"></div>
+                                                    <div><div className="text-xs font-bold text-cyan-400">CIANO</div><div className="text-[10px] text-slate-400">Automático / Dinâmico</div></div>
+                                                </div>
+                                                <div className="bg-slate-950/50 p-3 rounded border border-amber-900/30 flex items-center gap-3">
+                                                    <div className="w-3 h-3 bg-amber-500 rounded-full shadow-[0_0_8px_#f59e0b] animate-pulse"></div>
+                                                    <div><div className="text-xs font-bold text-amber-400">ÂMBAR</div><div className="text-[10px] text-slate-400">Sistema / Debug</div></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="lg:col-span-4 space-y-4">
+                                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2"><Icon name="BarChart" size={14} /> Carga Computacional</h3>
+                                    <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden mb-1">
+                                        <div className={`absolute top-0 left-0 h-full bg-gradient-to-r from-slate-500 to-${module.color}-500`} style={{width: `${module.complexity || 50}%`}}></div>
+                                    </div>
+                                    <div className="flex justify-between text-[10px] font-mono text-slate-500"><span>Idle</span><span>Max Load: {module.complexity}%</span></div>
+                                </div>
+
+                                <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
+                                    <div className={`absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl ${colorClass.split(' ')[2]} to-transparent opacity-20 rounded-bl-full pointer-events-none`}></div>
+                                    <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2"><Icon name="User" size={14} /> Gênese Teórica</h3>
+                                    <div className="flex items-start gap-3 mb-4">
+                                        <div className="w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center border border-slate-800 shadow-inner shrink-0"><Icon name="Code2" size={18} className="text-slate-400"/></div>
+                                        <div><p className="text-sm font-bold text-white">{module.creator.name}</p><p className="text-[10px] text-slate-500 uppercase font-mono tracking-wide">{module.creator.role} // {module.creator.year}</p></div>
+                                    </div>
+                                    <div className="bg-slate-900/80 rounded-lg p-3 border border-slate-800/50 mb-2"><div className="flex items-center gap-2 mb-2"><Icon name="Lightbulb" size={12} className={baseColor} /><span className={`text-[10px] font-bold uppercase ${baseColor}`}>A Origem</span></div><p className="text-xs text-slate-400 italic leading-relaxed">"{module.creator.reason}"</p></div>
+                                    <div className="bg-slate-900/80 rounded-lg p-3 border border-slate-800/50"><div className="flex items-center gap-2 mb-2"><Icon name="Target" size={12} className={baseColor} /><span className={`text-[10px] font-bold uppercase ${baseColor}`}>Implementação Sistêmica</span></div><p className="text-xs text-slate-300 leading-relaxed">{module.creator.usage}</p></div>
+                                </div>
+
+                                <div className="bg-black border border-slate-800 rounded-xl p-4 font-mono text-[10px] h-40 overflow-hidden flex flex-col shadow-inner">
+                                    <div className="text-slate-600 mb-2 flex justify-between"><span>root@sentinela:~# log --tail</span><Icon name="Zap" size={10} className={baseColor}/></div>
+                                    <div className={`flex-1 space-y-1.5 opacity-90 ${baseColor}`}>
+                                        <TypewriterLog lines={module.logs} active={true} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const MainGrid = ({ onSelect }) => (
+            <div className="h-full overflow-y-auto pb-32 pr-2 custom-scrollbar">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 animate-in">
+                    {modules.map((mod) => {
+                        const colorClasses = { cyan: 'hover:border-cyan-500/50 group-hover:text-cyan-400', emerald: 'hover:border-emerald-500/50 group-hover:text-emerald-400', orange: 'hover:border-orange-500/50 group-hover:text-orange-400', purple: 'hover:border-purple-500/50 group-hover:text-purple-400', red: 'hover:border-red-500/50 group-hover:text-red-400', yellow: 'hover:border-yellow-500/50 group-hover:text-yellow-400', pink: 'hover:border-pink-500/50 group-hover:text-pink-400', indigo: 'hover:border-indigo-500/50 group-hover:text-indigo-400', blue: 'hover:border-blue-500/50 group-hover:text-blue-400', slate: 'hover:border-slate-500/50 group-hover:text-slate-400' };
+                        const colorClass = colorClasses[mod.color] || colorClasses.cyan;
+                        return (
+                            <div key={mod.id} onClick={() => onSelect(mod)} className={`group cursor-pointer bg-slate-900/40 border border-slate-800/60 rounded-xl p-5 transition-all duration-300 hover:-translate-y-1 hover:bg-slate-900 hover:shadow-xl ${colorClass.split(' ')[0]}`}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className={`p-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-500 transition-colors ${colorClass.split(' ')[1]}`}><Icon name={mod.iconName} size={24} /></div>
+                                    {mod.status === 'ONLINE' && <div className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-[0_0_5px_#22c55e]"></div>}
+                                    {mod.status === 'AUTO' && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shadow-[0_0_5px_#06b6d4] animate-pulse"></div>}
+                                    {/* 🔴 Fallback para status SYSTEM ou DEV ONLY (luz amarela/âmbar) */}
+                                    {mod.status !== 'ONLINE' && mod.status !== 'AUTO' && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full shadow-[0_0_5px_#f59e0b]"></div>}
+                                </div>
+                                <div><h3 className="text-lg font-bold text-slate-200 mb-1 transition-colors group-hover:text-white">{mod.title}</h3><p className="text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-3">{mod.type}</p></div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+        );
+
+        function AISystemLore() {
+            const [activeModule, setActiveModule] = useState(null);
+            const [hasError, setHasError] = useState(false);
+            if (hasError) return <div className="text-red-500 p-10">Erro Crítico no Sistema. Recarregue a página.</div>;
+
+            return (
+                <div className="h-full flex flex-col text-slate-200 font-sans selection:bg-cyan-500/30 bg-[#050a10]">
+                    <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 relative z-10 overflow-hidden flex flex-col">
+                        {!activeModule && (
+                            <header className="shrink-0 mb-4 border-b border-slate-800/50 pb-4 animate-in px-2 md:px-0">
+                                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                                    <div className="text-center md:text-left">
+                                        <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-cyan-500 text-[10px] font-mono uppercase tracking-widest mb-1">
+                                            <Icon name="Terminal" size={10} /> v3.5 Guide
+                                        </div>
+                                        <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter flex items-center justify-center md:justify-start gap-3">
+                                            <span className="text-slate-200 tracking-widest">DAMAS</span>
+                                            <span className="text-sm text-slate-600 font-mono">vs</span>
+                                            <span className="font-mono text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-600 animate-pulse drop-shadow-[0_0_10px_rgba(34,211,238,0.4)] float">IA_</span>
+                                        </h1>
+                                    </div>
+                                    <p className="text-slate-500 text-xs max-w-md text-center md:text-right leading-tight">
+                                        Dossiê técnico (Deep Origins). Arquitetura neural explicada desde os princípios até a implementação.
+                                    </p>
+                                </div>
+                            </header>
+                        )}
+                        <div className="flex-1 overflow-hidden relative">
+                            {activeModule && activeModule.id === 'mindmap' ? (<MindMapView onBack={() => setActiveModule(null)} />) : activeModule ? (<DetailView module={activeModule} onBack={() => setActiveModule(null)} />) : (<MainGrid onSelect={setActiveModule} />)}
+                        </div>
+                    </div>
+                    <div className="fixed bottom-0 left-0 w-full bg-[#020617] border-t border-slate-800 px-6 py-2 z-50 flex justify-between items-center text-[10px] font-mono text-slate-500 uppercase tracking-wider select-none">
+                        <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div> SYSTEM: STABLE</span>
+                            <span className="hidden md:inline">MEM: 128.4 MB</span>
+                            <span className="hidden md:inline">WORKERS: ACTIVE</span>
+                        </div>
+                        <div className="flex items-center gap-4"><span className="text-slate-600">SENTINELA OS v3.5</span><span className="animate-pulse">_</span></div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<AISystemLore />);
+    </script>
+</body>
+</html>
