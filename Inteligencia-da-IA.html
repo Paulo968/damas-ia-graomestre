@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Damas vs IA // Arquivos do Sistema v3.5 (Guide Added)</title>
+    <title>Damas vs IA // Arquivos do Sistema v3.2 (Visual Update)</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -30,7 +30,7 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .animate-in { animation: fadeIn 0.5s ease-out forwards; }
 
-        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-3px); } }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-5px); } }
         .float { animation: float 3s ease-in-out infinite; }
 
         /* Scrollbars */
@@ -75,8 +75,7 @@
             Target: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
             BarChart: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>,
             Layers: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
-            MessageSquare: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-            AlertCircle: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            MessageSquare: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         };
 
         const Icon = ({ name, size = 24, className, style }) => {
@@ -112,40 +111,15 @@
             );
         };
 
-        // --- DADOS DO SISTEMA (DEEP LORE & ORIGINS - FIXED STATUS) ---
-        // Garantimos que todos os módulos tenham status: 'ONLINE' ou 'AUTO' para a luz verde aparecer.
+        // --- DADOS DO SISTEMA (DEEP LORE & ORIGINS) ---
         const modules = [
-            {
-                id: 'status_guide',
-                title: 'GUIA DE STATUS',
-                type: 'PROTOCOLO DE SINALIZAÇÃO',
-                iconName: 'AlertCircle',
-                color: 'emerald', // Cor base
-                status: 'ONLINE', // 🟢
-                complexity: 5, 
-                creator: { 
-                    name: 'UX Systems', 
-                    role: 'Interface Design', 
-                    year: '2025', 
-                    reason: 'A incerteza sobre o estado da máquina gera desconfiança. Um sistema visual instantâneo elimina a necessidade de ler logs técnicos.',
-                    usage: 'Define o significado das luzes nos cards: Verde = Operacional; Ciano = Adaptando/Pensando; Âmbar = Sistema/Debug.' 
-                },
-                langs: ['Visual Protocol', 'UI Feedback'], 
-                lore: 'O código de cores que traduz o pulso da máquina. Uma linguagem universal que informa, num piscar de olhos, se a IA está estável, a pensar ou em manutenção.', 
-                tech: { 
-                    green: 'ONLINE (Estável)', 
-                    cyan: 'AUTO (Dinâmico)', 
-                    amber: 'SYSTEM (Crítico)' 
-                }, 
-                logs: ['> Carregando protocolos visuais...', '> LED Verde: Normalidade confirmada.', '> LED Ciano: Heurística ativa.', '> LED Âmbar: Acesso restrito.']
-            },
             {
                 id: 'mindmap',
                 title: 'TOPOLOGIA NEURAL',
                 type: 'VISUALIZAÇÃO DE SISTEMA',
                 iconName: 'Network',
                 color: 'blue',
-                status: 'ONLINE', // 🟢
+                status: 'ONLINE',
                 complexity: 10, 
                 creator: { 
                     name: 'System Architect', 
@@ -165,7 +139,7 @@
                 type: 'PROCESSAMENTO PARALELO',
                 iconName: 'Cpu',
                 color: 'indigo',
-                status: 'ONLINE', // 🟢
+                status: 'ONLINE',
                 complexity: 95,
                 creator: {
                     name: 'Gene Amdahl',
@@ -185,7 +159,7 @@
                 type: 'MOTOR MINIMAX',
                 iconName: 'Brain',
                 color: 'cyan',
-                status: 'ONLINE', // 🟢
+                status: 'ONLINE',
                 complexity: 90, 
                 creator: {
                     name: 'Alan Turing',
@@ -205,7 +179,7 @@
                 type: 'ANÁLISE SEMÂNTICA',
                 iconName: 'Lightbulb',
                 color: 'yellow',
-                status: 'ONLINE', // 🟢
+                status: 'ONLINE',
                 complexity: 35,
                 creator: {
                     name: 'Grandmaster Module',
@@ -225,7 +199,7 @@
                 type: 'CÉREBRO DE MÉTRICAS',
                 iconName: 'BarChart',
                 color: 'orange',
-                status: 'ONLINE', // 🟢
+                status: 'ONLINE',
                 complexity: 60,
                 creator: {
                     name: 'Data Ops',
@@ -245,7 +219,7 @@
                 type: 'GESTÃO DE HORIZONTE',
                 iconName: 'Zap',
                 color: 'cyan',
-                status: 'AUTO', // 🔵 (Ciano pulsante, pois é 'AUTO')
+                status: 'AUTO',
                 complexity: 40,
                 creator: {
                     name: 'Heuristic Engine',
@@ -265,7 +239,7 @@
                 type: 'GESTÃO TEMPORAL',
                 iconName: 'History',
                 color: 'blue',
-                status: 'ONLINE', // 🟢
+                status: 'ONLINE',
                 complexity: 30,
                 creator: {
                     name: 'Resource Manager',
@@ -285,7 +259,7 @@
                 type: 'OTIMIZAÇÃO GEOMÉTRICA',
                 iconName: 'Crosshair',
                 color: 'emerald',
-                status: 'ONLINE', // 🟢
+                status: 'ONLINE',
                 complexity: 20,
                 creator: {
                     name: 'Geometry Engine',
@@ -305,7 +279,7 @@
                 type: 'FEEDBACK NARRATIVO',
                 iconName: 'MessageSquare',
                 color: 'pink',
-                status: 'ONLINE', // 🟢
+                status: 'ONLINE',
                 complexity: 25,
                 creator: {
                     name: 'UX Narrative',
@@ -325,7 +299,7 @@
                 type: 'FUSÃO DE PESOS',
                 iconName: 'Layers',
                 color: 'purple',
-                status: 'ONLINE', // 🟢
+                status: 'ONLINE',
                 complexity: 80,
                 creator: {
                     name: 'Deep Learning Ops',
@@ -345,7 +319,7 @@
                 type: 'MONITORAMENTO INTERNO',
                 iconName: 'Activity',
                 color: 'red',
-                status: 'DEV ONLY', // 🟡 (Âmbar)
+                status: 'DEV ONLY',
                 complexity: 15,
                 creator: {
                     name: 'Dev Tools',
@@ -365,7 +339,7 @@
                 type: 'CICLO DE VIDA',
                 iconName: 'RefreshCw',
                 color: 'blue',
-                status: 'SYSTEM', // 🟡 (Âmbar)
+                status: 'SYSTEM',
                 complexity: 10,
                 creator: {
                     name: 'Sys Admin',
@@ -443,7 +417,7 @@
                             <Icon name="ChevronLeft" size={20} />
                             <span className="text-xs font-bold tracking-widest">{activeNodeId ? "VOLTAR AO MAPA" : "VOLTAR AO HUB"}</span>
                         </button>
-                        <div className="bg-slate-900/80 backdrop-blur px-4 py-2 rounded-full border border-slate-700 text-blue-400 flex items-center gap-2 shadow-lg"><Icon name="Network" size={18} /><span className="text-xs font-bold tracking-widest">TOPOLOGIA VIVA v3.5</span></div>
+                        <div className="bg-slate-900/80 backdrop-blur px-4 py-2 rounded-full border border-slate-700 text-blue-400 flex items-center gap-2 shadow-lg"><Icon name="Network" size={18} /><span className="text-xs font-bold tracking-widest">TOPOLOGIA VIVA v3.2</span></div>
                     </div>
                     <div className="w-full h-full relative flex" style={bgStyle}>
                          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-900/5 to-transparent pointer-events-none"></div>
@@ -551,9 +525,6 @@
             const colorClass = themeColors[module.color] || themeColors.cyan;
             const baseColor = colorClass.split(' ')[0]; 
 
-            // 🌟 Adiciona o Guia de Luzes no detalhe do card GUIA DE STATUS
-            const isStatusGuide = module.id === 'status_guide';
-
             return (
                 <div className="animate-in h-full flex flex-col relative overflow-hidden"> 
                     <div className="shrink-0 flex items-center justify-between mb-4 border-b border-slate-800 pb-4">
@@ -579,24 +550,6 @@
                                     <div className="relative z-10">
                                         <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider mb-4 flex items-center gap-2"><Icon name="History" size={16} className={baseColor} /> Arquivo de Sistema</h3>
                                         <p className="text-slate-300 leading-relaxed font-light text-sm md:text-base">{module.lore}</p>
-                                        
-                                        {/* 🌟 VISUALIZAÇÃO ESPECIAL DO GUIA DE STATUS */}
-                                        {isStatusGuide && (
-                                            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                                <div className="bg-slate-950/50 p-3 rounded border border-green-900/30 flex items-center gap-3">
-                                                    <div className="w-3 h-3 bg-green-500 rounded-full shadow-[0_0_8px_#22c55e] animate-pulse"></div>
-                                                    <div><div className="text-xs font-bold text-green-400">VERDE</div><div className="text-[10px] text-slate-400">Operacional / Estável</div></div>
-                                                </div>
-                                                <div className="bg-slate-950/50 p-3 rounded border border-cyan-900/30 flex items-center gap-3">
-                                                    <div className="w-3 h-3 bg-cyan-500 rounded-full shadow-[0_0_8px_#06b6d4] animate-pulse"></div>
-                                                    <div><div className="text-xs font-bold text-cyan-400">CIANO</div><div className="text-[10px] text-slate-400">Automático / Dinâmico</div></div>
-                                                </div>
-                                                <div className="bg-slate-950/50 p-3 rounded border border-amber-900/30 flex items-center gap-3">
-                                                    <div className="w-3 h-3 bg-amber-500 rounded-full shadow-[0_0_8px_#f59e0b] animate-pulse"></div>
-                                                    <div><div className="text-xs font-bold text-amber-400">ÂMBAR</div><div className="text-[10px] text-slate-400">Sistema / Debug</div></div>
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -645,8 +598,6 @@
                                     <div className={`p-3 rounded-lg bg-slate-950 border border-slate-800 text-slate-500 transition-colors ${colorClass.split(' ')[1]}`}><Icon name={mod.iconName} size={24} /></div>
                                     {mod.status === 'ONLINE' && <div className="w-1.5 h-1.5 bg-green-500 rounded-full shadow-[0_0_5px_#22c55e]"></div>}
                                     {mod.status === 'AUTO' && <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full shadow-[0_0_5px_#06b6d4] animate-pulse"></div>}
-                                    {/* 🔴 Fallback para status SYSTEM ou DEV ONLY (luz amarela/âmbar) */}
-                                    {mod.status !== 'ONLINE' && mod.status !== 'AUTO' && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full shadow-[0_0_5px_#f59e0b]"></div>}
                                 </div>
                                 <div><h3 className="text-lg font-bold text-slate-200 mb-1 transition-colors group-hover:text-white">{mod.title}</h3><p className="text-[10px] font-mono text-slate-500 uppercase tracking-wider mb-3">{mod.type}</p></div>
                             </div>
@@ -665,22 +616,32 @@
                 <div className="h-full flex flex-col text-slate-200 font-sans selection:bg-cyan-500/30 bg-[#050a10]">
                     <div className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 relative z-10 overflow-hidden flex flex-col">
                         {!activeModule && (
-                            <header className="shrink-0 mb-4 border-b border-slate-800/50 pb-4 animate-in px-2 md:px-0">
-                                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                                    <div className="text-center md:text-left">
-                                        <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-cyan-500 text-[10px] font-mono uppercase tracking-widest mb-1">
-                                            <Icon name="Terminal" size={10} /> v3.5 Guide
-                                        </div>
-                                        <h1 className="text-3xl md:text-5xl font-black text-white tracking-tighter flex items-center justify-center md:justify-start gap-3">
-                                            <span className="text-slate-200 tracking-widest">DAMAS</span>
-                                            <span className="text-sm text-slate-600 font-mono">vs</span>
-                                            <span className="font-mono text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-600 animate-pulse drop-shadow-[0_0_10px_rgba(34,211,238,0.4)] float">IA_</span>
-                                        </h1>
-                                    </div>
-                                    <p className="text-slate-500 text-xs max-w-md text-center md:text-right leading-tight">
-                                        Dossiê técnico (Deep Origins). Arquitetura neural explicada desde os princípios até a implementação.
-                                    </p>
-                                </div>
+                            <header className="mb-8 text-center md:text-left border-b border-slate-800/50 pb-8 animate-in shrink-0">
+                                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-cyan-500 text-[10px] font-mono uppercase tracking-widest mb-4"><Icon name="Terminal" size={12} /> Arquivos Confidenciais v3.2</div>
+                                
+                                <h1 className="text-4xl md:text-7xl font-black text-white tracking-tighter mb-6 flex flex-col md:flex-row items-center md:justify-start justify-center gap-2 md:gap-4">
+                                    <span className="relative inline-block group cursor-default">
+                                        <span className="absolute -inset-1 bg-slate-800 skew-x-12 opacity-0 group-hover:opacity-50 transition-opacity duration-500 blur-sm"></span>
+                                        <span className="relative text-slate-200 tracking-[0.15em] drop-shadow-md">DAMAS</span>
+                                    </span>
+                                    <span className="text-lg md:text-2xl text-slate-600 font-mono font-light px-2">vs</span>
+                                    <span className="font-mono text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 animate-pulse drop-shadow-[0_0_15px_rgba(34,211,238,0.6)] tracking-tighter float">
+                                        IA_
+                                    </span>
+                                </h1>
+
+                                
+<p className="text-slate-400 max-w-2xl text-sm md:text-base leading-relaxed">Dossiê técnico completo (Deep Origins). Arquitetura neural explicada desde os princípios fundamentais da computação até a implementação final.</p>
+<div className="mt-4 flex justify-center md:justify-end">
+  <button
+    onClick={() => window.location.href = "Index_dificuldades_afinadas_resetIA_fix.html"}
+    className="inline-flex items-center gap-2 px-3 py-1 rounded-lg border border-slate-700/70 bg-slate-900/60 text-xs text-slate-300 hover:border-emerald-400 hover:text-emerald-300 hover:bg-slate-900 transition-colors duration-200"
+  >
+    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+    <span className="font-mono tracking-wide">Voltar ao Jogo</span>
+  </button>
+</div>
+
                             </header>
                         )}
                         <div className="flex-1 overflow-hidden relative">
@@ -693,7 +654,7 @@
                             <span className="hidden md:inline">MEM: 128.4 MB</span>
                             <span className="hidden md:inline">WORKERS: ACTIVE</span>
                         </div>
-                        <div className="flex items-center gap-4"><span className="text-slate-600">SENTINELA OS v3.5</span><span className="animate-pulse">_</span></div>
+                        <div className="flex items-center gap-4"><span className="text-slate-600">SENTINELA OS v3.2</span><span className="animate-pulse">_</span></div>
                     </div>
                 </div>
             );

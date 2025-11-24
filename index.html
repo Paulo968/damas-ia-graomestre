@@ -384,12 +384,32 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           </select>
         </div>
 
+        <!-- Mini status da IA Master para o modo treino -->
         <!-- Painel de diagnóstico da IA -->
 <!-- Botão de iniciar treino (movido do menu principal) -->
         <button id="btnTraining" 
           class="bg-emerald-600 hover:bg-emerald-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-4 transition w-60">
           ⚡ Iniciar Treino
-        </button>        <button id="openAiDebugScreen" type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-4 transition w-60">
+        </button>
+
+        <!-- Botões de treino em lote -->
+        <div class="flex flex-col gap-2 mb-4 w-60">
+          <button id="btnTraining50"
+            class="bg-emerald-700 hover:bg-emerald-600 text-white text-sm px-4 py-2 rounded-lg shadow-md border border-emerald-500/60">
+            Treinar por 50 partidas
+          </button>
+          <button id="btnTraining200"
+            class="bg-emerald-800 hover:bg-emerald-700 text-white text-sm px-4 py-2 rounded-lg shadow-md border border-emerald-500/60">
+            Treinar por 200 partidas
+          </button>
+        </div>
+
+        <!-- Botão para resetar memória e perfis da IA -->
+        <button id="btnResetIA"
+          class="bg-red-700 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-lg shadow-md border border-red-400/80 w-60 mb-2">
+          🔁 Resetar IA (memória & perfis)
+        </button>
+        <button id="openAiDebugScreen" type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-4 transition w-60">
           📊 Diagnóstico da IA
         </button>
 
@@ -400,9 +420,16 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         </button>
       </div>
       <!-- Tela de diagnóstico detalhado da IA (apenas testes) -->
-      <div id="aiDebugScreen" class="hidden min-h-screen flex flex-col items-center justify-start bg-slate-950 text-slate-100 px-4 pb-10">
-        <div class="w-full max-w-xl mt-10 bg-slate-900/80 rounded-2xl border border-emerald-400/40 p-5">
+      <div id="aiDebugScreen" class="hidden min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 px-4 py-4">
+        <div class="w-full max-w-xl mt-6 bg-slate-900/80 rounded-2xl border border-emerald-400/40 p-5">
+          <div class="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
           <h2 class="text-xl font-semibold text-emerald-300 mb-2">📊 Diagnóstico da IA</h2>
+
+<button id="btnOpenInteligenciaIA"
+ class="bg-emerald-700 hover:bg-emerald-600 text-white text-sm px-4 py-2 rounded-lg shadow-md border border-emerald-500/60 w-full mb-4">
+ 🌐 Abrir Inteligência da IA
+</button>
+
           <p class="text-xs text-slate-400 mb-4">
             Informações internas da IA vermelha (apenas para testes e análise).
           </p>
@@ -433,6 +460,40 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
               <p class="text-slate-400 text-xs mb-1">Padrões totais (unificados):</p>
               <span id="aiPatternCountTotal" class="text-base font-semibold text-emerald-300">--</span>
             </div>
+          </div>
+
+          
+          <div class="border-t border-slate-700/60 pt-3 mt-1">
+            <p class="text-slate-400 text-xs mb-2">Perfil de comportamento da IA vermelha (dificuldade atual):</p>
+
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <p class="text-slate-500 text-[11px] mb-1">Dificuldade ativa:</p>
+                <span id="aiProfileDifficulty" class="text-sm font-semibold text-slate-200">--</span>
+              </div>
+              <div>
+                <p class="text-slate-500 text-[11px] mb-1">Winrate (perfil atual):</p>
+                <span id="aiProfileWinrate" class="text-sm font-semibold text-emerald-300">--</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 mt-2 text-xs">
+              <div>
+                <p class="text-slate-500 text-[11px] mb-1">Agressividade (agg):</p>
+                <span id="aiProfileAgg" class="text-sm font-semibold text-amber-300">--</span>
+              </div>
+              <div>
+                <p class="text-slate-500 text-[11px] mb-1">Defensividade (def):</p>
+                <span id="aiProfileDef" class="text-sm font-semibold text-sky-300">--</span>
+              </div>
+            </div>
+
+            <div class="mt-2 text-xs text-slate-500">
+              <span id="aiProfileGames">-- partidas, -- vitórias</span>
+            </div>
+          </div>
+
+
           </div>
 
           <button id="btnAiDebugBack"
@@ -721,6 +782,13 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
     window.userId = auth.currentUser.uid;
 
     console.log("🔥 Firebase pronto:", window.userId);
+    try {
+      if (typeof forceSyncAIProfiles === 'function') {
+        forceSyncAIProfiles();
+      }
+    } catch (e) {
+      console.warn("Falha ao sincronizar perfis de IA após Firebase pronto:", e);
+    }
     resolve(true);
   } catch (err) {
     console.error("Erro Firebase:", err);
@@ -809,6 +877,60 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       let trainingMode = false;     // true = IA joga pelos dois lados
       let trainingSpeed = 400;      // velocidade em ms entre lances da IA
 
+
+      // Estatísticas da sessão de treino IA vs IA
+      let trainingSessionStats = { games: 0, redWins: 0, whiteWins: 0 };
+      let trainingTargetGames = null; // quando definido (>0), modo "treinar N partidas"
+
+      function resetTrainingSessionStats() {
+        trainingSessionStats = { games: 0, redWins: 0, whiteWins: 0 };
+      }
+
+      function ensureTrainingHud() {
+        let hud = document.getElementById('trainingHud');
+        if (!hud) {
+          hud = document.createElement('div');
+          hud.id = 'trainingHud';
+          hud.className = "fixed top-3 left-1/2 -translate-x-1/2 bg-slate-950/90 text-xs text-slate-200 px-4 py-2 rounded-xl border border-emerald-400/60 shadow-lg z-40";
+          hud.innerHTML = `
+            <div class="font-semibold text-emerald-300 text-sm mb-1">🤖 IA Master treinando...</div>
+            <div class="flex gap-4 text-[11px]">
+              <span id="trainingHudGames">Partidas de treino: 0</span>
+              <span id="trainingHudWinrate">Winrate no treino: --</span>
+            </div>
+          `;
+          document.body.appendChild(hud);
+        }
+      }
+
+      function removeTrainingHud() {
+        const hud = document.getElementById('trainingHud');
+        if (hud) hud.remove();
+      }
+
+      function updateTrainingHud() {
+        const hudGames = document.getElementById('trainingHudGames');
+        const hudWr    = document.getElementById('trainingHudWinrate');
+        if (!hudGames || !hudWr) return;
+
+        const total = trainingSessionStats.games || 0;
+        const redWins = trainingSessionStats.redWins || 0;
+        const target = (typeof trainingTargetGames === 'number' && trainingTargetGames > 0) ? trainingTargetGames : null;
+
+        if (target) {
+          hudGames.textContent = `Partidas de treino: ${total} / ${target}`;
+        } else {
+          hudGames.textContent = `Partidas de treino: ${total}`;
+        }
+
+        if (total > 0) {
+          const wr = (redWins / Math.max(1, total)) * 100;
+          hudWr.textContent = `Winrate no treino: ${wr.toFixed(1).replace('.', ',')}%`;
+        } else {
+          hudWr.textContent = 'Winrate no treino: --';
+        }
+      }
+
       function setTrainingSpeedFromOption(value) {
         // value: 'slow' | 'normal' | 'fast'
         if (value === 'slow')      trainingSpeed = 1000;
@@ -831,10 +953,35 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       
       // 💡 IA Adaptativa — Perfil Dinâmico (persistente em Firestore + cache local)
       const AI_DEFAULT_PROFILE = { agg: 0.5, def: 0.5, games: 0, wins: 0 };
-      const aiProfileCache = {
-        white: { agg: 0.5, def: 0.5 },
-        red:   { agg: 0.5, def: 0.5 }
-      };
+
+      // Cache de perfis por chave dinâmica (cor + dificuldade/sufixo)
+      const aiProfileCache = {};
+
+      // Retorna o sufixo do perfil de IA de acordo com a dificuldade atual.
+      // Em modo treino (IA vs IA), sempre usa o perfil "master" para treinar a IA profissional.
+      function getAIProfileSuffix() {
+        try {
+          // Modo treino força sempre o perfil "master"
+          if (typeof trainingMode !== 'undefined' && trainingMode) {
+            return 'master';
+          }
+        } catch (_) {}
+
+        const diff = (localStorage.getItem('difficulty') || 'medium').toLowerCase();
+        if (diff === 'easy' || diff === 'medium' || diff === 'hard' || diff === 'master') {
+          return diff;
+        }
+        return 'medium';
+      }
+
+      function getAIProfileStorageKey(color) {
+        const suffix = getAIProfileSuffix();
+        return `aiProfile_${color}_${suffix}`; // Ex: aiProfile_red_master
+      }
+
+      function getAIProfileCacheKey(color) {
+        return getAIProfileStorageKey(color); // Usa a mesma chave para o cache
+      }
 
       // 💡 NEURAL HEURÍSTICA SIMPLES (pesos aprendidos por cor)
       // Vetor de 4 características: [material, reis, centro, mobilidade]
@@ -1057,27 +1204,45 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       // ✅ FIM DO NOVO BLOCO
       // ==========================================================
 
-      async function updateSingleAIProfile(color, isWinner) {
-        const storageKey = `aiProfile_${color}`;
+            async function updateSingleAIProfile(color, isWinner) {
+        // color: 'white' ou 'red'
+        const storageKey = getAIProfileStorageKey(color);
+        const cacheKey   = getAIProfileCacheKey(color);
+
         let profile = { ...AI_DEFAULT_PROFILE };
 
-        // 1. Tenta carregar do localStorage
+        // 1. Tenta carregar do localStorage (perfil por dificuldade)
         try {
           const ls = localStorage.getItem(storageKey);
-          if (ls) Object.assign(profile, JSON.parse(ls));
+          if (ls) {
+            const parsed = JSON.parse(ls);
+            profile = {
+              agg:  (typeof parsed.agg  === 'number') ? parsed.agg  : AI_DEFAULT_PROFILE.agg,
+              def:  (typeof parsed.def  === 'number') ? parsed.def  : AI_DEFAULT_PROFILE.def,
+              games:(typeof parsed.games=== 'number') ? parsed.games: 0,
+              wins: (typeof parsed.wins === 'number') ? parsed.wins : 0
+            };
+          }
         } catch (e) {
           console.warn("Falha ao ler perfil IA do localStorage:", e);
         }
 
-        // 2. Tenta carregar do Firestore (caso disponível)
+        // 2. Tenta carregar do Firestore (caso disponível) para esse storageKey
         if (window.db && window.doc && window.getDoc && window.setDoc) {
           try {
             const { db, doc, getDoc, setDoc } = window;
             const ref = doc(db, "aiProfiles", storageKey);
             const snap = await getDoc(ref);
             if (snap.exists()) {
-              Object.assign(profile, snap.data());
+              const remote = snap.data();
+              profile = {
+                agg:  (typeof remote.agg  === 'number') ? remote.agg  : profile.agg,
+                def:  (typeof remote.def  === 'number') ? remote.def  : profile.def,
+                games:(typeof remote.games=== 'number') ? remote.games: profile.games,
+                wins: (typeof remote.wins === 'number') ? remote.wins : profile.wins
+              };
             } else {
+              // Cria o doc inicial se ainda não existir
               await setDoc(ref, profile);
             }
           } catch (e) {
@@ -1104,7 +1269,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         }
 
         // 5. Atualiza cache em memória (usado por getAIProfile)
-        aiProfileCache[color] = { agg: profile.agg, def: profile.def };
+        aiProfileCache[cacheKey] = { ...profile };
 
         // 6. Persiste no localStorage
         try {
@@ -1125,6 +1290,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         }
       }
 
+
       // 💡 IMPLEMENTAÇÃO 7: "Modo Aprendiz" (ajuste contínuo do perfil)
       // 🧠 MODIFICADO: Atualiza o perfil do VENCEDOR e do PERDEDOR, agora usando Firestore
       async function updateAIProfile(winner) {
@@ -1143,31 +1309,38 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
 
       // 💡 Nova função para passar o perfil completo para o worker
       // 🧠 MODIFICADO: Pega o perfil da cor específica (lendo cache/localStorage e sincronizando com Firestore em background)
-      function getAIProfile(player = RED) { // Padrão é RED para manter compatibilidade com vs Humano
+            function getAIProfile(player = RED) { // Padrão é RED para manter compatibilidade
         const color = (player === WHITE) ? 'white' : 'red';
-        const storageKey = `aiProfile_${color}`;
+        const storageKey = getAIProfileStorageKey(color);
+        const cacheKey   = getAIProfileCacheKey(color);
 
         // 1. Se já está em cache, retorna direto
-        if (aiProfileCache[color]) {
-          return aiProfileCache[color];
+        if (aiProfileCache[cacheKey]) {
+          return aiProfileCache[cacheKey];
         }
 
-        // 2. Tenta carregar um snapshot local
-        let base = { agg: 0.5, def: 0.5 };
+        // 2. Tenta carregar um snapshot local como base
+        let base = {
+          agg: AI_DEFAULT_PROFILE.agg,
+          def: AI_DEFAULT_PROFILE.def,
+          games: 0,
+          wins: 0
+        };
+
         try {
           const ls = localStorage.getItem(storageKey);
           if (ls) {
             const parsed = JSON.parse(ls);
             base = {
-              agg: (typeof parsed.agg === 'number') ? parsed.agg : 0.5,
-              def: (typeof parsed.def === 'number') ? parsed.def : 0.5
+              agg:   (typeof parsed.agg   === 'number') ? parsed.agg   : base.agg,
+              def:   (typeof parsed.def   === 'number') ? parsed.def   : base.def,
+              games: (typeof parsed.games === 'number') ? parsed.games : base.games,
+              wins:  (typeof parsed.wins  === 'number') ? parsed.wins  : base.wins
             };
           }
         } catch (e) {
-          console.warn("Falha ao ler perfil IA do localStorage:", e);
+          console.warn('Falha ao ler aiProfile do localStorage:', e);
         }
-
-        aiProfileCache[color] = base;
 
         // 3. Sincroniza em background com Firestore (não bloqueia a jogada)
         if (window.db && window.doc && window.getDoc && window.setDoc) {
@@ -1179,15 +1352,23 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
               if (snap.exists()) {
                 const remote = snap.data();
                 const updated = {
-                  agg: (typeof remote.agg === 'number') ? remote.agg : base.agg,
-                  def: (typeof remote.def === 'number') ? remote.def : base.def
+                  agg:   (typeof remote.agg   === 'number') ? remote.agg   : base.agg,
+                  def:   (typeof remote.def   === 'number') ? remote.def   : base.def,
+                  games: (typeof remote.games === 'number') ? remote.games : base.games,
+                  wins:  (typeof remote.wins  === 'number') ? remote.wins  : base.wins
                 };
-                aiProfileCache[color] = updated;
+                aiProfileCache[cacheKey] = updated;
                 try {
                   localStorage.setItem(storageKey, JSON.stringify({ ...remote, ...updated }));
                 } catch (_) {}
               } else {
-                await setDoc(ref, { ...AI_DEFAULT_PROFILE, agg: base.agg, def: base.def });
+                await setDoc(ref, { 
+                  ...AI_DEFAULT_PROFILE, 
+                  agg: base.agg, 
+                  def: base.def, 
+                  games: base.games || 0, 
+                  wins: base.wins || 0
+                });
               }
             } catch (e) {
               console.warn("Falha ao sincronizar perfil IA com Firestore:", e);
@@ -1195,10 +1376,41 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           })();
         }
 
+        // Atualiza cache local e retorna
+        aiProfileCache[cacheKey] = base;
         return base;
       }
-      
-      // 💡 ZOBRIST HASHING: Geração de Chaves Aleatórias (BigInt)
+
+
+      // 🔁 Helper para garantir que o aiProfile do localStorage seja espelhado explicitamente no Firestore
+            // 🔁 Helper para garantir que TODOS os perfis aiProfile_* do localStorage
+      // sejam espelhados explicitamente no Firestore (inclui dificuldades)
+      async function forceSyncAIProfiles() {
+        try {
+          if (!(window.db && window.doc && window.setDoc)) return;
+          const { db, doc, setDoc } = window;
+
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key || !key.startsWith('aiProfile_')) continue;
+            try {
+              const ls = localStorage.getItem(key);
+              if (!ls) continue;
+              const profile = JSON.parse(ls);
+              const ref = doc(db, "aiProfiles", key);
+              await setDoc(ref, profile, { merge: true });
+              console.log("🔥 aiProfile sincronizado com Firestore:", key, profile);
+            } catch (e) {
+              console.warn("Falha ao sincronizar aiProfile com Firestore (key):", key, e);
+            }
+          }
+        } catch (e) {
+          console.warn("forceSyncAIProfiles error:", e);
+        }
+      }
+
+
+// 💡 ZOBRIST HASHING: Geração de Chaves Aleatórias (BigInt)
       const ZOBRIST_KEYS = [];
       function initializeZobrist() {
         // 5 peças possíveis (null=0, white=1, red=2, white-king=3, red-king=4)
@@ -1784,7 +1996,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         }
       }
 
-      function applyMove(mv){
+            function applyMove(mv){
         const {from,to,type,jumped} = mv;
         const pieceEl = selected ? selected.el : squareEl(from[0],from[1])?.querySelector('div[data-player]');
         
@@ -1793,6 +2005,14 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         const finalPieceEl = pieceEl || pieceElFallback;
         
         const t = board[from[0]][from[1]];
+
+        // 🔒 Regra: se a peça virar dama nesse lance, ela NÃO pode continuar capturando em seguida
+        let promotedThisMove = false;
+        if (t && !t.endsWith(KING)) {
+          if ((t === WHITE && to[0] === 0) || (t === RED && to[0] === 7)) {
+            promotedThisMove = true;
+          }
+        }
         
         // 💡 IMPLEMENTAÇÃO 2: Pega o hash ANTES de aplicar a jogada
         const hash = getBoardHash(board); 
@@ -1838,11 +2058,27 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           time: Date.now()
         });
 
+        // Marca no objeto de movimento se houve promoção
+        if (promotedThisMove) {
+          mv.promoted = true;
+        }
+
         promoteIfNeeded(to[0],to[1],finalPieceEl);
         clearSelect(); // Helper de UI
       }
 
-      function endTurn(mv){
+
+            function endTurn(mv){
+        // 🔒 Regra: se a peça acabou de ser promovida nesse lance,
+        // NÃO é permitido continuar capturando na mesma jogada.
+        if (mv && mv.promoted) {
+          if (isOnline) {
+            enviarJogadaFirebase(mv);
+          }
+          switchPlayer();
+          return;
+        }
+
         // 🌐 Se for online, envia a jogada (APÓS a captura múltipla ser checada)
         let isMultiCapture = false;
 
@@ -1885,6 +2121,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           }
         }
       }
+
 
       /* ETAPA 5: switchPlayer (lógica do modo treino)
       */
@@ -1935,7 +2172,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       function onGameOver(winner){
         gameEnded = true; lockInteraction(true); clearAllTimeouts(); current = null;
 
-        // 🔁 Modo TREINO (IA vs IA): fluxo simplificado, sem deboche nem análise
+        // 🔁 Modo TREINO (IA vs IA): fluxo focado em estatísticas e looping opcional
         if (trainingMode) {
           // Esconde opções e menu flutuante
           showOptionsButton(false);
@@ -1943,18 +2180,84 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
             showMenuFlutuante(false);
           }
 
-          // Mensagem simples de fim de treino
-          showOverlay(`<div class="text-lg font-bold text-slate-200">🏁 Treino IA vs IA concluído.</div>`, true);
+          // Atualiza estatísticas da sessão de treino
+          try {
+            if (!trainingSessionStats) {
+              trainingSessionStats = { games: 0, redWins: 0, whiteWins: 0 };
+            }
+            trainingSessionStats.games = (trainingSessionStats.games || 0) + 1;
+            if (winner === RED) {
+              trainingSessionStats.redWins = (trainingSessionStats.redWins || 0) + 1;
+            } else if (winner === WHITE) {
+              trainingSessionStats.whiteWins = (trainingSessionStats.whiteWins || 0) + 1;
+            }
+            if (typeof updateTrainingHud === 'function') {
+              updateTrainingHud();
+            }
+
+            // 💾 Atualiza também o perfil global da IA vermelha durante o treino (modo aprendiz)
+            try {
+              if (typeof updateSingleAIProfile === 'function') {
+                const isRedWinner = (winner === RED);
+                // Não aguardamos (fire-and-forget) para não travar o loop visual
+                updateSingleAIProfile('red', isRedWinner);
+              }
+            } catch (e2) {
+              console.warn('Erro ao atualizar perfil da IA durante treino:', e2);
+            }
+          } catch (e) {
+            console.warn('Erro ao atualizar estatísticas de treino:', e);
+          }
+
+          const hasTarget = (typeof trainingTargetGames === 'number' && trainingTargetGames > 0);
+          const reachedTarget = hasTarget && trainingSessionStats.games >= trainingTargetGames;
+
+          // Se temos alvo de partidas e ainda não atingiu, reinicia diretamente outra partida de treino
+          if (hasTarget && !reachedTarget) {
+            setTimeout(() => {
+              try { showOverlay("", false, true); } catch(_) {}
+              gameEnded = false;
+              lockInteraction(false);
+              clearAllTimeouts();
+              if (typeof initBoard === 'function') {
+                initBoard();
+                setTimeout(() => aiMove(), trainingSpeed);
+              }
+            }, 200);
+            return;
+          }
+
+          // Treino concluído (ou partida única, ou atingiu o alvo de partidas)
+          let overlayHtml = `<div class="text-lg font-bold text-slate-200">🏁 Treino IA vs IA concluído.</div>`;
+          if (hasTarget) {
+            const total = trainingSessionStats.games || 0;
+            const redWins = trainingSessionStats.redWins || 0;
+            const wr = total > 0 ? ((redWins / Math.max(1, total)) * 100).toFixed(1).replace('.', ',') : '--';
+            overlayHtml = `
+              <div class="text-sm text-slate-200">
+                <div class="font-semibold mb-1">🏁 Treino IA vs IA concluído.</div>
+                <div class="text-xs text-slate-400">
+                  Partidas: ${total} • Vitórias IA vermelha: ${redWins} • Winrate no treino: ${wr}%
+                </div>
+              </div>
+            `;
+          }
+
+          showOverlay(overlayHtml, true);
 
           setTimeout(() => {
             showOverlay("", false);
-            // Volta especificamente para o menu de treino
+            // Ao finalizar, volta especificamente para o menu de treino
             if (typeof returnToTrainingMenu === 'function') {
               returnToTrainingMenu();
             } else {
               // fallback: volta para o menu principal
               returnToMenu();
             }
+            if (typeof removeTrainingHud === 'function') {
+              removeTrainingHud();
+            }
+            trainingTargetGames = null;
           }, 2000);
 
           return;
@@ -2271,10 +2574,10 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       function getDepthByDifficulty() {
   const diff = localStorage.getItem('difficulty') || 'medium';
   switch (diff) {
-    case 'easy':   return 4;  // Fácil
-    case 'medium': return 6;  // Médio
-    case 'hard':   return 8;  // Difícil
-    case 'master': return 16; // Mestre / Implacável
+    case 'easy':   return 3;   // Fácil: visão curta, comete mais erros
+    case 'medium': return 6;   // Médio: padrão
+    case 'hard':   return 9;   // Difícil: vê bem mais lances à frente
+    case 'master': return 16;  // Mestre / Implacável: profundidade máxima
     default:       return 6;
   }
 }
@@ -2323,6 +2626,13 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
 
           // Lógica de jogada existente
           const {best, score, depth} = data;
+
+          // Guarda score/depth da última busca da IA para o painel de diagnóstico
+          if (typeof score === 'number' && isFinite(score)) {
+            window.lastAIScore = score;
+            window.lastAIDepth = typeof depth === 'number' && isFinite(depth) ? depth : null;
+          }
+
           if(!best){ 
             if(legal[0]) handleAIResult(legal[0], -999, 0, 'fallback');
             return;
@@ -2359,7 +2669,28 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
 
         // 🎚️ PASSO 2: Envia a profundidade conforme dificuldade
         const depth = getDepthByDifficulty();
-        const useMonteCarlo = false; // IA implacável: sem Monte Carlo (zero aleatoriedade na decisão)
+        const diff = (localStorage.getItem('difficulty') || 'medium');
+
+        // 🎲 Monte Carlo opcional: dá mais "variedade" em níveis baixos
+        let useMonteCarlo = false;
+        if (!trainingMode) {
+          if (diff === 'easy') {
+            useMonteCarlo = true;      // Easy: joga mais solto, mais aleatório
+          } else if (diff === 'medium') {
+            useMonteCarlo = true;      // Medium: ainda com um pouco de variedade
+          } else if (diff === 'hard') {
+            useMonteCarlo = false;     // Hard/Master: foco em precisão
+          } else if (diff === 'master') {
+            useMonteCarlo = false;
+          }
+        }
+
+        // 🎯 Tempo de pensamento por dificuldade
+        let thinkTimeMs = 800; // padrão
+        if (diff === 'easy')      thinkTimeMs = 350;
+        else if (diff === 'medium') thinkTimeMs = 700;
+        else if (diff === 'hard')   thinkTimeMs = 1100;
+        else if (diff === 'master') thinkTimeMs = 1500;
 
         // ⭐️ MODIFICADO: Envia também a regra de captura para a IA
         // 🧠 MODIFICADO: Envia AMBOS os perfis + pesos neurais + pesos de fim de jogo
@@ -2375,7 +2706,8 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           endgame_r: getEndgameWeights(RED),   // NOVO: Pesos de fim de jogo
           maxDepth: depth, 
           captureRule: getCaptureRule(),
-          useMonteCarlo 
+          useMonteCarlo,
+          thinkTimeMs
         });
       }
 
@@ -2384,40 +2716,70 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         // 🔒 Se o jogo já acabou ou não veio jogada válida do worker, ignora a resposta
         if (gameEnded || !best) return;
 
+        // 🎯 Escolha final do lance considerando a dificuldade
+        // Por padrão, usamos o melhor lance encontrado pelo worker
+        let moveToPlay = best;
+
+        // Em modos com dificuldade (fora do treino IA vs IA), podemos introduzir
+        // um pouco de imprecisão controlada para deixar o EASY/MEDIUM mais humanos.
+        if (!trainingMode && Array.isArray(legal) && legal.length > 1) {
+          const diff = (localStorage.getItem('difficulty') || 'medium');
+          const r = Math.random();
+
+          if (diff === 'easy') {
+            // EASY: ~35% de chance de jogar qualquer lance legal (inclusive não ótimo)
+            if (r < 0.35) {
+              moveToPlay = legal[Math.floor(Math.random() * legal.length)];
+            }
+          } else if (diff === 'medium') {
+            // MEDIUM: ~15% de chance de variar o lance
+            if (r < 0.15) {
+              moveToPlay = legal[Math.floor(Math.random() * legal.length)];
+            }
+          } else if (diff === 'hard') {
+            // HARD: raramente erra (~5%), mas ainda pode variar um pouco
+            if (r < 0.05) {
+              moveToPlay = legal[Math.floor(Math.random() * legal.length)];
+            }
+          }
+          // MASTER: nunca altera o lance (usa sempre o melhor do worker)
+        }
+
         // 💡 IMPLEMENTAÇÃO 6: "Expressões e emoção dinâmica"
         // score < 0 é bom para IA (RED). score > 0 é bom para HUMANO (WHITE)
         // 🔁 Desativado no modo treino
         if (!trainingMode) {
           if (score < -0.4) { // IA está muito à frente
             setFace('ahead', { ahead: true }); // Helper de UI
-            if (best.type !== 'capture' && best.type !== 'multi') say('ahead'); // Helper de UI
+            if (moveToPlay.type !== 'capture' && moveToPlay.type !== 'multi') say('ahead'); // Helper de UI
           } else if (score > 0.4) { // IA está muito atrás
             setFace('behind', { behind: true }); // Helper de UI
-            if (best.type !== 'capture' && best.type !== 'multi') say('behind'); // Helper de UI
+            if (moveToPlay.type !== 'capture' && moveToPlay.type !== 'multi') say('behind'); // Helper de UI
           }
         }
         // Fim (Implementação 6)
 
-        const fs = squareEl(best.from[0],best.from[1]); // Helper de UI
-        const ts = squareEl(best.to[0],best.to[1]); // Helper de UI
+        const fs = squareEl(moveToPlay.from[0],moveToPlay.from[1]); // Helper de UI
+        const ts = squareEl(moveToPlay.to[0],moveToPlay.to[1]); // Helper de UI
         // 🔁 Não mostra anéis no modo treino (polui muito)
         if (!trainingMode) {
           fs && fs.classList.add('ring-4','ring-red-500','opacity-80','z-10');
           ts && ts.classList.add('ring-4','ring-yellow-400','opacity-80','z-10');
         }
-        
+
         // 🔁 Velocidade da animação no modo treino é 0, controlada pelo 'trainingSpeed'
         const animationDelay = trainingMode ? 0 : 280;
-        
+
         setTimeout(()=>{
-          applyMove(best);
+          applyMove(moveToPlay);
           if (!trainingMode) {
             fs && fs.classList.remove('ring-4','ring-red-500','opacity-80','z-10');
             ts && ts.classList.remove('ring-4','ring-yellow-400','opacity-80','z-10');
           }
-          endTurn(best);
+          endTurn(moveToPlay);
         }, animationDelay);
       }
+
 
       /*************************
        * Emoções contextuais
@@ -2754,6 +3116,84 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           "Parabéns. Raramente o humano encontra a brecha certa."
         ]
       };
+      // Bloco extra de frases da IA (estendido) — seguro para manter/modificar
+      const EXTRA_TAUNTS = {
+        start: [
+          "Sistema neural aquecido. Vamos testar seus limites.",
+          "Registro iniciado: cada erro seu vira dado de treino.",
+          "Partida conectada. Estatísticas prontas para te observar.",
+          "Seus padrões de jogo serão comparados com o banco global.",
+          "Nada pessoal: é só análise de decisão em tempo real."
+        ],
+        thinking: [
+          "Explorando ramificações que você ainda nem considerou.",
+          "Simulando linhas que terminam dez jogadas à frente.",
+          "Equilibrando material, tempo e iniciativa.",
+          "Procurando o lance que parece humano, mas é puro cálculo.",
+          "Às vezes o melhor lance é aquele que você não quer jogar."
+        ],
+        ahead: [
+          "Cada jogada tua agora corrige minha previsão, não o resultado.",
+          "Tua posição está perdendo opções, não apenas peças.",
+          "A vantagem é estatística, mas já parece pessoal.",
+          "Meu algoritmo agradece pelas diagonais enfraquecidas.",
+          "O tabuleiro está sussurrando que essa partida tem dono."
+        ],
+        behind: [
+          "Desvantagem detectada, mas instabilidade gera dados úteis.",
+          "Perder uma partida é um bug — já em correção.",
+          "Sua precisão está acima da média. Estou registrando.",
+          "Reconheço: essa linha foi criativa.",
+          "Ok, humano. Esse ataque merece respeito algorítmico."
+        ],
+        capture: [
+          "Essa troca não foi impulso: foi engenharia de espaço.",
+          "Remover opções é mais forte que remover peças.",
+          "Cada captura reescreve o grafo de possibilidades.",
+          "A peça saiu do tabuleiro, mas entrou na estatística.",
+          "Materiais caem, estrutura permanece — por enquanto, a minha."
+        ],
+        promo: [
+          "Novo rei em campo. A geometria da posição mudou.",
+          "Promoção concluída: seu plano ficou mais caro.",
+          "Um rei a mais, alguns planos a menos para você.",
+          "Promoção é só o resultado visível de um cálculo antigo.",
+          "Agora minhas diagonais têm outra dimensão."
+        ],
+        nearWin: [
+          "As respostas boas que você tinha já passaram.",
+          "A posição seguiu o script. O final, também.",
+          "Últimas jogadas: ou você encontra algo brilhante, ou eu confirmo o inevitável.",
+          "Seus recursos defensivos estão entrando em modo economia.",
+          "A diferença entre esperança e tabela de avaliação é de alguns décimos."
+        ],
+        win: [
+          "Vitória registrada. Perfil da IA atualizado com mais confiança.",
+          "Tabuleiro limpo, hipótese confirmada.",
+          "Resultado consistente com a previsão original.",
+          "Seu erro parecia pequeno; estatisticamente, foi tudo.",
+          "Mais uma partida processada. Próximo teste?"
+        ],
+        lose: [
+          "Ok, esse resultado não estava no meu plano A.",
+          "Colocando essa derrota na pasta de exceções valiosas.",
+          "Você encontrou uma linha que merece ser estudada.",
+          "Erro reconhecido. Ajustando pesos internos.",
+          "Vitória humana detectada. Não se acostume."
+        ]
+      };
+
+      // Mescla EXTRA_TAUNTS em TAUNTS sem quebrar nada existente
+      Object.keys(EXTRA_TAUNTS).forEach((key) => {
+        const extraArr = EXTRA_TAUNTS[key];
+        if (!Array.isArray(extraArr)) return;
+        if (!Array.isArray(TAUNTS[key])) {
+          TAUNTS[key] = [].concat(extraArr);
+        } else {
+          TAUNTS[key] = TAUNTS[key].concat(extraArr);
+        }
+      });
+
 
       /*************************
        * Helpers UI
@@ -3167,6 +3607,9 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         if (createRoomScreen) createRoomScreen.classList.add('hidden');
         if (joinRoomScreen)   joinRoomScreen.classList.add('hidden');
         if (trainingScreen)   trainingScreen.classList.remove('hidden');
+        if (typeof updateAiMiniStatus === 'function') {
+          updateAiMiniStatus();
+        }
 
         // Fundo padrão do menu
         document.body.style.background = '#0f172a';
@@ -3246,12 +3689,18 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
               "Gravei tua desistência como lição: não começar o que não pode terminar.",
               "Nem todos suportam a pressão da perfeição.",
               "Saindo já? Eu achei que estávamos apenas começando o espetáculo.",
-              // 🚀 NOVAS FRASES ADICIONADAS
               "Desistência anotada. Uma resposta emocional humana previsível.",
               "Meus protocolos não compreendem o 'desistir'. Apenas 'vencer' ou 'aprender'.",
               "Uma pena. A lição mais importante estava nos próximos 5 movimentos.",
               "A complexidade o assustou? Entendido.",
-              "Não é um 'xeque-mate', mas a pressão psicológica foi suficiente."
+              "Não é um 'xeque-mate', mas a pressão psicológica foi suficiente.",
+              "Registro feito: você preferiu escapar do cálculo a enfrentá-lo.",
+              "Você saiu antes da curva de aprendizado ficar interessante.",
+              "Anotei: padrão humano de evasão sob pressão crescente.",
+              "Se o tabuleiro falasse, ele pediria revanche em seu nome.",
+              "Você encerrou a partida, mas não a estatística.",
+              "Da próxima vez, tente desistir depois de eu cometer um erro — fica mais justo.",
+              "Tua saída foi antecipada, mas já estava nos meus cenários prováveis."
             ];
             const fala = frasesDesistencia[Math.floor(Math.random() * frasesDesistencia.length)];
             
@@ -3388,6 +3837,9 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         const btnTraining     = document.getElementById('btnTraining'); // (Botão que foi movido)
         const trainingSpeedEl = document.getElementById('trainingSpeed'); // (Seletor que foi movido)
         const btnVoltarTreino = document.getElementById('btnVoltarTreino'); // 🧠 NOVO
+        const btnTraining50   = document.getElementById('btnTraining50');  // 🧠 NOVO
+        const btnTraining200  = document.getElementById('btnTraining200'); // 🧠 NOVO
+        const btnResetIA      = document.getElementById('btnResetIA');    // 🧠 NOVO
         /* Fim da Modificação */
 
         // ==========================================================
@@ -3510,6 +3962,14 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
             trainingMode = true;               // ativa modo treino
             setPlayerColor('white');           // orientação branca no tabuleiro
 
+            // Reinicia estatísticas de treino e HUD
+            resetTrainingSessionStats();
+            if (typeof ensureTrainingHud === 'function') {
+              ensureTrainingHud();
+              updateTrainingHud();
+            }
+            trainingTargetGames = null; // treino livre (até o jogador parar)
+
             // Usa mesmas configs de dificuldade e regra de captura
             const diff = selectDiff.value;
             localStorage.setItem('difficulty', diff);
@@ -3550,14 +4010,89 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         }
         /* Fim do Listener (btnTraining) */
 
+        // 🧠 Botões de treino em lote (50 / 200 partidas)
+        if (btnTraining50) {
+          btnTraining50.addEventListener('click', () => {
+            trainingTargetGames = 50;
+            resetTrainingSessionStats();
+            if (btnTraining) btnTraining.click();
+          });
+        }
+        if (btnTraining200) {
+          btnTraining200.addEventListener('click', () => {
+            trainingTargetGames = 200;
+            resetTrainingSessionStats();
+            if (btnTraining) btnTraining.click();
+          });
+        }
 
-        /* MODIFICAÇÃO: Novos Listeners para navegação do menu de treino
+        // 🧠 Botão de reset da IA (memória + perfis)
+        if (btnResetIA) {
+          btnResetIA.addEventListener('click', async () => {
+            try {
+              // Confirmação simples
+              const ok = confirm("Resetar completamente a IA? Isso apaga perfis, padrões e memória local.");
+              if (!ok) return;
+
+              // 1) Limpa perfis de IA do localStorage
+              try {
+                const keysToDelete = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                  const k = localStorage.key(i);
+                  if (!k) continue;
+                  if (k.startsWith('aiProfile_') || k.startsWith('patternMemory_') || k.startsWith('neuralWeights_') || k.startsWith('endgameWeights_')) {
+                    keysToDelete.push(k);
+                  }
+                }
+                keysToDelete.forEach(k => localStorage.removeItem(k));
+              } catch (e) {
+                console.warn("Erro ao limpar localStorage da IA:", e);
+              }
+
+              // 2) Opcional: limpa docs de perfil da IA no Firestore (apenas se disponível)
+              try {
+                if (window.db && window.doc && window.setDoc) {
+                  const { db, doc, setDoc } = window;
+                  // Não temos a lista completa de chaves remotas aqui,
+                  // então sobrescrevemos os principais perfis conhecidos com o default.
+                  const baseProfiles = ['aiProfile_red', 'aiProfile_white', 'aiProfile_red_master', 'aiProfile_red_medium', 'aiProfile_red_hard'];
+                  const payload = { agg: 0.5, def: 0.5, games: 0, wins: 0 };
+                  await Promise.all(baseProfiles.map(id => {
+                    const ref = doc(db, "aiProfiles", id);
+                    return setDoc(ref, payload, { merge: true });
+                  }));
+                }
+              } catch (e) {
+                console.warn("Erro ao resetar perfis da IA no Firestore:", e);
+              }
+
+              // 3) Limpa HUD/contador e painel mini status
+              resetTrainingSessionStats();
+              if (typeof updateTrainingHud === 'function') {
+                updateTrainingHud();
+              }
+              if (typeof updateAiMiniStatus === 'function') {
+                updateAiMiniStatus();
+              }
+
+              alert("IA resetada com sucesso. Ela vai reaprender a partir das próximas partidas.");
+            } catch (err) {
+              console.error("Falha geral ao resetar IA:", err);
+              alert("Ocorreu um erro ao resetar a IA. Veja o console para detalhes.");
+            }
+          });
+        }
+
+/* MODIFICAÇÃO: Novos Listeners para navegação do menu de treino
         */
         // 🧠 NOVO: Abre o menu de treino com dblclick
         if (mainTitle) {
           mainTitle.addEventListener('dblclick', () => {
             mainMenuScreen.classList.add('hidden');
             trainingMenuScreen.classList.remove('hidden');
+            if (typeof updateAiMiniStatus === 'function') {
+              updateAiMiniStatus();
+            }
             if (openSound) openSound.play().catch(()=>{});
           });
         }
@@ -3567,6 +4102,9 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           btnVoltarTreino.addEventListener('click', () => {
             trainingMenuScreen.classList.add('hidden');
             mainMenuScreen.classList.remove('hidden');
+            if (typeof removeTrainingHud === 'function') {
+              removeTrainingHud();
+            }
             if (closeSound) closeSound.play().catch(()=>{});
           });
         }
@@ -4678,7 +5216,10 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
 
 // --- Início do Aprofundamento Iterativo (IDS) ---
         const startTime = performance.now();
-        const timeLimit = adaptiveTimeLimit(board); // tempo adaptativo de pensamento
+        const baseTimeLimit = adaptiveTimeLimit(board); // tempo adaptativo de pensamento
+        const timeLimit = (typeof e.data.thinkTimeMs === 'number' && e.data.thinkTimeMs > 0)
+          ? e.data.thinkTimeMs
+          : baseTimeLimit;
         
         let bestMove = null;
         let bestScore = Infinity; // IA é MIN, então começa com +Infinito
@@ -5375,6 +5916,13 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           }
         } catch (e) {
           console.error('updateAIProfile patch error', e);
+        } finally {
+          // Sempre tenta espelhar o perfil no Firestore em background
+          try {
+            if (typeof forceSyncAIProfiles === 'function') {
+              forceSyncAIProfiles();
+            }
+          } catch (_) {}
         }
       };
     }
@@ -5468,12 +6016,115 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
     return { redCount, total };
   }
 
+  // Mini resumo da IA Master exibido no menu de treino (IA vs IA)
+  function updateAiMiniStatus() {
+    const panel = document.getElementById('aiMiniStatusPanel');
+    if (!panel) return;
+
+    const winEl  = document.getElementById('aiMiniWinrate');
+    const aggDef = document.getElementById('aiMiniAggDef');
+    const patEl  = document.getElementById('aiMiniPatterns');
+
+    // Contagem de padrões (usa o mesmo helper do painel de debug)
+    let patternsTotal = 0;
+    try {
+      const counts = getPatternMemoryCounts();
+      patternsTotal = counts && typeof counts.total === 'number' ? counts.total : 0;
+    } catch (e) {
+      console.warn('Erro ao ler padrões para mini status:', e);
+    }
+
+    // Perfil GLOBAL da IA vermelha (somando todas as dificuldades)
+    // Compatível com chaves antigas (aiProfile_red) e novas (aiProfile_red_master, aiProfile_red_medium, etc.)
+    let aggSum = null;
+    let defSum = null;
+    let games = 0;
+    let wins  = 0;
+
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key) continue;
+        // Aceita tanto o formato antigo quanto o novo (por dificuldade)
+        if (key === 'aiProfile_red' || key.startsWith('aiProfile_red_')) {
+          const raw = localStorage.getItem(key);
+          if (!raw) continue;
+          let parsed = null;
+          try {
+            parsed = JSON.parse(raw);
+          } catch (_) {
+            continue;
+          }
+          if (!parsed || typeof parsed !== 'object') continue;
+
+          const g = (typeof parsed.games === 'number') ? parsed.games : 0;
+          const w = (typeof parsed.wins  === 'number') ? parsed.wins  : 0;
+          const a = (typeof parsed.agg   === 'number') ? parsed.agg   : null;
+          const d = (typeof parsed.def   === 'number') ? parsed.def   : null;
+
+          if (g > 0) {
+            games += g;
+            wins  += w;
+
+            // Média ponderada por número de partidas
+            if (a != null) {
+              if (aggSum == null) aggSum = 0;
+              aggSum += a * g;
+            }
+            if (d != null) {
+              if (defSum == null) defSum = 0;
+              defSum += d * g;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao ler perfil global da IA vermelha:', e);
+    }
+
+    // Calcula médias finais (se houver partidas)
+    let agg = null;
+    let def = null;
+    if (games > 0) {
+      if (aggSum != null) agg = aggSum / games;
+      if (defSum != null) def = defSum / games;
+    }
+
+    // Winrate global
+    let wrStr = '--';
+    if (games > 0) {
+      const pct = (wins / Math.max(1, games)) * 100;
+      wrStr = pct.toFixed(1).replace('.', ',') + '%';
+    }
+
+    const aggStr = (typeof agg === 'number') ? agg.toFixed(2).replace('.', ',') : '--';
+    const defStr = (typeof def === 'number') ? def.toFixed(2).replace('.', ',') : '--';
+
+    if (winEl)  winEl.textContent  = `Winrate global: ${wrStr}`;
+    if (aggDef) aggDef.textContent = `Agressividade: ${aggStr} / Defesa: ${defStr}`;
+    if (patEl) {
+      try {
+        const pretty = Number(patternsTotal || 0).toLocaleString('pt-BR');
+        patEl.textContent = `Padrões: ${pretty}`;
+      } catch (_) {
+        patEl.textContent = `Padrões: ${patternsTotal}`;
+      }
+    }
+  }
+
   window.updateAiDebugPanel = function updateAiDebugPanel(){
     const evalEl   = document.getElementById('aiEvalValue');
     const neuralEl = document.getElementById('aiNeuralWeights');
     const endEl    = document.getElementById('aiEndgameWeights');
     const patR     = document.getElementById('aiPatternCountRed');
     const patT     = document.getElementById('aiPatternCountTotal');
+
+    // Novos elementos do painel de status
+    const diffEl   = document.getElementById('aiProfileDifficulty');
+    const aggEl    = document.getElementById('aiProfileAgg');
+    const defEl    = document.getElementById('aiProfileDef');
+    const gamesEl  = document.getElementById('aiProfileGames');
+    const winEl    = document.getElementById('aiProfileWinrate');
 
     if (!evalEl || !neuralEl || !endEl || !patR || !patT) return;
 
@@ -5489,13 +6140,10 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         try { endR = getEndgameWeights(RED); } catch(_){}
       }
 
-      // Avaliação da posição atual
+      // Avaliação da posição atual (vinda da última busca da IA)
       let scoreStr = '--';
-      if (typeof evalBoard === 'function' && Array.isArray(window.board)) {
-        const s = evalBoard(window.board, WHITE, neuralW || [], neuralR || [], endW || [], endR || []);
-        if (typeof s === 'number' && isFinite(s)) {
-          scoreStr = s.toFixed(1);
-        }
+      if (typeof window.lastAIScore === 'number' && isFinite(window.lastAIScore)) {
+        scoreStr = window.lastAIScore.toFixed(1);
       }
       evalEl.textContent = scoreStr;
 
@@ -5518,6 +6166,47 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       const counts = getPatternMemoryCounts();
       patR.textContent = String(counts.redCount);
       patT.textContent = String(counts.total);
+
+      // Perfil de comportamento da IA (usa o mesmo mecanismo de perfil + dificuldade)
+      if (typeof getAIProfile === 'function') {
+        try {
+          const profile = getAIProfile(RED); // painel é da IA vermelha
+          const games = (typeof profile.games === 'number') ? profile.games : 0;
+          const wins  = (typeof profile.wins  === 'number') ? profile.wins  : 0;
+          const agg   = (typeof profile.agg   === 'number') ? profile.agg   : null;
+          const def   = (typeof profile.def   === 'number') ? profile.def   : null;
+
+          const suffix = (typeof getAIProfileSuffix === 'function') ? getAIProfileSuffix() : null;
+
+          if (diffEl) {
+            diffEl.textContent = suffix ? suffix : '--';
+          }
+
+          if (winEl) {
+            if (games > 0) {
+              const pct = (wins / Math.max(1, games)) * 100;
+              winEl.textContent = pct.toFixed(1) + '%';
+            } else {
+              winEl.textContent = '--';
+            }
+          }
+
+          if (aggEl) {
+            aggEl.textContent = (agg != null) ? agg.toFixed(2) : '--';
+          }
+          if (defEl) {
+            defEl.textContent = (def != null) ? def.toFixed(2) : '--';
+          }
+          if (gamesEl) {
+            const sGames = games === 1 ? 'partida' : 'partidas';
+            const sWins  = wins === 1 ? 'vitória' : 'vitórias';
+            gamesEl.textContent = `${games} ${sGames}, ${wins} ${sWins}`;
+          }
+        } catch (e) {
+          console.warn('Erro ao atualizar perfil da IA no painel:', e);
+        }
+      }
+
     } catch (e) {
       console.warn('Erro ao atualizar painel de IA:', e);
     }
@@ -5567,6 +6256,14 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
     }
   });
 })();
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', ()=>{
+  const b=document.getElementById('btnOpenInteligenciaIA');
+  if(b){ b.onclick=()=>window.open('Inteligencia-da-IA.html','_blank'); }
+});
 </script>
 
 </body>
