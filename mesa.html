@@ -86,7 +86,6 @@
   #board {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    /* AQUI ESTÁ A MÁGICA DA RESPONSIVIDADE */
     width: min(92vmin, 100vw - 20px);
     max-width: 500px;
     max-height: calc(100dvh - 160px); 
@@ -104,7 +103,7 @@
     .score { font-size: 1.1rem; }
     .captures { height: 6px; margin-top: 4px; }
     .label { font-size: 0.65rem; margin-bottom: 0; }
-    #board { max-height: calc(100dvh - 110px); } /* Aumenta o espaço do tabuleiro */
+    #board { max-height: calc(100dvh - 110px); } 
   }
 
   .sq { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
@@ -164,34 +163,38 @@
     box-shadow: inset 0 0 0 2px rgba(56, 189, 248, 0.3);
   }
 
-  /* --- BOTÃO MENU (TOPO ESQUERDO) --- */
+  /* --- BOTÃO MENU (CORRIGIDO: SUPER ACESSÍVEL) --- */
   #btn-menu-trigger {
     position: fixed;
-    top: 15px; 
-    left: 15px; 
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: rgba(30, 41, 59, 0.8);
+    /* Usa margem de segurança para não ficar embaixo da câmera/notch */
+    top: max(20px, env(safe-area-inset-top)); 
+    left: max(20px, env(safe-area-inset-left)); 
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(30, 41, 59, 0.95); /* Quase sólido para garantir visibilidade */
     backdrop-filter: blur(4px);
-    color: #94a3b8;
-    border: 1px solid rgba(255,255,255,0.15);
+    color: #e2e8f0; /* Cor mais clara */
+    border: 1px solid rgba(255,255,255,0.2);
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     cursor: pointer;
-    z-index: 9999; 
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    transition: all 0.2s;
-    pointer-events: auto; 
+    /* Z-Index extremo para ficar acima de tudo */
+    z-index: 99999; 
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    transition: transform 0.1s;
+    pointer-events: auto; /* Garante clique */
+    touch-action: manipulation; /* Melhora resposta ao toque */
   }
-  #btn-menu-trigger:active { transform: scale(0.9); background: #334155; color: white; }
+  #btn-menu-trigger:active { transform: scale(0.92); background: #475569; }
 
   /* --- MODAIS --- */
   .modal {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-    z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px);
+    z-index: 100000; /* Acima até do botão */
+    align-items: center; justify-content: center; backdrop-filter: blur(8px);
   }
   .modal.flex { display: flex; }
 
@@ -206,13 +209,14 @@
 
   /* Menu List Styling */
   .menu-btn {
-    width: 100%; padding: 12px; margin-bottom: 8px;
+    width: 100%; padding: 14px; margin-bottom: 10px; /* Botões maiores para toque */
     background: #334155; color: white; border-radius: 12px;
     font-weight: 600; text-align: left; display: flex; align-items: center;
     transition: background 0.2s;
+    border: 1px solid transparent;
   }
-  .menu-btn:active { background: #475569; }
-  .menu-btn i { width: 30px; text-align: center; margin-right: 10px; color: #94a3b8; }
+  .menu-btn:active { background: #475569; transform: scale(0.98); }
+  .menu-btn i { width: 30px; text-align: center; margin-right: 12px; color: #94a3b8; font-size: 1.1rem; }
   .menu-btn.danger { background: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); }
   .menu-btn.danger i { color: #f87171; }
 
@@ -258,8 +262,8 @@
     </div>
   </div>
 
-  <!-- BOTÃO MENU (TOPO ESQUERDO) -->
-  <button id="btn-menu-trigger" onclick="game.openMenu()">
+  <!-- BOTÃO MENU (CORRIGIDO) -->
+  <button id="btn-menu-trigger" onclick="game.openMenu()" aria-label="Abrir Menu">
     <i class="fas fa-bars"></i>
   </button>
 
@@ -269,12 +273,12 @@
   <!-- MODAL MENU PRINCIPAL DO JOGO -->
   <div id="game-menu-modal" class="modal">
     <div class="modal-box text-left">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-bold text-white">Menu de Jogo</h2>
-        <button onclick="game.closeMenu()" class="text-slate-400 hover:text-white p-2"><i class="fas fa-times"></i></button>
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-white">Menu de Jogo</h2>
+        <button onclick="game.closeMenu()" class="text-slate-400 hover:text-white p-2 bg-slate-800 rounded-full w-10 h-10 flex items-center justify-center"><i class="fas fa-times"></i></button>
       </div>
       
-      <div class="space-y-2">
+      <div class="space-y-3">
         <button class="menu-btn" onclick="game.undo(); game.closeMenu()">
           <i class="fas fa-undo"></i> Desfazer Jogada
         </button>
@@ -287,7 +291,7 @@
           <i class="fas fa-sync-alt"></i> Reiniciar Partida
         </button>
 
-        <div class="border-t border-slate-700 my-2"></div>
+        <div class="border-t border-slate-700 my-3"></div>
 
         <button class="menu-btn" onclick="game.toggleRule()">
           <i class="fas fa-exchange-alt" id="icon-rule"></i> 
@@ -303,7 +307,7 @@
           <i class="fas fa-book"></i> Regras
         </button>
 
-        <div class="border-t border-slate-700 my-2"></div>
+        <div class="border-t border-slate-700 my-3"></div>
 
         <button class="menu-btn danger" onclick="game.exitToMain()">
           <i class="fas fa-sign-out-alt"></i> Sair para o Início
