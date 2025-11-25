@@ -38,11 +38,11 @@
     justify-content: center;
     padding: 10px;
     z-index: 20; 
-    pointer-events: none; /* Permite clicar através da área vazia */
+    pointer-events: none; 
   }
 
   .player-card {
-    pointer-events: auto; /* Reativa cliques no card */
+    pointer-events: auto;
     background: #1e293b;
     padding: 10px 24px;
     border-radius: 16px;
@@ -54,6 +54,7 @@
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0.6; 
     transform: scale(0.95);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
   }
   
   .player-card.active {
@@ -61,7 +62,7 @@
     background: #253346;
     opacity: 1;
     transform: scale(1.05); 
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.25);
   }
 
   .rotate-180 { transform: rotate(180deg) scale(0.95); }
@@ -71,7 +72,7 @@
   .score { font-size: 1.25rem; font-weight: 800; color: white; }
   .captures { margin-top: 6px; display: flex; gap: 4px; height: 8px; justify-content: center; }
 
-  /* --- TABULEIRO --- */
+  /* --- TABULEIRO RESPONSIVO --- */
   #board-wrapper {
     flex-grow: 1;
     display: flex;
@@ -79,12 +80,13 @@
     align-items: center;
     width: 100%;
     position: relative;
-    z-index: 10; /* Garante que fique abaixo do menu */
+    z-index: 10; 
   }
 
   #board {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
+    /* AQUI ESTÁ A MÁGICA DA RESPONSIVIDADE */
     width: min(92vmin, 100vw - 20px);
     max-width: 500px;
     max-height: calc(100dvh - 160px); 
@@ -94,6 +96,15 @@
     background: #334155;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     overflow: hidden;
+  }
+
+  /* Mídia para telas pequenas ou deitadas (Landscape) */
+  @media (max-height: 660px) {
+    .player-card { padding: 6px 16px; min-height: auto; }
+    .score { font-size: 1.1rem; }
+    .captures { height: 6px; margin-top: 4px; }
+    .label { font-size: 0.65rem; margin-bottom: 0; }
+    #board { max-height: calc(100dvh - 110px); } /* Aumenta o espaço do tabuleiro */
   }
 
   .sq { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
@@ -153,7 +164,7 @@
     box-shadow: inset 0 0 0 2px rgba(56, 189, 248, 0.3);
   }
 
-  /* --- BOTÃO MENU (TOPO ESQUERDO - FIXO) --- */
+  /* --- BOTÃO MENU (TOPO ESQUERDO) --- */
   #btn-menu-trigger {
     position: fixed;
     top: 15px; 
@@ -161,7 +172,7 @@
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: rgba(30, 41, 59, 0.8); /* Mais opaco para garantir clique */
+    background: rgba(30, 41, 59, 0.8);
     backdrop-filter: blur(4px);
     color: #94a3b8;
     border: 1px solid rgba(255,255,255,0.15);
@@ -170,10 +181,10 @@
     align-items: center;
     font-size: 1.2rem;
     cursor: pointer;
-    z-index: 9999; /* Z-Index muito alto para garantir prioridade */
+    z-index: 9999; 
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     transition: all 0.2s;
-    pointer-events: auto; /* Garante que receba cliques */
+    pointer-events: auto; 
   }
   #btn-menu-trigger:active { transform: scale(0.9); background: #334155; color: white; }
 
@@ -247,7 +258,7 @@
     </div>
   </div>
 
-  <!-- BOTÃO MENU (AGORA NO TOPO ESQUERDO) -->
+  <!-- BOTÃO MENU (TOPO ESQUERDO) -->
   <button id="btn-menu-trigger" onclick="game.openMenu()">
     <i class="fas fa-bars"></i>
   </button>
