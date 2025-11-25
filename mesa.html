@@ -38,9 +38,11 @@
     justify-content: center;
     padding: 10px;
     z-index: 20; 
+    pointer-events: none; /* Permite clicar através da área vazia */
   }
 
   .player-card {
+    pointer-events: auto; /* Reativa cliques no card */
     background: #1e293b;
     padding: 10px 24px;
     border-radius: 16px;
@@ -76,6 +78,7 @@
     justify-content: center;
     align-items: center;
     width: 100%;
+    position: relative;
   }
 
   #board {
@@ -149,36 +152,36 @@
     box-shadow: inset 0 0 0 2px rgba(56, 189, 248, 0.3);
   }
 
-  /* --- CONTROLES --- */
-  .controls-bar {
-    position: absolute; bottom: 20px; right: 20px;
-    display: flex; flex-direction: column; gap: 12px; z-index: 30;
+  /* --- BOTÃO MENU (TOPO ESQUERDO) --- */
+  #btn-menu-trigger {
+    position: fixed;
+    top: 15px; /* Mudado para o topo */
+    left: 15px; /* Canto esquerdo */
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(4px);
+    color: #94a3b8;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    z-index: 100;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    transition: all 0.2s;
   }
+  #btn-menu-trigger:active { transform: scale(0.9); background: #334155; color: white; }
 
-  .btn-icon {
-    background: #1e293b; color: #94a3b8;
-    border: 1px solid #334155; width: 44px; height: 44px;
-    border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 1rem; cursor: pointer;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: all 0.2s;
-  }
-  .btn-icon:hover { background: #334155; color: white; transform: scale(1.1); }
-  .btn-icon:active { transform: scale(0.95); }
-
-  /* --- TOAST & MODAL --- */
-  #toast {
-    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
-    background: rgba(15, 23, 42, 0.95); color: #fbbf24; padding: 16px 24px;
-    border-radius: 12px; z-index: 60; font-weight: 700; text-align: center;
-    opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    border: 1px solid #475569; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-  }
-  #toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-
+  /* --- MODAIS --- */
   .modal {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-    z-index: 50; align-items: center; justify-content: center; backdrop-filter: blur(8px);
+    z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(8px);
   }
+  .modal.flex { display: flex; }
+
   .modal-box {
     background: #1e293b; padding: 2rem; border-radius: 20px;
     text-align: center; border: 1px solid #334155;
@@ -187,6 +190,28 @@
     max-width: 320px; width: 90%;
   }
   @keyframes popUp { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); }}
+
+  /* Menu List Styling */
+  .menu-btn {
+    width: 100%; padding: 12px; margin-bottom: 8px;
+    background: #334155; color: white; border-radius: 12px;
+    font-weight: 600; text-align: left; display: flex; align-items: center;
+    transition: background 0.2s;
+  }
+  .menu-btn:active { background: #475569; }
+  .menu-btn i { width: 30px; text-align: center; margin-right: 10px; color: #94a3b8; }
+  .menu-btn.danger { background: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.2); }
+  .menu-btn.danger i { color: #f87171; }
+
+  /* --- TOAST --- */
+  #toast {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+    background: rgba(15, 23, 42, 0.95); color: #fbbf24; padding: 16px 24px;
+    border-radius: 12px; z-index: 300; font-weight: 700; text-align: center;
+    opacity: 0; pointer-events: none; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    border: 1px solid #475569; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
   .shake { animation: shake 0.3s ease-in-out; }
   @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px) rotate(-1deg)} 75%{transform:translateX(4px) rotate(1deg)} }
@@ -197,28 +222,7 @@
 </head>
 <body>
 
-  <!-- 🔧 NOVO BOTÃO: Voltar ao Menu -->
-  <button id="btnVoltarMenu"
-    style="
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(255,255,255,0.05);
-      color: #94a3b8;
-      border: 1px solid rgba(255,255,255,0.15);
-      padding: 6px 10px;
-      border-radius: 8px;
-      font-size: 14px;
-      cursor: pointer;
-      z-index: 9999;
-      backdrop-filter: blur(4px);
-      transition: all .2s;
-    "
-    onmouseover="this.style.background='rgba(255,255,255,0.15)'; this.style.color='white';"
-    onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='#94a3b8';"
-  >
-    ← Menu</button>
-
+  <!-- JOGADOR VERMELHO (TOPO - INVERTIDO) -->
   <div class="player-area">
     <div class="player-card rotate-180" id="card-red">
       <span class="label">Vermelho</span>
@@ -227,10 +231,12 @@
     </div>
   </div>
 
+  <!-- TABULEIRO -->
   <div id="board-wrapper">
     <div id="board"></div>
   </div>
 
+  <!-- JOGADOR BRANCO (BAIXO) -->
   <div class="player-area">
     <div class="player-card" id="card-white">
       <span class="label">Branco</span>
@@ -239,16 +245,59 @@
     </div>
   </div>
 
-  <div class="controls-bar">
-    <button class="btn-icon" onclick="game.undo()" title="Desfazer Jogada"><i class="fas fa-undo"></i></button>
-    <button class="btn-icon" onclick="game.startNewGame()" title="Reiniciar Partida"><i class="fas fa-sync-alt"></i></button>
-    <button class="btn-icon" onclick="game.resetScores()" title="Zerar Placar"><i class="fas fa-trash-alt"></i></button>
-    <button class="btn-icon" onclick="game.toggleRule()" id="btnRule" title="Captura p/ Trás: ON" style="color: #34d399;"><i class="fas fa-arrows-alt-v"></i></button>
-    <button class="btn-icon" onclick="game.toggleSound()" id="btnSound" title="Som"><i class="fas fa-volume-up"></i></button>
-    <button class="btn-icon" onclick="game.showRules()" title="Regras" style="border-color: #64748b;"><i class="fas fa-question"></i></button>
-  </div>
+  <!-- BOTÃO MENU (AGORA NO TOPO ESQUERDO) -->
+  <button id="btn-menu-trigger" onclick="game.openMenu()">
+    <i class="fas fa-bars"></i>
+  </button>
 
+  <!-- TOAST -->
   <div id="toast">Aviso</div>
+
+  <!-- MODAL MENU PRINCIPAL DO JOGO -->
+  <div id="game-menu-modal" class="modal">
+    <div class="modal-box text-left">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold text-white">Menu de Jogo</h2>
+        <button onclick="game.closeMenu()" class="text-slate-400 hover:text-white p-2"><i class="fas fa-times"></i></button>
+      </div>
+      
+      <div class="space-y-2">
+        <button class="menu-btn" onclick="game.undo(); game.closeMenu()">
+          <i class="fas fa-undo"></i> Desfazer Jogada
+        </button>
+        
+        <button class="menu-btn" onclick="game.resetScores(); game.closeMenu()">
+          <i class="fas fa-trash-alt"></i> Zerar Placar
+        </button>
+        
+        <button class="menu-btn" onclick="game.startNewGame(); game.closeMenu()">
+          <i class="fas fa-sync-alt"></i> Reiniciar Partida
+        </button>
+
+        <div class="border-t border-slate-700 my-2"></div>
+
+        <button class="menu-btn" onclick="game.toggleRule()">
+          <i class="fas fa-exchange-alt" id="icon-rule"></i> 
+          <span id="text-rule">Captura p/ Trás: ON</span>
+        </button>
+
+        <button class="menu-btn" onclick="game.toggleSound()">
+          <i class="fas fa-volume-up" id="icon-sound"></i> 
+          <span id="text-sound">Som: Ligado</span>
+        </button>
+
+        <button class="menu-btn" onclick="game.showRules(); document.getElementById('game-menu-modal').style.display='none'">
+          <i class="fas fa-book"></i> Regras
+        </button>
+
+        <div class="border-t border-slate-700 my-2"></div>
+
+        <button class="menu-btn danger" onclick="game.exitToMain()">
+          <i class="fas fa-sign-out-alt"></i> Sair para o Início
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL FIM DE JOGO -->
   <div id="modal" class="modal">
@@ -265,27 +314,18 @@
   <!-- MODAL DE REGRAS -->
   <div id="rules-modal" class="modal">
     <div class="modal-box text-left">
-      <h2 class="text-xl font-bold text-white mb-4 text-center"><i class="fas fa-book-open mr-2 text-blue-400"></i>Regras do Jogo</h2>
+      <h2 class="text-xl font-bold text-white mb-4 text-center"><i class="fas fa-book-open mr-2 text-blue-400"></i>Regras</h2>
       <div class="text-slate-300 text-sm space-y-3 overflow-y-auto max-h-[60vh] pr-1">
-        <p><strong class="text-blue-400">1. Movimento:</strong> Pedras andam 1 casa para frente. Damas andam quantas casas quiserem (voadora).</p>
-        
-        <p><strong class="text-blue-400">2. Captura:</strong> 
-          <ul class="list-disc ml-4 text-slate-400">
-            <li>A captura é <strong>obrigatória</strong>.</li>
-            <li>Pedras capturam para frente (e para trás se ativado).</li>
-            <li>Damas capturam a distância.</li>
-          </ul>
-        </p>
-
+        <p><strong>1. Movimento:</strong> Pedras andam 1 casa para frente. Damas andam quantas casas quiserem.</p>
+        <p><strong>2. Captura:</strong> Obrigatória. Pedras capturam frente (e trás se ativo). Damas capturam a distância.</p>
         <div class="bg-slate-800/80 p-3 rounded-lg border border-yellow-600/30">
-          <p class="text-yellow-400 font-bold mb-1 text-xs uppercase tracking-wide"><i class="fas fa-balance-scale mr-1"></i> Lei da Maioria</p>
-          <p class="text-xs leading-relaxed">Se houver mais de uma opção de captura, você é <strong>OBRIGADO</strong> a escolher o caminho que captura o <strong>MAIOR NÚMERO</strong> de peças.</p>
+          <p class="text-yellow-400 font-bold mb-1 text-xs uppercase"><i class="fas fa-balance-scale mr-1"></i> Lei da Maioria</p>
+          <p class="text-xs">Obrigatório escolher o caminho que captura o MAIOR número de peças.</p>
         </div>
-
-        <p><strong class="text-blue-400">3. Empate:</strong> O jogo empata automaticamente se sobrar apenas 1 peça de cada lado.</p>
+        <p><strong>3. Empate:</strong> Automático se sobrar 1 peça de cada lado.</p>
       </div>
       <button class="mt-6 bg-slate-700 hover:bg-slate-600 text-white py-2 px-6 rounded-xl font-bold w-full transition border border-slate-600" onclick="game.closeRules()">
-        Entendi
+        Voltar
       </button>
     </div>
   </div>
@@ -328,6 +368,7 @@ class DamasGame {
 
     this.initDOM();
     this.startNewGame();
+    this.updateMenuUI(); // Inicializa textos do menu
   }
 
   initDOM() {
@@ -367,26 +408,47 @@ class DamasGame {
     }
   }
   
-  showToast(msg) {
-    const t = document.getElementById('toast');
-    t.innerText = msg;
-    t.classList.add('show');
-    if (this.toastTimer) clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  // Menu Logic
+  openMenu() { document.getElementById('game-menu-modal').classList.add('flex'); }
+  closeMenu() { document.getElementById('game-menu-modal').classList.remove('flex'); }
+  
+  showRules() { document.getElementById('rules-modal').classList.add('flex'); }
+  closeRules() { 
+    document.getElementById('rules-modal').classList.remove('flex'); 
+    this.openMenu(); // Volta para o menu principal ao fechar regras
+  }
+
+  exitToMain() {
+    try { window.location.href = "index.html"; } 
+    catch (e) { alert("Navegação apenas no arquivo local."); }
+  }
+
+  updateMenuUI() {
+    const btnRuleIcon = document.getElementById('icon-rule');
+    const btnRuleText = document.getElementById('text-rule');
+    const btnSoundIcon = document.getElementById('icon-sound');
+    const btnSoundText = document.getElementById('text-sound');
+
+    if (this.allowBackwardCapture) {
+      btnRuleIcon.className = "fas fa-check text-green-400";
+      btnRuleText.innerText = "Captura p/ Trás: ON";
+    } else {
+      btnRuleIcon.className = "fas fa-times text-slate-500";
+      btnRuleText.innerText = "Captura p/ Trás: OFF";
+    }
+
+    if (this.soundEnabled) {
+      btnSoundIcon.className = "fas fa-volume-up text-green-400";
+      btnSoundText.innerText = "Som: Ligado";
+    } else {
+      btnSoundIcon.className = "fas fa-volume-mute text-slate-500";
+      btnSoundText.innerText = "Som: Mudo";
+    }
   }
 
   toggleRule() {
     this.allowBackwardCapture = !this.allowBackwardCapture;
-    const btn = document.getElementById('btnRule');
-    if (this.allowBackwardCapture) {
-      btn.innerHTML = '<i class="fas fa-arrows-alt-v"></i>';
-      btn.style.color = '#34d399';
-      this.showToast("Captura p/ trás: ATIVADA");
-    } else {
-      btn.innerHTML = '<i class="fas fa-long-arrow-alt-up"></i>';
-      btn.style.color = '#94a3b8';
-      this.showToast("Captura p/ trás: DESATIVADA");
-    }
+    this.updateMenuUI();
     if (this.gameActive && this.selected) {
       this.calculateValidMovesForSelected();
       this.updateUI();
@@ -395,9 +457,15 @@ class DamasGame {
   
   toggleSound() {
     this.soundEnabled = !this.soundEnabled;
-    const btn = document.getElementById('btnSound');
-    btn.innerHTML = this.soundEnabled ? '<i class="fas fa-volume-up"></i>' : '<i class="fas fa-volume-mute"></i>';
-    btn.style.color = this.soundEnabled ? '#94a3b8' : '#ef4444';
+    this.updateMenuUI();
+  }
+  
+  showToast(msg) {
+    const t = document.getElementById('toast');
+    t.innerText = msg;
+    t.classList.add('show');
+    if (this.toastTimer) clearTimeout(this.toastTimer);
+    this.toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
   }
   
   playSound(name) {
@@ -405,9 +473,6 @@ class DamasGame {
     const s = this.sounds[name];
     if (s) { s.currentTime = 0; s.play().catch(() => {}); }
   }
-
-  showRules() { document.getElementById('rules-modal').style.display = 'flex'; }
-  closeRules() { document.getElementById('rules-modal').style.display = 'none'; }
 
   createInitialBoard() {
     let b = Array(ROWS).fill(null).map(() => Array(COLS).fill(EMPTY));
@@ -568,6 +633,7 @@ class DamasGame {
         }
       }
     } else {
+      // DAMA
       for (let d of directions) {
         let enemyPos = null;
         for (let i = 1; i < 8; i++) {
@@ -588,9 +654,9 @@ class DamasGame {
               });
             }
           } else {
-            if (enemyPos !== null) break; 
             const isFriend = (Math.floor(cell) === Math.floor(p));
-            if (isFriend) break; 
+            if (isFriend) break;
+            if (enemyPos !== null) break; // Duas peças seguidas
             enemyPos = {r: nr, c: nc};
           }
         }
@@ -798,14 +864,6 @@ function closeModal() {
   document.getElementById('modal').style.display = 'none';
   game.startNewGame();
 }
-
-document.getElementById("btnVoltarMenu").onclick = () => {
-    try {
-        window.location.href = "./index.html";
-    } catch (e) {
-        console.error("Navigation error:", e);
-    }
-};
 </script>
 </body>
 </html>
