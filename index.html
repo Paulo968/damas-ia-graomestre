@@ -263,6 +263,11 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           class="bg-cyan-600 hover:bg-cyan-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(56,189,248,0.5)] mb-4 transition w-60">
           🤖 Jogar vs IA
         </button>
+<button id="btnMultiplayer"
+  class="bg-purple-600 hover:bg-purple-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(192,132,252,0.5)] transition w-60 mb-4">
+  🎮 Multiplayer Externo
+</button>
+
       
         <!-- Seletor de Dificuldade (pertence ao modo IA) -->
         <div class="text-center mb-4 w-60" id="difficultyContainer">
@@ -6450,5 +6455,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
 });
 </script>
 
+
+<script>
+document.addEventListener("DOMContentLoaded", ()=>{
+  const b=document.getElementById("btnMultiplayer");
+  if(b){ b.onclick=()=>{ window.location.href="mesa.html"; } }
+});
+</script>
 </body>
   </html>
