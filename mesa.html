@@ -79,6 +79,7 @@
     align-items: center;
     width: 100%;
     position: relative;
+    z-index: 10; /* Garante que fique abaixo do menu */
   }
 
   #board {
@@ -152,33 +153,34 @@
     box-shadow: inset 0 0 0 2px rgba(56, 189, 248, 0.3);
   }
 
-  /* --- BOTÃO MENU (TOPO ESQUERDO) --- */
+  /* --- BOTÃO MENU (TOPO ESQUERDO - FIXO) --- */
   #btn-menu-trigger {
     position: fixed;
-    top: 15px; /* Mudado para o topo */
-    left: 15px; /* Canto esquerdo */
+    top: 15px; 
+    left: 15px; 
     width: 44px;
     height: 44px;
     border-radius: 12px;
-    background: rgba(30, 41, 59, 0.6);
+    background: rgba(30, 41, 59, 0.8); /* Mais opaco para garantir clique */
     backdrop-filter: blur(4px);
     color: #94a3b8;
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.15);
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 1.2rem;
     cursor: pointer;
-    z-index: 100;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 9999; /* Z-Index muito alto para garantir prioridade */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     transition: all 0.2s;
+    pointer-events: auto; /* Garante que receba cliques */
   }
   #btn-menu-trigger:active { transform: scale(0.9); background: #334155; color: white; }
 
   /* --- MODAIS --- */
   .modal {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-    z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(8px);
+    z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px);
   }
   .modal.flex { display: flex; }
 
