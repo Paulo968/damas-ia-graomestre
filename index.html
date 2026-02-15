@@ -2027,8 +2027,13 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         // 💡 PASSO 1 (CORREÇÃO): Caminho do Firestore simplificado
         const salaRef = doc(db, "salas", currentRoom);
 
-        // 'current' aqui é o jogador QUE ACABOU de mover
-        const proximoJogador = (current === WHITE) ? RED : WHITE;
+        // 'current' aqui é o jogador QUE ACABOU de mover, exceto nos casos especiais abaixo.
+        // Se mv for nulo (estado inicial) ou se mv.continuation estiver definido (captura múltipla em andamento),
+        // não devemos alternar a vez, pois o mesmo jogador ainda deve jogar.
+        // Caso contrário, alternamos para o outro jogador normalmente.
+        const proximoJogador = (!mv || (mv && mv.continuation))
+          ? current
+          : ((current === WHITE) ? RED : WHITE);
 
         try {
           await updateDoc(salaRef, {
@@ -2284,6 +2289,8 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           const more = followUpCaptures(board, mv.to[0], mv.to[1], current);
           if(more.length){
             isMultiCapture = true; // 🌐 Marca como captura múltipla
+            // 🔁 Marca a jogada como continuação para que o servidor não alterne a vez
+            try { mv.continuation = true; } catch(_){ /* ignore se não for objeto */ }
             legal = more;
             
             // 🌐 Lógica de captura múltipla online/offline
