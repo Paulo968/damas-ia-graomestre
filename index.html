@@ -224,12 +224,24 @@
         transform-origin: center center;
       }
       .piece {
+        /* Garante que cada peça esteja sempre centrada em seu quadrado.  A tradução
+           inicial definida pelas classes utilitárias (-translate-x-1/2/-translate-y-1/2)
+           é reimplementada aqui para que possamos combinar rotações no mesmo
+           transform.  A transição continua aplicada para suavizar giros. */
         transition: transform 0.4s ease-in-out;
+        transform: translate(-50%, -50%);
       }
       /* Rotação do tabuleiro para quem joga de VERMELHO */
-      #board.rot-180 { transform: rotate(180deg); }
+      #board.rot-180 {
+        transform: rotate(180deg);
+      }
       /* Contra-rotação das peças (pra elas não ficarem “de cabeça pra baixo”) */
-      .piece.counter-rot { transform: rotate(180deg); }
+      .piece.counter-rot {
+        /* Combina a mesma tradução de centragem com a rotação de 180°.  Sem
+           incluir a tradução novamente, a rotação original substituiria o
+           translate e as peças ficariam desalinhadas nos quadrados. */
+        transform: translate(-50%, -50%) rotate(180deg);
+      }
       
       /* 🚫 Regra 'html, body' anterior foi removida e substituída pela do usuário no topo */
     </style>
@@ -302,6 +314,22 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           <div id="ruleExplanation" class="mt-2 text-xs text-slate-400 text-center w-60 h-10 transition-all duration-300">
             <!-- preenchido via JS -->
           </div>
+        </div>
+
+        <!-- Seletor de Região (NOVO) -->
+        <div class="text-center mb-4 w-60" id="regionContainer">
+          <p class="mb-2 text-slate-400">Sua Região:</p>
+          <select id="regionSelect" class="bg-slate-800 border border-cyan-400/40 text-white px-4 py-2 rounded-lg w-60">
+            <option value="">Padrão (Brasil)</option>
+            <option value="mg">Minas Gerais</option>
+            <option value="ba">Bahia</option>
+            <option value="sp">São Paulo</option>
+            <option value="rj">Rio de Janeiro</option>
+            <option value="rs">Rio Grande do Sul</option>
+            <option value="pe">Pernambuco</option>
+            <option value="ce">Ceará</option>
+            <option value="pa">Pará</option>
+          </select>
         </div>
 
         <!-- 
@@ -680,7 +708,8 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
                   shadow-[0_0_25px_rgba(56,189,248,0.5)]] p-6 rounded-2xl w-[90%] max-w-lg relative overflow-hidden transform scale-95 opacity-0">
         
         <!-- Luz de fundo animada -->
-        <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 via-transparent to-blue-500/10 blur-3xl"></div>
+        <!-- o overlay de luz de fundo deve permitir cliques passar: pointer-events-none -->
+        <div class="absolute inset-0 bg-gradient-to-tr from-cyan-500/10 via-transparent to-blue-500/10 blur-3xl pointer-events-none"></div>
         
         <h2 class="text-2xl font-bold mb-3 text-center text-cyan-300 drop-shadow-lg">
           📘 Manual de Instruções
@@ -1564,6 +1593,139 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       // 🔥 FIM DA INTEGRAÇÃO FIREBASE
       // ======================================================
 
+      /*
+       * =====================================================
+       * 🧠 Sincronização Persistente da Inteligência e Perfis da IA
+       *
+       * Para garantir que todas as instâncias do jogo compartilhem a mesma
+       * inteligência (pesos neurais, heurística de fim de jogo e memória de
+       * padrões) e os mesmos perfis de IA (agg/def/games/wins), criamos
+       * assinantes (listeners) do Firestore. Sempre que um documento é
+       * atualizado no servidor, atualizamos o cache local (localStorage e
+       * caches em memória) e, quando aplicável, enviamos os dados ao Web
+       * Worker. Estes listeners são registrados após o Firebase estar pronto
+       * (firebaseReady) e podem ser removidos chamando as funções de
+       * unsubscribe retornadas.
+       */
+      // Guardam funções de unsubscribe para evitar múltiplos ouvintes duplicados
+      let iaIntelligenceUnsub = null;
+      let iaProfilesUnsubs = [];
+
+      /**
+       * Inscreve-se no documento /ia/inteligencia no Firestore.
+       * Quando os dados remotos mudam, atualiza localmente os pesos neurais,
+       * pesos de fim de jogo e memórias de padrões, além de notificar o worker.
+       */
+      function subscribeToInteligenciaIA() {
+        try {
+          if (!window.onSnapshot || !window.doc || !window.db) return;
+          // Remove listener anterior, se houver
+          if (iaIntelligenceUnsub) {
+            try { iaIntelligenceUnsub(); } catch (_) {}
+            iaIntelligenceUnsub = null;
+          }
+          const { db, doc, onSnapshot } = window;
+          const ref = doc(db, 'ia', 'inteligencia');
+          iaIntelligenceUnsub = onSnapshot(ref, (snap) => {
+            try {
+              if (!snap.exists()) return;
+              const data = snap.data() || {};
+              // Atualiza pesos neurais
+              if (data.neural_w) {
+                saveNeuralWeights('white', data.neural_w);
+                if (!getNeuralWeights.cache) getNeuralWeights.cache = {};
+                getNeuralWeights.cache.white = data.neural_w;
+              }
+              if (data.neural_r) {
+                saveNeuralWeights('red', data.neural_r);
+                if (!getNeuralWeights.cache) getNeuralWeights.cache = {};
+                getNeuralWeights.cache.red = data.neural_r;
+              }
+              // Atualiza pesos de fim de jogo
+              if (data.endgame_w) {
+                saveEndgameWeights('white', data.endgame_w);
+                if (!getEndgameWeights.cache) getEndgameWeights.cache = {};
+                getEndgameWeights.cache.white = data.endgame_w;
+              }
+              if (data.endgame_r) {
+                saveEndgameWeights('red', data.endgame_r);
+                if (!getEndgameWeights.cache) getEndgameWeights.cache = {};
+                getEndgameWeights.cache.red = data.endgame_r;
+              }
+              // Atualiza memória de padrões
+              const memW = data.patternMemory_white || {};
+              const memR = data.patternMemory_red || {};
+              localStorage.setItem('patternMemory_white', JSON.stringify(memW));
+              localStorage.setItem('patternMemory_red', JSON.stringify(memR));
+              // Se houver worker, envia nova memória
+              if (worker) {
+                worker.postMessage({
+                  type: 'loadPatternMemory',
+                  patternMemory_white: memW,
+                  patternMemory_red: memR
+                });
+              }
+            } catch (ex) {
+              console.warn('Erro ao processar snapshot de inteligencia IA:', ex);
+            }
+          });
+        } catch (ex) {
+          console.warn('Falha ao inscrever inteligência IA:', ex);
+        }
+      }
+
+      /**
+       * Inscreve-se em todos os documentos de perfis de IA (aiProfiles).
+       * Para cada combinação de cor (white/red) e dificuldade (easy, medium,
+       * hard, master) haverá um documento. Quando um perfil muda, este
+       * listener atualiza o localStorage e o cache em memória para que as
+       * próximas leituras usem os valores mais recentes.
+       */
+      function subscribeToAIProfiles() {
+        try {
+          if (!window.onSnapshot || !window.doc || !window.db) return;
+          // Cancela listeners anteriores
+          if (iaProfilesUnsubs && iaProfilesUnsubs.length) {
+            iaProfilesUnsubs.forEach(unsub => {
+              try { unsub(); } catch (_) {}
+            });
+          }
+          iaProfilesUnsubs = [];
+          const { db, doc, onSnapshot } = window;
+          const suffixes = ['easy','medium','hard','master'];
+          const colors = ['white','red'];
+          for (const color of colors) {
+            for (const suf of suffixes) {
+              const key = `aiProfile_${color}_${suf}`;
+              const ref = doc(db, 'aiProfiles', key);
+              const unsub = onSnapshot(ref, (snap) => {
+                try {
+                  if (!snap.exists()) return;
+                  const data = snap.data() || {};
+                  // Atualiza localStorage com o perfil remoto
+                  try {
+                    localStorage.setItem(key, JSON.stringify(data));
+                  } catch (_) {}
+                  // Atualiza cache em memória
+                  if (!aiProfileCache) return;
+                  aiProfileCache[key] = {
+                    agg:  (typeof data.agg  === 'number') ? data.agg  : aiProfileCache[key]?.agg,
+                    def:  (typeof data.def  === 'number') ? data.def  : aiProfileCache[key]?.def,
+                    games:(typeof data.games=== 'number') ? data.games: aiProfileCache[key]?.games,
+                    wins: (typeof data.wins === 'number') ? data.wins : aiProfileCache[key]?.wins
+                  };
+                } catch (ex) {
+                  console.warn('Erro ao processar snapshot de perfil IA:', ex);
+                }
+              });
+              iaProfilesUnsubs.push(unsub);
+            }
+          }
+        } catch (ex) {
+          console.warn('Falha ao inscrever perfis IA:', ex);
+        }
+      }
+
       // 🌐 PASSO 3 (JS): Helpers de Cor do Jogador
       function setPlayerColor(color){ // 'white' ou 'red'
         localStorage.setItem('playerColor', color);
@@ -1682,6 +1844,9 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         // 5️⃣ Limpeza de cache entre partidas
         if (worker) worker.postMessage({ resetCache: true });
 
+        // 🔁 Reinicia flag de aviso de poucas peças (contexto lowMaterial)
+        window.lowMaterialAnnounced = false;
+
         elBoard.innerHTML='';
         board = Array(8).fill(null).map(()=>Array(8).fill(null));
         selected=null; 
@@ -1727,7 +1892,8 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           if (!trainingMode) {
             setFace('idle'); 
             const diff = localStorage.getItem('difficulty') || 'medium';
-            if(diff === 'easy') say("Modo de treino ativo. Ajustando nível humano.");
+            // No modo fácil, não confunda o usuário com mensagem de treinamento
+            if(diff === 'easy') say("Modo fácil: calibrando nível humano.");
             else if(diff === 'master') say("Modo Grão-Mestre: nenhum erro será perdoado.");
             else say('start');
           } else {
@@ -1767,6 +1933,12 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
             }
           }
         }
+        // 🔃 Reaplica a orientação após redesenhar peças.  Necessário porque o tabuleiro
+        // pode ter sido reconstruído a partir do servidor.  Sem isso, a classe
+        // rot-180 no tabuleiro e a contra-rotação das peças podem se perder.
+        try {
+          ajustarOrientacao(getPlayerColor());
+        } catch(_){ /* falha silenciosa se ajustarOrientacao não existir */ }
       }
 
       // 🌐 Escuta alterações no Firestore para jogadas em tempo real
@@ -1976,11 +2148,15 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           return;
         }
         
-        const sq=e.currentTarget;
-        const r=+sq.dataset.r, c=+sq.dataset.c;
-        const piece=board[r][c];
+        const sq = e.currentTarget;
+        const rr = +sq.dataset.r;
+        const cc = +sq.dataset.c;
+        // Converte coordenadas da visualização para coordenadas lógicas
+        const [r, c] = viewToLogicalCoords(rr, cc);
+        const piece = board[r][c];
 
         if(selected){
+          // selected.r e selected.c já são coordenadas lógicas
           const mv = legal.find(m=> m.from[0]===selected.r && m.from[1]===selected.c && m.to[0]===r && m.to[1]===c);
           if(mv){ 
             applyMove(mv); 
@@ -1988,10 +2164,11 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           }
           else{
             clearSelect(); // Helper de UI
+            // Se clicou na própria peça, seleciona novamente
             if(piece && piece.startsWith(current)) selectPiece(sq,r,c); // Helper de UI
           }
         } else if(piece && piece.startsWith(current)){
-          selectPiece(sq,r,c); // Helper de UI
+          selectPiece(sq,r,c); // Helper de UI (r,c são lógicos)
         }
       }
       /* Fim da Etapa 4 */
@@ -2003,7 +2180,8 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           board[r][c]=t+KING;
           if(el) el.classList.add('king');
           setFace('promo',{shake:true,pulse:true}); // Helper de UI
-          say('promo'); // Helper de UI
+          // Usa contexto especial para promoção surpresa
+          sayWithContext('surprisePromo');
         }
       }
 
@@ -2370,7 +2548,10 @@ if (window.drawReason) {
             if (typeof removeTrainingHud === 'function') {
               removeTrainingHud();
             }
+            // Reseta alvo de treino para próxima sessão
             trainingTargetGames = null;
+            // Salva a inteligência global ao final do lote de treino
+            try { salvarInteligenciaIA(); } catch(_) {}
           }, 2000);
 
           return;
@@ -2500,6 +2681,8 @@ if (window.drawReason) {
           adjustNeuralWeights(winner);
           // 🧠 NOVO: Ajuste de pesos de fim de jogo (se aplicável)
           adjustEndgameWeights(winner);
+          // Salva a inteligência global após cada partida local (humano vs IA)
+          try { salvarInteligenciaIA(); } catch(_) {}
         }
 
         // 🧠 ETAPA 4: Salva partida no histórico e Gera análise (só no modo IA)
@@ -2799,11 +2982,15 @@ if (window.drawReason) {
         }
 
         // 🎯 Tempo de pensamento por dificuldade
+        // Configura o tempo de busca de acordo com a dificuldade. Para os níveis mais
+        // baixos, a IA responde rapidamente; no nível mestre, dedica mais tempo para
+        // aumentar a força sem travar a interface. Estes valores substituem o
+        // modelo anterior (350/700/1100/1500ms).
         let thinkTimeMs = 800; // padrão
-        if (diff === 'easy')      thinkTimeMs = 350;
-        else if (diff === 'medium') thinkTimeMs = 700;
-        else if (diff === 'hard')   thinkTimeMs = 1100;
-        else if (diff === 'master') thinkTimeMs = 1500;
+        if (diff === 'easy')      thinkTimeMs = 200;
+        else if (diff === 'medium') thinkTimeMs = 800;
+        else if (diff === 'hard')   thinkTimeMs = 1600;
+        else if (diff === 'master') thinkTimeMs = 3000;
 
         // ⭐️ MODIFICADO: Envia também a regra de captura para a IA
         // 🧠 MODIFICADO: Envia AMBOS os perfis + pesos neurais + pesos de fim de jogo
@@ -2870,7 +3057,26 @@ if (window.drawReason) {
             if (moveToPlay.type !== 'capture' && moveToPlay.type !== 'multi') say('behind'); // Helper de UI
           }
         }
+
+        // 💬 Contexto de sacrifício: se a IA estiver bem atrás (score > 0.8) e optar por capturar,
+        // considera-se um sacrifício calculado. Fala uma frase especial antes do lance.
+        if (!trainingMode && moveToPlay.type === 'capture' && score > 0.8) {
+          sayWithContext('sacrifice');
+        }
         // Fim (Implementação 6)
+
+        // 💬 Contexto de poucas peças: se restarem 8 peças ou menos no total, a IA comenta uma vez
+        // Não em modo treino, para evitar falas excessivas
+        if (!trainingMode) {
+          try {
+            const { w, r } = countPieces();
+            const total = w + r;
+            if (total <= 8 && !window.lowMaterialAnnounced) {
+              window.lowMaterialAnnounced = true;
+              sayWithContext('lowMaterial');
+            }
+          } catch (_) {}
+        }
 
         const fs = squareEl(moveToPlay.from[0],moveToPlay.from[1]); // Helper de UI
         const ts = squareEl(moveToPlay.to[0],moveToPlay.to[1]); // Helper de UI
@@ -3126,6 +3332,83 @@ if (window.drawReason) {
         surprise: ['😮','😲','😐','🤨','😯','💡']
       };
 
+      /**
+       * REGIONAL_PHRASES fornece gírias e expressões típicas de
+       * diferentes estados brasileiros. Cada entrada possui três
+       * categorias:
+       *  - generic: frases neutras para qualquer contexto;
+       *  - ahead: usadas quando a IA está em vantagem (grupo "ahead");
+       *  - behind: usadas quando a IA está em desvantagem (grupo "behind");
+       * Isso permite que a função say() misture provocações com um
+       * tempero regional. Novos estados podem ser adicionados seguindo
+       * este padrão usando a sigla como chave.
+       */
+      const REGIONAL_PHRASES = {
+        mg: {
+          generic: ['uai', 'sô', 'trem', 'num sei não', 'eita trem'],
+          ahead: ['trem bão demais', 'uai sô, tá fácil', 'agora sim, hein'],
+          behind: ['vixemaria', 'arreda pra lá', 'tá osso demais uai']
+        },
+        ba: {
+          generic: ['oxente', 'ôxe', 'vixe', 'arretado', 'massa'],
+          ahead: ['é barril dobrado', 'só sucesso, meu rei', 'ó a responsa'],
+          behind: ['me lasquei', 'vixe, deu ruim', 'ave maria, tu é bom']
+        },
+        sp: {
+          generic: ['mano', 'suave', 'mó da hora', 'parça', 'truta'],
+          ahead: ['chupa', 'tá ligado, é nóis', 'toma essa'],
+          behind: ['vish', 'perrengue', 'deu ruim', 'foi mal aí']
+        },
+        rj: {
+          generic: ['pô', 'ih', 'maneiro', 'bolado', 'sinistro'],
+          ahead: ['sente o drama', 'parada é essa', 'só alegria'],
+          behind: ['deu ruim', 'que parada', 'não rolou', 'sacanagem']
+        },
+        rs: {
+          generic: ['bah', 'tchê', 'gurizada', 'tri', 'guria'],
+          ahead: ['tri legal', 'já era', 'galo véio', 'barbaridade'],
+          behind: ['mas bah', 'me quebrei', 'só na tristeza', 'tô tri mal']
+        },
+        pe: {
+          generic: ['oxe', 'oxente', 'massa', 'visse', 'cabrunco'],
+          ahead: ['arretado demais', 'agora é conosco', 'é show de bola'],
+          behind: ['vixe maria', 'tô lascado', 'deu zebra', 'me lasquei']
+        },
+        ce: {
+          generic: ['ei', 'oxe', 'cabra da peste', 'abestado', 'mermão'],
+          ahead: ['é nós na fita', 'mais ligeiro que coceira', 'macho véi'],
+          behind: ['tô ferrado', 'deu zebra', 'oxe, mermão', 'não acredito']
+        },
+        pa: {
+          generic: ['égua', 'marrapaz', 'maneiro', 'véi', 'bicho'],
+          ahead: ['égua de bom', 'isso aí é top', 'só sucesso'],
+          behind: ['égua de ruim', 'me ferrei', 'deu xabu', 'quebrei a cara']
+        }
+      };
+
+      /**
+       * DIFFICULTY_PHRASES contém frases breves associadas ao nível de
+       * dificuldade selecionado. Elas serão anexadas às provocações
+       * para dar um feedback contextual sobre o desafio.
+       */
+      const DIFFICULTY_PHRASES = {
+        easy: ['Relaxa, tô só aquecendo.', 'Vamos devagar pra te acompanhar.', 'Facinho, facinho...'],
+        medium: ['Tá ficando interessante.', 'Ótimo, um desafio médio.', 'Avisa quando esquentar.'],
+        hard: ['Agora o bicho pega.', 'Isso sim é jogo.', 'Bem-vindo ao modo hardcore.'],
+        master: ['Cada lance é decisivo.', 'Nível grão-mestre, hein?', 'Aqui só gênio sobrevive.']
+      };
+
+      /**
+       * CONTEXT_PHRASES oferece conjuntos de mensagens para contextos
+       * específicos não cobertos pelos grupos padrão de TAUNTS. Podem
+       * ser usados ao chamar say() passando diretamente o array.
+       */
+      const CONTEXT_PHRASES = {
+        sacrifice: ['Sacrifício calculado.', 'Perder pra ganhar, estratégia pura.', 'Entreguei a peça, ganhei o jogo.'],
+        surprisePromo: ['Promoção surpresa!', 'Olha quem virou rei!', 'Rei nascendo do nada.'],
+        lowMaterial: ['Poucas peças, mil ideias.', 'O fim tá perto, cuidado.', 'Cada movimento agora vale ouro.']
+      };
+
       const TAUNTS = {
         start: [
           "IA online. Iniciando protocolos estratégicos.",
@@ -3315,29 +3598,74 @@ if (window.drawReason) {
       // *** FUNÇÃO 'say' MODIFICADA ***
       // Agora ela controla o 'bubbleText' e a classe 'show' no 'bubble'
       function say(group, extra = ""){
-        // 🔁 IA não fala no modo treino
-        if (isOnline || trainingMode) return; 
+        // 🔁 IA não fala no modo treino ou no modo online
+        if (isOnline || trainingMode) return;
 
         const now = performance.now();
         if (now - lastTauntAt < 900) return; // anti-spam sutil
         lastTauntAt = now;
 
-        const pick = (arr)=>arr[Math.floor(Math.random()*arr.length)];
-        
-        // 🐞 CORREÇÃO: Adicionada verificação se 'group' é válido em TAUNTS
-        const text = (Array.isArray(group) ? pick(group) : (TAUNTS[group] ? pick(TAUNTS[group]) : group)) + (extra ? " " + extra : "");
-        
-        // Coloca o texto no span de texto
+        const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+        // Determina a base da fala: pode ser um array customizado, um grupo de TAUNTS ou uma string simples
+        let base;
+        if (Array.isArray(group)) {
+          base = pick(group);
+        } else if (TAUNTS[group]) {
+          base = pick(TAUNTS[group]);
+        } else {
+          base = typeof group === 'string' ? group : '';
+        }
+
+        // Recupera a sigla de região e normaliza
+        const region = (localStorage.getItem('region') || '').toLowerCase();
+        let regionPhrase = '';
+        if (region && REGIONAL_PHRASES[region]) {
+          // Seleciona categoria conforme o grupo: ahead/behind usam suas próprias listas
+          let cat = 'generic';
+          if (group === 'ahead' && REGIONAL_PHRASES[region].ahead) cat = 'ahead';
+          else if (group === 'behind' && REGIONAL_PHRASES[region].behind) cat = 'behind';
+          const arr = REGIONAL_PHRASES[region][cat] || REGIONAL_PHRASES[region].generic;
+          regionPhrase = pick(arr);
+        }
+
+        // Recupera a dificuldade para escolher uma frase correspondente
+        const diff = (localStorage.getItem('difficulty') || '').toLowerCase();
+        let diffPhrase = '';
+        if (diff && DIFFICULTY_PHRASES[diff]) {
+          diffPhrase = pick(DIFFICULTY_PHRASES[diff]);
+        }
+
+        // Constrói o texto completo, concatenando as partes disponíveis
+        const parts = [];
+        if (base) parts.push(base);
+        if (regionPhrase) parts.push(regionPhrase);
+        if (diffPhrase) parts.push(diffPhrase);
+        if (extra) parts.push(extra);
+        const text = parts.join(' ');
+
+        // Mostra o balão com a fala composta
         bubbleText.textContent = text;
-        // Adiciona a classe .show ao card PAI. 
-        // O CSS vai usar isso para mostrar o bubbleText e esconder o placeholder
         bubble.classList.add('show');
-        
-        // 🌟 MUDANÇA 2 (JS): Tempo de fala aumentado para 7 segundos
-        setTimeout(()=>{
-          // Remove a classe .show, fazendo o CSS reverter para o placeholder
+        setTimeout(() => {
           bubble.classList.remove('show');
-        }, 7000); // Duração que a fala fica visível (era 3000)
+        }, 7000);
+      }
+
+      /**
+       * Chama say() usando um contexto personalizado. Se houver um conjunto
+       * de frases em CONTEXT_PHRASES para a chave fornecida, ele escolhe
+       * uma delas; caso contrário, delega ao grupo padrão.
+       *
+       * @param {string|Array} ctxKey  Chave em CONTEXT_PHRASES ou grupo/array de TAUNTS
+       * @param {string} extra         Texto extra a ser concatenado
+       */
+      function sayWithContext(ctxKey, extra = "") {
+        if (typeof ctxKey === 'string' && CONTEXT_PHRASES[ctxKey]) {
+          say(CONTEXT_PHRASES[ctxKey], extra);
+        } else {
+          say(ctxKey, extra);
+        }
       }
       
       // Esta função continua igual. 
@@ -3413,7 +3741,45 @@ if (window.drawReason) {
         });
       }
 
-      function squareEl(r,c){ return document.querySelector(`[data-r="${r}"][data-c="${c}"]`); }
+      /**
+       * Retorna o elemento de quadrado (div) para a coordenada lógica informada.
+       * No modo online, se o jogador for vermelho, o tabuleiro é rotacionado 180° apenas visualmente.
+       * Por isso, ao buscar um quadrado do DOM a partir de coordenadas lógicas (linha r, coluna c),
+       * precisamos converter para as coordenadas de visualização (espelhadas) para manter consistência.
+       * Para jogadores brancos ou jogos locais/treino, a conversão não é aplicada.
+       *
+       * @param {number} r Linha lógica (0-7)
+       * @param {number} c Coluna lógica (0-7)
+       * @returns {HTMLElement|null} Elemento de quadrado correspondente
+       */
+      function squareEl(r,c){
+        // Converte da coordenada lógica para a coordenada de visualização quando online e o jogador for vermelho
+        let rr = r, cc = c;
+        try {
+          if (isOnline && getPlayerColor() === 'red') {
+            rr = 7 - r;
+            cc = 7 - c;
+          }
+        } catch(_) {}
+        return document.querySelector(`[data-r="${rr}"][data-c="${cc}"]`);
+      }
+
+      /**
+       * Converte coordenadas de tela (dataset r/c da div) para coordenadas lógicas (linha/coluna no array board).
+       * Necessário no modo online quando o tabuleiro é rotacionado para o jogador vermelho: a casa com
+       * data-r=0,data-c=0 aparece visualmente na parte inferior direita, mas logicamente é a casa (7,7).
+       * Para jogos locais e para o jogador branco não ocorre transformação.
+       *
+       * @param {number} r Linha na visualização (dataset.r do quadrado)
+       * @param {number} c Coluna na visualização (dataset.c do quadrado)
+       * @returns {Array<number>} [linha lógica, coluna lógica]
+       */
+      function viewToLogicalCoords(r, c) {
+        if (isOnline && getPlayerColor() === 'red') {
+          return [7 - r, 7 - c];
+        }
+        return [r, c];
+      }
 
       function explodeAt(x,y){
         for(let i=0;i<8;i++){
@@ -3921,7 +4287,22 @@ if (window.drawReason) {
         // 🔥 PARTE 3 (GATILHO): Carrega a inteligência do Firestore ANTES de iniciar o worker
         // (await) garante que o worker receba a memória mais recente, se existir
         await carregarInteligenciaIA();
-        
+
+        // Após carregar a inteligência local, registra listeners para sincronizar
+        // automaticamente as atualizações remotas de IA (pesos/memória) e perfis.
+        try {
+          if (typeof firebaseReady !== 'undefined') {
+            firebaseReady.then(() => {
+              try { subscribeToInteligenciaIA(); } catch(_) {}
+              try { subscribeToAIProfiles(); } catch(_) {}
+            });
+          } else {
+            // fallback: tenta registrar imediatamente
+            subscribeToInteligenciaIA();
+            subscribeToAIProfiles();
+          }
+        } catch (_) {}
+
         initWorker(); // Inicia o worker (de game-core.js)
       
         // --- Seletores do Menu ---
@@ -3961,6 +4342,17 @@ if (window.drawReason) {
         // 1. Lê a dificuldade (e a regra) salvas no localStorage
         const savedDiff = localStorage.getItem('difficulty') || 'medium';
         const savedRule = localStorage.getItem('captureRule') || 'sim';
+
+        // 🔹 Lê a região salva e define o valor do seletor
+        const selectRegion = document.getElementById('regionSelect');
+        const savedRegion = localStorage.getItem('region') || '';
+        if (selectRegion) {
+          selectRegion.value = savedRegion;
+          // ao alterar, atualiza o localStorage
+          selectRegion.addEventListener('change', (e) => {
+            localStorage.setItem('region', e.target.value);
+          });
+        }
 
         // 2. Define o valor dos <select> ocultos ANTES da lógica dos botões
         if (selectDiff) {
@@ -5069,6 +5461,18 @@ if (window.drawReason) {
 
       const TT = new Map(); // Tabela de Transposição (cache)
 
+      // === Killer move e tabela de histórico para Move Ordering ===
+      // Cada profundidade (ply) terá até dois "killer moves" que causaram um corte beta.
+      // Eles são priorizados no ordenamento de lances, pois têm alta chance de provocar novo corte.
+      const KILLERS = Array.from({ length: 64 }, () => [null, null]);
+      // Tabela de histórico: acumula uma pontuação para cada lance (from/to) baseado em cortes anteriores.
+      const HISTORY = {};
+
+      // Gera uma chave única para um lance na tabela de histórico.
+      function historyKey(m) {
+        return `${m.from[0]}${m.from[1]}${m.to[0]}${m.to[1]}`;
+      }
+
       // 💡 NOVO: Função para checar Simetria Vertical
       function isVerticallySymmetric(b) {
         for (let r = 0; r < 8; r++) {
@@ -5144,6 +5548,144 @@ if (window.drawReason) {
           }
           TT.set(key,best); return best;
         }
+      }
+
+      /*
+       * Algoritmo NegaScout / Principal Variation Search (PVS)
+       *
+       * Esta variante do Alpha-Beta utiliza uma busca "null-window" para as jogadas
+       * subsequentes à melhor jogada conhecida. Com isso, reduz o número de nós
+       * avaliados ao reaproveitar informação do primeiro filho. Também implementa
+       * killer moves e histórico para ordenar lances de maneira mais eficaz.
+       *
+       * Parâmetros:
+       *   b       – tabuleiro 8x8 (matriz de peças ou null)
+       *   depth   – profundidade restante de busca
+       *   isMax   – true se o jogador atual é MAX (brancas), false se MIN (vermelhas)
+       *   alpha   – limite inferior (valor mínimo aceitável para MAX)
+       *   beta    – limite superior (valor máximo aceitável para MIN)
+       *   zHash   – hash Zobrist (BigInt) da posição atual
+       *   ply     – profundidade absoluta (0 para raiz, 1 para filhos, ...)
+       *
+       * Retorna a avaliação numérica da posição.
+       */
+      function negascout(b, depth, isMax, alpha, beta, zHash, ply) {
+        // Contagem de repetições para anti-loop
+        const hashKey = zHash.toString();
+        const visits = (repetitionCount.get(hashKey) || 0) + 1;
+        repetitionCount.set(hashKey, visits);
+
+        // Usa transposition table para evitar recalcular posições repetidas
+        // A chave inclui profundidade e indicador de MAX/MIN para maior precisão.
+        const ttKey = hashKey + '|' + depth + '|' + isMax;
+        if (TT.has(ttKey)) {
+          return TT.get(ttKey);
+        }
+
+        // Determina o jogador atual
+        const player = isMax ? WHITE : RED;
+
+        // Condição terminal: profundidade esgotada ou posição terminal
+        if (depth === 0 || isGameOver(b, player)) {
+          const v = evalBoard(b);
+          TT.set(ttKey, v);
+          return v;
+        }
+
+        // Gera lances e filtra capturas obrigatórias
+        const all = allMoves(player, b);
+        let legalMoves = filterMandatoryWithMaxChain(b, player, all);
+
+        // Ordenação de lances com heurísticas avançadas: capturas/promos, killer moves e histórico
+        legalMoves.sort((a, c) => {
+          // Base: capturas primeiro
+          if (a.type === 'capture' && c.type !== 'capture') return -1;
+          if (a.type !== 'capture' && c.type === 'capture') return 1;
+          // Promoções (chegar ao fim) priorizadas
+          const aPromo = (player === RED && a.to[0] === 7) || (player === WHITE && a.to[0] === 0);
+          const cPromo = (player === RED && c.to[0] === 7) || (player === WHITE && c.to[0] === 0);
+          if (aPromo && !cPromo) return -1;
+          if (!aPromo && cPromo) return 1;
+          // Killer move: verifica se o lance está no topo dos killers para este ply
+          const killers = KILLERS[ply] || [];
+          const aIsKiller = killers && killers.some(k => k && k.from[0] === a.from[0] && k.from[1] === a.from[1] && k.to[0] === a.to[0] && k.to[1] === a.to[1]);
+          const cIsKiller = killers && killers.some(k => k && k.from[0] === c.from[0] && k.from[1] === c.from[1] && k.to[0] === c.to[0] && k.to[1] === c.to[1]);
+          if (aIsKiller && !cIsKiller) return -1;
+          if (!aIsKiller && cIsKiller) return 1;
+          // Histórico: maior histórico = mais prioritário
+          const aHist = HISTORY[historyKey(a)] || 0;
+          const cHist = HISTORY[historyKey(c)] || 0;
+          if (aHist !== cHist) return cHist - aHist;
+          return 0;
+        });
+
+        // Inicializa melhor avaliação dependendo do lado
+        let bestVal = isMax ? -Infinity : Infinity;
+
+        // Loop pelos lances
+        for (let i = 0; i < legalMoves.length; i++) {
+          const m = legalMoves[i];
+          // Simula o lance e obtém novo tabuleiro e hash
+          const simResult = simulate(b, m, zHash);
+          const nb = simResult.board;
+          const newZHash = simResult.zHash;
+          // Verifica se há capturas sequenciais (segue mesma cor)
+          const contCaps = (m.type === 'capture') ? followUpCaptures(nb, m.to[0], m.to[1], player) : [];
+          // Define se o próximo jogador é MAX ou MIN
+          const nextIsMax = contCaps.length ? isMax : !isMax;
+
+          let score;
+          if (i === 0) {
+            // Primeiro filho: janela completa
+            score = negascout(nb, depth - 1, nextIsMax, alpha, beta, newZHash, ply + 1);
+          } else {
+            if (isMax) {
+              // Jogador MAX faz pesquisa null-window [alpha, alpha+1]
+              score = negascout(nb, depth - 1, nextIsMax, alpha, alpha + 1, newZHash, ply + 1);
+              // Se o valor estiver dentro da janela, faz pesquisa completa
+              if (score > alpha && score < beta) {
+                score = negascout(nb, depth - 1, nextIsMax, score, beta, newZHash, ply + 1);
+              }
+            } else {
+              // Jogador MIN faz pesquisa null-window [beta-1, beta]
+              score = negascout(nb, depth - 1, nextIsMax, beta - 1, beta, newZHash, ply + 1);
+              // Se estiver dentro da janela, faz pesquisa completa
+              if (score < beta && score > alpha) {
+                score = negascout(nb, depth - 1, nextIsMax, alpha, score, newZHash, ply + 1);
+              }
+            }
+          }
+
+          // Atualiza melhor valor e alpha/beta
+          if (isMax) {
+            if (score > bestVal) bestVal = score;
+            if (score > alpha) alpha = score;
+          } else {
+            if (score < bestVal) bestVal = score;
+            if (score < beta) beta = score;
+          }
+
+          // Corte alpha-beta
+          if (alpha >= beta) {
+            // Atualiza killers: armazena o lance que causou o corte
+            const killers = KILLERS[ply] || [];
+            const found = killers.find(k => k && k.from[0] === m.from[0] && k.from[1] === m.from[1] && k.to[0] === m.to[0] && k.to[1] === m.to[1]);
+            if (!found) {
+              // desloca e insere no início
+              killers[1] = killers[0];
+              killers[0] = m;
+              KILLERS[ply] = killers;
+            }
+            // Atualiza histórico (quadrado da profundidade para valorizar cortes profundos)
+            const hk = historyKey(m);
+            HISTORY[hk] = (HISTORY[hk] || 0) + depth * depth;
+            break;
+          }
+        }
+
+        // Salva no transposition table e retorna
+        TT.set(ttKey, bestVal);
+        return bestVal;
       }
 
       // *** GERENCIADOR DE BUSCA (onmessage) ***
@@ -5408,12 +5950,14 @@ if (window.drawReason) {
 
             const contCaps = (m.type==='capture') ? followUpCaptures(nb, m.to[0], m.to[1], RED) : [];
             
-            // Chama o minimax para a profundidade 'd-1', passando o novo ZHash
+            // Chama a busca avançada (NegaScout / PVS) na profundidade 'd-1'
+            // Para sequências de captura, o jogador permanece o mesmo (Red = MIN);
+            // caso contrário, alterna entre MAX e MIN.
             const val = contCaps.length
-              ? minimax(nb, d-1, false, -Infinity, Infinity, newZHash) // Continua como MIN
-              : minimax(nb, d-1, true,  -Infinity, Infinity, newZHash); // Passa para MAX
-              
-            if(val < currentBestScoreForDepth){ 
+              ? negascout(nb, d-1, /* isMax = false para Red (MIN) */ false, -Infinity, Infinity, newZHash, 1)
+              : negascout(nb, d-1, /* isMax = true para White (MAX) */ true,  -Infinity, Infinity, newZHash, 1);
+
+            if (val < currentBestScoreForDepth) { 
               currentBestScoreForDepth = val; 
               currentBestMoveForDepth = m; 
             }
