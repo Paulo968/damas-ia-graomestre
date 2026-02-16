@@ -1905,41 +1905,87 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       }
       
       // 🌐 Função para redesenhar o tabuleiro com base nos dados (usado no modo online)
-      function drawBoardFromData(newBoardData) {
-        if (!newBoardData) return;
-        board = newBoardData; // Atualiza o estado lógico
-        
-        for(let r=0;r<8;r++){
-          for(let c=0;c<8;c++){
-            const sq = squareEl(r,c); // Helper de UI
-            if (!sq) continue;
-            sq.innerHTML = ''; // Limpa a casa
-            
-            const piece = board[r][c];
-            if (piece) {
-              const colorClass = piece.startsWith(WHITE) ? P_BRANCA : P_VERMELHA;
-              const player = piece.startsWith(WHITE) ? WHITE : RED;
-              const pEl = createPiece(colorClass, player);
-              
-              if (piece.endsWith(KING)) {
-                pEl.classList.add('king');
-              }
-              
-              // 🌐 Aplica a contra-rotação se necessário
-              if (getPlayerColor() === 'red') {
-                pEl.classList.add('counter-rot');
-              }
-              sq.appendChild(pEl);
-            }
-          }
-        }
-        // 🔃 Reaplica a orientação após redesenhar peças.  Necessário porque o tabuleiro
-        // pode ter sido reconstruído a partir do servidor.  Sem isso, a classe
-        // rot-180 no tabuleiro e a contra-rotação das peças podem se perder.
-        try {
-          ajustarOrientacao(getPlayerColor());
-        } catch(_){ /* falha silenciosa se ajustarOrientacao não existir */ }
+      
+// substitua inteira a função drawBoardFromData pelo código abaixo
+function drawBoardFromData(newBoardData) {
+  if (!newBoardData) return;
+
+  // 1) atualizar o estado do tabuleiro (compatível com estrutura atual)
+  //    tenta suportar ambos: se newBoardData já for o board, mantém; se for wrapper, tenta acessar .board
+  board = newBoardData.board !== undefined ? newBoardData.board : newBoardData;
+
+  // 2) sincronizar o turno atual com o campo remoto (tentativas por várias chaves possíveis)
+  //    ajuste as chaves se seu payload usar outro nome
+  if (newBoardData.current !== undefined) {
+    current = newBoardData.current;
+  } else if (newBoardData.turn !== undefined) {
+    current = newBoardData.turn;
+  } else if (newBoardData.playerTurn !== undefined) {
+    current = newBoardData.playerTurn;
+  } else if (newBoardData.JogadorDaVez !== undefined) {
+    current = newBoardData.JogadorDaVez;
+  }
+  // se nenhuma chave encontrada, mantemos o `current` já existente (não sobrescreve com undefined)
+
+  // 3) RECALCULA jogadas legais imediatamente (essencial)
+  //    supondo que computeLegal ou getLegalMoves exista; se sua função usa globals, chame sem args.
+  //    Caso sua função retorne array, atualiza a variável global `legal`.
+  try {
+    // primeira tentativa: função que recebe (board, current)
+    if (typeof computeLegal === 'function') {
+      // teste assinatura: computeLegal(board, current) -> se der undefined, tenta sem args
+      let maybe = computeLegal(board, current);
+      if (maybe === undefined) {
+        maybe = computeLegal();
       }
+      if (Array.isArray(maybe)) {
+        legal = maybe;
+      }
+    } else if (typeof getLegalMoves === 'function') {
+      let maybe = getLegalMoves(board, current);
+      if (maybe === undefined) maybe = getLegalMoves();
+      if (Array.isArray(maybe)) legal = maybe;
+    } else {
+      // fallback defensivo: limpa legal para evitar estado inconsistente
+      legal = [];
+    }
+  } catch (e) {
+    // se computeLegal lançar, garanta que legal não fique undefined
+    console.error('Erro ao recomputar legal:', e);
+    legal = [];
+  }
+
+  // 4) redesenha o tabuleiro e atualiza indicadores de turno/estado visual
+  if (typeof renderBoard === 'function') {
+    renderBoard(); // função de desenho UI
+  } else {
+    // caso seu código use drawBoardFromData para desenhar diretamente, reexecute essa lógica aqui
+    // (seu código atual já fazia o redraw; manter isso)
+    for(let r=0;r<8;r++){
+      for(let c=0;c<8;c++){
+        const sq = squareEl(r,c);
+        if (!sq) continue;
+        sq.innerHTML = '';
+        const piece = board[r][c];
+        if (piece) {
+          const colorClass = piece.startsWith(WHITE) ? P_BRANCA : P_VERMELHA;
+          const el = createPiece(colorClass, piece.startsWith(WHITE) ? WHITE : RED);
+          sq.appendChild(el);
+        }
+      }
+    }
+  }
+
+  // 5) atualiza UI/estado de interação (ex.: habilita/desabilita cliques com base no current)
+  if (typeof updateTurnUI === 'function') {
+    updateTurnUI(current);
+  } else {
+    // exemplo simples: ajustar uma classe ou texto de elemento #turnIndicator
+    const el = document.getElementById('turnIndicator');
+    if (el) el.textContent = 'Vez de: ' + (current || '—');
+  }
+}
+
 
       // 🌐 Escuta alterações no Firestore para jogadas em tempo real
       function ouvirSala(codigo) {
