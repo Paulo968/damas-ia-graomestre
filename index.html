@@ -1990,6 +1990,10 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
             if (serializeBoard(board) !== data.Tabuleiro) {
               console.log("Recebendo atualização do tabuleiro...");
               drawBoardFromData(newBoard);
+          current = data.current;
+          computeLegal();
+          lockInteraction(getPlayerColor() !== current);
+
               sMove.play().catch(()=>{}); // 🔊 Toca som de movimento
               if (data.UltimaJogada?.type === 'capture') {
                 sCap.play().catch(()=>{}); // 🔊 Toca som de captura
@@ -2121,6 +2125,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           await updateDoc(salaRef, { 
             Jogador2: jogador2_uid, // Salva o UID do Jogador 2
             Status: "Em jogo",
+            JogadorDaVez: (!mv || (mv && mv.continuation)) ? current : ((current === WHITE) ? RED : WHITE),
             Timestamp: Date.now()
           });
           return true;
@@ -2154,10 +2159,9 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         }
         
         const sq = e.currentTarget;
-        const rr = +sq.dataset.r;
-        const cc = +sq.dataset.c;
-        // Converte coordenadas da visualização para coordenadas lógicas
-        const [r, c] = viewToLogicalCoords(rr, cc);
+        let r = +sq.dataset.r;
+        let c = +sq.dataset.c;
+        [r, c] = viewToLogicalCoords(r, c);
         const piece = board[r][c];
 
         if(selected){
