@@ -1990,10 +1990,6 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
             if (serializeBoard(board) !== data.Tabuleiro) {
               console.log("Recebendo atualização do tabuleiro...");
               drawBoardFromData(newBoard);
-          current = newCurrent; // CORREÇÃO: usar JogadorDaVez recebido do servidor
-          computeLegal();
-          lockInteraction(getPlayerColor() !== current);
-
               sMove.play().catch(()=>{}); // 🔊 Toca som de movimento
               if (data.UltimaJogada?.type === 'capture') {
                 sCap.play().catch(()=>{}); // 🔊 Toca som de captura
@@ -2125,7 +2121,6 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           await updateDoc(salaRef, { 
             Jogador2: jogador2_uid, // Salva o UID do Jogador 2
             Status: "Em jogo",
-            JogadorDaVez: (!mv || (mv && mv.continuation)) ? current : ((current === WHITE) ? RED : WHITE),
             Timestamp: Date.now()
           });
           return true;
@@ -2159,9 +2154,10 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         }
         
         const sq = e.currentTarget;
-        let r = +sq.dataset.r;
-        let c = +sq.dataset.c;
-        [r, c] = viewToLogicalCoords(r, c);
+        const rr = +sq.dataset.r;
+        const cc = +sq.dataset.c;
+        // Converte coordenadas da visualização para coordenadas lógicas
+        const [r, c] = viewToLogicalCoords(rr, cc);
         const piece = board[r][c];
 
         if(selected){
@@ -3355,50 +3351,45 @@ if (window.drawReason) {
        * este padrão usando a sigla como chave.
        */
       const REGIONAL_PHRASES = {
-        br: {
-          generic: ['beleza', 'tamo junto', 'mandou bem', 'show', 'topzera'],
-          ahead: ['é nóis', 'lacrou', 'mandou ver', 'brabo demais'],
-          behind: ['foi na moral', 'deu ruim', 'ajuda aí', 'segura a onda']
-        },
         mg: {
-          generic: ['uai', 'sô', 'trem', 'num sei não', 'eita trem', 'ôxe uai'],
-          ahead: ['trem bão demais', 'uai sô, tá fácil', 'agora sim, hein', 'misericórdia, que jogada'],
-          behind: ['vixemaria', 'arreda pra lá', 'tá osso demais uai', 'ih, deu ruim']
+          generic: ['uai', 'sô', 'trem', 'num sei não', 'eita trem'],
+          ahead: ['trem bão demais', 'uai sô, tá fácil', 'agora sim, hein'],
+          behind: ['vixemaria', 'arreda pra lá', 'tá osso demais uai']
         },
         ba: {
-          generic: ['oxente', 'ôxe', 'vixe', 'arretado', 'massa', 'cabô?'],
-          ahead: ['é barril dobrado', 'só sucesso, meu rei', 'ó a responsa', 'açucena'],
-          behind: ['me lasquei', 'vixe, deu ruim', 'ave maria, tu é bom', 'foi pro brejo']
+          generic: ['oxente', 'ôxe', 'vixe', 'arretado', 'massa'],
+          ahead: ['é barril dobrado', 'só sucesso, meu rei', 'ó a responsa'],
+          behind: ['me lasquei', 'vixe, deu ruim', 'ave maria, tu é bom']
         },
         sp: {
-          generic: ['mano', 'suave', 'mó da hora', 'parça', 'truta', 'topzera'],
-          ahead: ['chupa', 'tá ligado, é nóis', 'toma essa', 'lacrou demais'],
-          behind: ['vish', 'perrengue', 'deu ruim', 'foi mal aí', 'quebrou']
+          generic: ['mano', 'suave', 'mó da hora', 'parça', 'truta'],
+          ahead: ['chupa', 'tá ligado, é nóis', 'toma essa'],
+          behind: ['vish', 'perrengue', 'deu ruim', 'foi mal aí']
         },
         rj: {
-          generic: ['pô', 'ih', 'maneiro', 'bolado', 'sinistro', 'da hora'],
-          ahead: ['sente o drama', 'é isso aí, parceiro', 'partiu vencer', 'arrasou'],
-          behind: ['vamo que vamo', 'deu ruim', 'foi por água abaixo', 'pé na bunda do erro']
+          generic: ['pô', 'ih', 'maneiro', 'bolado', 'sinistro'],
+          ahead: ['sente o drama', 'parada é essa', 'só alegria'],
+          behind: ['deu ruim', 'que parada', 'não rolou', 'sacanagem']
         },
         rs: {
-          generic: ['bah', 'tri', 'tchê', 'bah, guri', 'bah tchê'],
-          ahead: ['tri bom', 'é dela', 'mandou bem tchê', 'prontinho'],
-          behind: ['bah, que zica', 'foi na madeira', 'deu ruim, tchê']
+          generic: ['bah', 'tchê', 'gurizada', 'tri', 'guria'],
+          ahead: ['tri legal', 'já era', 'galo véio', 'barbaridade'],
+          behind: ['mas bah', 'me quebrei', 'só na tristeza', 'tô tri mal']
         },
         pe: {
-          generic: ['oxente cabra', 'vixe maria', 'arretado', 'num tô acreditando', 'massa véi'],
-          ahead: ['tu é sinistro', 'deu bom demais', 'arrasou no lance'],
-          behind: ['foi pro beleléu', 'deu ruim, véi', 'tá osso']
+          generic: ['oxe', 'oxente', 'massa', 'visse', 'cabrunco'],
+          ahead: ['arretado demais', 'agora é conosco', 'é show de bola'],
+          behind: ['vixe maria', 'tô lascado', 'deu zebra', 'me lasquei']
         },
         ce: {
-          generic: ['ôxe meu', 'vixe mané', 'cabrunco', 'massa', 'topzera'],
-          ahead: ['tu é danado', 'arretado demais', 'mandou ver'],
-          behind: ['deu ruim, cabra', 'foi pro avesso', 'vish']
+          generic: ['ei', 'oxe', 'cabra da peste', 'abestado', 'mermão'],
+          ahead: ['é nós na fita', 'mais ligeiro que coceira', 'macho véi'],
+          behind: ['tô ferrado', 'deu zebra', 'oxe, mermão', 'não acredito']
         },
         pa: {
-          generic: ['oxente', 'eita', 'massa', 'cabô', 'vixe que'],
-          ahead: ['tá bão dimais', 'mandou bem', 'arrasou'],
-          behind: ['deu ruim', 'foi na maré', 'ih, ferrou']
+          generic: ['égua', 'marrapaz', 'maneiro', 'véi', 'bicho'],
+          ahead: ['égua de bom', 'isso aí é top', 'só sucesso'],
+          behind: ['égua de ruim', 'me ferrei', 'deu xabu', 'quebrei a cara']
         }
       };
 
