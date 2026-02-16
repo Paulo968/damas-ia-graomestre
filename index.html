@@ -1926,7 +1926,39 @@ function drawBoardFromData(newBoardData) {
     current = newBoardData.JogadorDaVez;
   }
 
-  // 3) RECALCULA jogadas legais imediatamente (essencial)
+  
+  // --- Auto-assign first-player behavior ---
+  // Se o servidor não tiver definido `current` (null/undefined), assumimos que quem entrou primeiro
+  // (ou o cliente que executar essa lógica quando o tabuleiro for recebido) será o jogador da vez.
+  // Tentamos atualizar o servidor/Firebase se as referências estiverem disponíveis.
+  if (current === undefined || current === null || current === '') {
+    try {
+      // Tenta usar playerId local (definido pela sua app). Se não existir, tenta usar `clientId` ou `window.localPlayerId`.
+      var localId = window.playerId || window.clientId || window.localPlayerId || localStorage.getItem('playerId') || null;
+      if (localId) {
+        current = localId;
+        // envia pro servidor se possível (Firebase compat)
+        if (typeof updateDoc === 'function' && typeof doc === 'function' && typeof db !== 'undefined') {
+          try {
+            // Se houver uma variável roomRef previamente guardada (com a ref do documento), use-a.
+            if (typeof roomRef !== 'undefined' && roomRef !== null) {
+              updateDoc(roomRef, { current: current }).catch(function(e){ console.warn('updateDoc current falhou:', e); });
+            } else if (window.roomId) {
+              // tenta construir a ref com doc(db, 'rooms', roomId)
+              try {
+                var _r = doc(db, 'rooms', window.roomId);
+                updateDoc(_r, { current: current }).catch(function(e){ console.warn('updateDoc current falhou (2):', e); });
+              } catch(e){}
+            }
+          } catch(e){}
+        }
+      }
+    } catch(e){
+      console.warn('Auto-assign current falhou:', e);
+    }
+  }
+  // --- fim auto-assign ---
+// 3) RECALCULA jogadas legais imediatamente (essencial)
   try {
     if (typeof computeLegal === 'function') {
       let maybe = computeLegal(board, current);
