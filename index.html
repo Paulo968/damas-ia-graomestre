@@ -1907,15 +1907,15 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       // 🌐 Função para redesenhar o tabuleiro com base nos dados (usado no modo online)
       
 // substitua inteira a função drawBoardFromData pelo código abaixo
-
-// substitua inteira a função drawBoardFromData pelo código abaixo
 function drawBoardFromData(newBoardData) {
   if (!newBoardData) return;
 
   // 1) atualizar o estado do tabuleiro (compatível com estrutura atual)
+  //    tenta suportar ambos: se newBoardData já for o board, mantém; se for wrapper, tenta acessar .board
   board = newBoardData.board !== undefined ? newBoardData.board : newBoardData;
 
   // 2) sincronizar o turno atual com o campo remoto (tentativas por várias chaves possíveis)
+  //    ajuste as chaves se seu payload usar outro nome
   if (newBoardData.current !== undefined) {
     current = newBoardData.current;
   } else if (newBoardData.turn !== undefined) {
@@ -1925,42 +1925,15 @@ function drawBoardFromData(newBoardData) {
   } else if (newBoardData.JogadorDaVez !== undefined) {
     current = newBoardData.JogadorDaVez;
   }
+  // se nenhuma chave encontrada, mantemos o `current` já existente (não sobrescreve com undefined)
 
-  
-  // --- Auto-assign first-player behavior ---
-  // Se o servidor não tiver definido `current` (null/undefined), assumimos que quem entrou primeiro
-  // (ou o cliente que executar essa lógica quando o tabuleiro for recebido) será o jogador da vez.
-  // Tentamos atualizar o servidor/Firebase se as referências estiverem disponíveis.
-  if (current === undefined || current === null || current === '') {
-    try {
-      // Tenta usar playerId local (definido pela sua app). Se não existir, tenta usar `clientId` ou `window.localPlayerId`.
-      var localId = window.playerId || window.clientId || window.localPlayerId || localStorage.getItem('playerId') || null;
-      if (localId) {
-        current = localId;
-        // envia pro servidor se possível (Firebase compat)
-        if (typeof updateDoc === 'function' && typeof doc === 'function' && typeof db !== 'undefined') {
-          try {
-            // Se houver uma variável roomRef previamente guardada (com a ref do documento), use-a.
-            if (typeof roomRef !== 'undefined' && roomRef !== null) {
-              updateDoc(roomRef, { current: current }).catch(function(e){ console.warn('updateDoc current falhou:', e); });
-            } else if (window.roomId) {
-              // tenta construir a ref com doc(db, 'rooms', roomId)
-              try {
-                var _r = doc(db, 'rooms', window.roomId);
-                updateDoc(_r, { current: current }).catch(function(e){ console.warn('updateDoc current falhou (2):', e); });
-              } catch(e){}
-            }
-          } catch(e){}
-        }
-      }
-    } catch(e){
-      console.warn('Auto-assign current falhou:', e);
-    }
-  }
-  // --- fim auto-assign ---
-// 3) RECALCULA jogadas legais imediatamente (essencial)
+  // 3) RECALCULA jogadas legais imediatamente (essencial)
+  //    supondo que computeLegal ou getLegalMoves exista; se sua função usa globals, chame sem args.
+  //    Caso sua função retorne array, atualiza a variável global `legal`.
   try {
+    // primeira tentativa: função que recebe (board, current)
     if (typeof computeLegal === 'function') {
+      // teste assinatura: computeLegal(board, current) -> se der undefined, tenta sem args
       let maybe = computeLegal(board, current);
       if (maybe === undefined) {
         maybe = computeLegal();
@@ -1973,17 +1946,21 @@ function drawBoardFromData(newBoardData) {
       if (maybe === undefined) maybe = getLegalMoves();
       if (Array.isArray(maybe)) legal = maybe;
     } else {
+      // fallback defensivo: limpa legal para evitar estado inconsistente
       legal = [];
     }
   } catch (e) {
+    // se computeLegal lançar, garanta que legal não fique undefined
     console.error('Erro ao recomputar legal:', e);
     legal = [];
   }
 
   // 4) redesenha o tabuleiro e atualiza indicadores de turno/estado visual
   if (typeof renderBoard === 'function') {
-    renderBoard();
+    renderBoard(); // função de desenho UI
   } else {
+    // caso seu código use drawBoardFromData para desenhar diretamente, reexecute essa lógica aqui
+    // (seu código atual já fazia o redraw; manter isso)
     for(let r=0;r<8;r++){
       for(let c=0;c<8;c++){
         const sq = squareEl(r,c);
@@ -2003,74 +1980,11 @@ function drawBoardFromData(newBoardData) {
   if (typeof updateTurnUI === 'function') {
     updateTurnUI(current);
   } else {
+    // exemplo simples: ajustar uma classe ou texto de elemento #turnIndicator
     const el = document.getElementById('turnIndicator');
     if (el) el.textContent = 'Vez de: ' + (current || '—');
   }
-
-  // 6) GARANTIA: desbloqueia a interface após sincronizar o estado
-  try {
-    if (typeof unlockInterfaceAfterSync === 'function') {
-      unlockInterfaceAfterSync();
-    } else {
-      // fallback defensivo: remove classes/overlays comuns que podem bloquear interação
-      document.body.classList.remove('locked');
-      const overlays = document.querySelectorAll('.overlay, .loading, .waiting, .blocker, .modal-backdrop, .manual-panel, .analysis-panel, #overlay');
-      overlays.forEach(el => {
-        try {
-          el.style.display = 'none';
-          el.style.pointerEvents = 'none';
-          el.classList.remove('show', 'open', 'visible');
-        } catch(e){}
-      });
-      const b = document.getElementById('board');
-      if (b) b.style.pointerEvents = 'auto';
-    }
-  } catch(e){
-    console.warn('Erro ao tentar desbloquear interface:', e);
-  }
 }
-
-// utilidade: define unlockInterfaceAfterSync se não existir (não sobrescreve se já existir)
-if (typeof unlockInterfaceAfterSync !== 'function') {
-  function unlockInterfaceAfterSync() {
-    try {
-      document.body.classList.remove('locked');
-      const overlays = document.querySelectorAll('.overlay, .loading, .waiting, .blocker, .modal-backdrop, .manual-panel, .analysis-panel, #overlay');
-      overlays.forEach(el => {
-        try {
-          el.style.display = 'none';
-          el.style.pointerEvents = 'auto';
-          el.classList.remove('show', 'open', 'visible');
-        } catch(e){}
-      });
-      // remove backdrop-like full-screen elements that may still intercept pointer events
-      const fulls = Array.from(document.querySelectorAll('body *')).filter(el=>{
-        try{
-          const cs = window.getComputedStyle(el);
-          const rect = el.getBoundingClientRect();
-          const vw = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-          const vh = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
-          if (cs.pointerEvents === 'none') return false;
-          return (rect.width >= vw*0.9 && rect.height >= vh*0.9) || cs.zIndex >= 9000;
-        }catch(_){ return false; }
-      });
-      fulls.forEach(el=>{
-        try{ el.style.pointerEvents = 'none'; el.style.display = 'none'; }catch(_){}
-      });
-      const b = document.getElementById('board');
-      if (b) b.style.pointerEvents = 'auto';
-      // re-enable buttons like menu
-      const menu = document.getElementById('btnMenuOpcoes');
-      if (menu) menu.style.pointerEvents = 'auto';
-      // clear any global lock flags
-      window.boardLocked = false;
-      window.interactionLocked = false;
-    } catch(e){
-      console.error('unlockInterfaceAfterSync erro:', e);
-    }
-  }
-}
-
 
 
       // 🌐 Escuta alterações no Firestore para jogadas em tempo real
@@ -2121,7 +2035,11 @@ if (typeof unlockInterfaceAfterSync !== 'function') {
             // Compara o tabuleiro serializado para evitar redesenhos desnecessários
             if (serializeBoard(board) !== data.Tabuleiro) {
               console.log("Recebendo atualização do tabuleiro...");
-              drawBoardFromData(newBoard);
+              
+  // 🟢 CORREÇÃO: primeiro atualiza o current para o valor recebido
+  current = newCurrent;
+
+drawBoardFromData(newBoard);
               sMove.play().catch(()=>{}); // 🔊 Toca som de movimento
               if (data.UltimaJogada?.type === 'capture') {
                 sCap.play().catch(()=>{}); // 🔊 Toca som de captura
