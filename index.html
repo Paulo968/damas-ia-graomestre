@@ -6144,7 +6144,7 @@ if (window.drawReason) {
     try{
       if (window.db && window.doc && window.setDoc){
         const ref = window.doc(window.db, "telemetry", (window.userId||'anon'));
-        const payload = { last: Date.now(), ...tel };
+        const payload = { last: Date.now(), tel };
         await window.setDoc(ref, payload, { merge:true });
       }
     }catch(_){}
@@ -6244,10 +6244,10 @@ if (window.drawReason) {
           if (data.telemetry){
             // forward telemetry but also tag worker id
             try{
-              const tel = {...data.telemetry, wid:id};
+              const tel = { ...(data.telemetry || {}), wid: id };
               if (window.db && window.doc && window.setDoc){
                 const ref = window.doc(window.db, "telemetry", (window.userId||'anon'));
-                window.setDoc(ref, { last:Date.now(), ...tel }, {merge:true});
+                Promise.resolve(window.setDoc(ref, { last: Date.now(), tel }, { merge: true })).catch(()=>{});
               }
             }catch(_){}
             return;
@@ -6693,10 +6693,6 @@ if (window.drawReason) {
             getEndgameWeights.cache.red = merged;
           }
         } catch(e){ console.warn('Falha leve na IA (ignorado).'); }
-      };
-    }
-
-        }
       };
     }
 
