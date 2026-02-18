@@ -788,7 +788,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
     <!-- ====================================================== -->
     <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, runTransaction } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -873,7 +873,6 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       let gameHistory = []; // 🧠 Histórico da partida atual
       let isOnline = false; // 🌐 Controla o modo de jogo
       let currentRoom = null; // 🌐 ID da sala online
-      let onlineMoveSeq = 0; // 🌐 sequência de jogadas aplicada (anti-regressão)
       let onlineUnsubscribe = null; // 🌐 Função para parar de ouvir o Firestore
       let worker; // Referência ao Web Worker
       let gameEnded = false; // 🔒 Travamento de interação pós-jogo
@@ -2010,55 +2009,12 @@ function drawBoardFromData(newBoardData) {
       }
 
       // 🌐 Envia a jogada para o Firebase
-      async function enviarJogadaFirebase(mv){
-        // mv=null => envio inicial do tabuleiro
-        try { if (typeof window.firebaseReady !== 'undefined') { await window.firebaseReady; } } catch(_) {}
-
-        if (!window.db || !window.doc) {
-          console.warn('DB não pronto, carregamento da IA aguardando...');
+      async function enviarJogadaFirebase(mv) {
+        if (!isOnline || !currentRoom) return;
+        if (!window.db || !window.doc || !window.updateDoc) {
+          console.error("Firebase DB não está inicializado.");
           return;
         }
-        if (!currentRoom) return;
-
-        const roomRef = window.doc(window.db, "salas", currentRoom);
-        const myColor = (typeof getPlayerColor === 'function') ? getPlayerColor() : null;
-
-        // Mantém a vez em captura múltipla
-        const proximoJogador = (!mv || mv?.continuation)
-          ? current
-          : (current === WHITE ? RED : WHITE);
-
-        const payload = {
-          Tabuleiro: serializeBoard(board),
-          JogadorDaVez: proximoJogador,
-          UltimaJogada: mv || null,
-          Timestamp: Date.now()
-        };
-
-        try {
-          await runTransaction(window.db, async (tx) => {
-            const snap = await tx.get(roomRef);
-            if (!snap.exists()) throw new Error('Sala não existe.');
-            const data = snap.data() || {};
-
-            // valida vez (evita que o mesmo cliente envie fora do turno)
-            if (myColor && data.JogadorDaVez && data.JogadorDaVez !== myColor && mv) {
-              throw new Error('Não é sua vez.');
-            }
-
-            const nextMove = (typeof data.MoveNumber === 'number') ? (data.MoveNumber + 1) : (onlineMoveSeq + 1);
-            payload.MoveNumber = nextMove;
-
-            tx.update(roomRef, payload);
-          });
-        } catch (e) {
-          console.warn('Falha ao enviar jogada:', e?.message || e);
-          try { showOverlayError(e?.message || 'Falha ao enviar jogada'); } catch(_) {}
-          return;
-        }
-
-        try { onlineMoveSeq = Math.max(onlineMoveSeq, payload.MoveNumber || 0); } catch(_) {}
-      }
         const { db, doc, updateDoc } = window;
         // 💡 PASSO 1 (CORREÇÃO): Caminho do Firestore simplificado
         const salaRef = doc(db, "salas", currentRoom);
@@ -2108,8 +2064,6 @@ function drawBoardFromData(newBoardData) {
 
       // 🌐 Funções de Sala (chamadas pela UI)
       async function criarSalaFirebase(codigo, jogador1_uid) {
-        try { if (typeof window.firebaseReady !== 'undefined') { await window.firebaseReady; } } catch(_) {}
-
           if (!window.db || !window.doc || !window.setDoc) {
             showOverlayError("Erro de conexão (DB1). O modo online não funcionará.");
             return;
@@ -2125,8 +2079,7 @@ function drawBoardFromData(newBoardData) {
               Tabuleiro: null, // Tabuleiro inicial será enviado no initBoard
               JogadorDaVez: WHITE, // Branco sempre começa
               Status: "Esperando",
-              Timestamp: Date.now(),
-            MoveNumber: 0
+              Timestamp: Date.now()
             });
           } catch (error) {
             console.error("Erro ao criar sala:", error);
@@ -2135,8 +2088,6 @@ function drawBoardFromData(newBoardData) {
         }
         
       async function entrarSalaFirebase(codigo, jogador2_uid) {
-        try { if (typeof window.firebaseReady !== 'undefined') { await window.firebaseReady; } } catch(_) {}
-
         if (!window.db || !window.doc || !window.getDoc || !window.updateDoc) {
           showOverlayError("Erro de conexão (DB2). O modo online não funcionará.");
           return false;
