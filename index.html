@@ -92,7 +92,7 @@
         letter-spacing:.5px; opacity:0; pointer-events:none; transition: opacity .45s ease;
         z-index:50; text-align:center; padding: 1rem;
       }
-      .overlay.show{ opacity:1; pointer-events:auto }
+.overlay.show{ opacity:1; pointer-events:none }
       /* Estilos para o novo modal de manual E ANÁLISE */
       /* Adiciona transição para o painel */
       .manual-panel, .analysis-panel {
@@ -874,6 +874,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       let isOnline = false; // 🌐 Controla o modo de jogo
       let currentRoom = null; // 🌐 ID da sala online
       let onlineUnsubscribe = null; // 🌐 Função para parar de ouvir o Firestore
+      let onlineStarted = false; // 🌐 garante initBoard só 1 vez por sala
       let worker; // Referência ao Web Worker
       let gameEnded = false; // 🔒 Travamento de interação pós-jogo
       let isReturningToMenu = false; // 🔄 Evita travar ao voltar ao menu depois de desistir
@@ -1957,8 +1958,9 @@ function drawBoardFromData(newBoardData) {
             return;
           }
 
-          // 🌐 Outro jogador entrou — só inicia se o board ainda estiver vazio
-          if (data.Status === "Em jogo" && !document.getElementById('board').innerHTML) {
+          // 🌐 Outro jogador entrou — inicia somente uma vez por sala
+          if (data.Status === "Em jogo" && !onlineStarted) {
+            onlineStarted = true;
             console.log("Oponente entrou! Iniciando jogo.");
             showOverlay("🛰️<br/>Oponente conectado! Iniciando...", true);
             setTimeout(() => {
@@ -2129,6 +2131,8 @@ function drawBoardFromData(newBoardData) {
         if (gameEnded) return;
         // 🌐 Se for online, só permite jogar se for a vez do jogador
         if (isOnline && current !== getPlayerColor()) {
+          // Mostra mensagem sutil informando que é a vez do oponente
+          setBubblePlaceholder(`Sala: ${currentRoom} | Vez do oponente...`);
           console.log("Não é sua vez!");
           return;
         }
@@ -4669,6 +4673,7 @@ if (window.drawReason) {
           if (closeSound) closeSound.play().catch(()=>{}); // 🔊 Som de clique (Imediato)
           
           isOnline = true;
+          onlineStarted = false; // 🌐 reseta a flag de inicialização online
           setPlayerColor('white'); // dono = branco
           
           onlineMenuScreen.classList.add('hidden');
@@ -4724,6 +4729,7 @@ if (window.drawReason) {
           if (closeSound) closeSound.play().catch(()=>{}); // 🔊 Som de clique (Imediato)
           
           isOnline = true;
+          onlineStarted = false; // 🌐 reseta a flag de inicialização online
           setPlayerColor('red'); // visitante = vermelho
           
           const code = inputRoomCode.value.trim().toUpperCase();
