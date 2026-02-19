@@ -693,12 +693,38 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
     </div>
     <!-- Fim da estrutura modificada -->
 
-    <!-- O container 'max-w-2xl' é mantido para alinhar com os cards
-        O 'id="board"' agora é controlado pelo CSS no <style> -->
-    <div class="relative w-full max-w-2xl">
-      
-      <!-- 1️⃣ CLASSES REMOVIDAS: O CSS #board agora controla o layout -->
-      <div id="board"></div>
+    <!-- O container 'max-w-4xl' agora envolve o tabuleiro e o chat.  -->
+    <div id="gameContainer" class="relative w-full max-w-4xl mx-auto flex flex-col md:flex-row items-start justify-center gap-4">
+      <div id="boardWrapper" class="flex-none">
+        <!-- 1️⃣ CLASSES REMOVIDAS: O CSS #board controla o layout -->
+        <div id="board"></div>
+      </div>
+      <!-- Painel de Chat (desktop) -->
+      <div id="chatPanel" class="hidden flex-col w-64 bg-slate-800 text-slate-200 rounded-xl border border-cyan-400/40 overflow-hidden">
+        <div class="flex items-center justify-between bg-slate-700 px-3 py-2">
+          <span class="font-semibold">💬 Chat</span>
+        </div>
+        <div id="chatMessages" class="flex-1 overflow-y-auto p-2 space-y-1 text-sm"></div>
+        <div class="p-2">
+          <input type="text" id="chatInput" class="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1 text-sm" placeholder="Digite sua mensagem..." maxlength="200">
+          <button id="chatSend" class="mt-1 w-full bg-cyan-600 hover:bg-cyan-500 text-white py-1 rounded">Enviar</button>
+        </div>
+      </div>
+    </div>
+    <!-- Botão flutuante e gaveta de chat para mobile -->
+    <button id="openChatMobile" class="hidden md:hidden fixed bottom-4 right-4 z-40 bg-cyan-600 hover:bg-cyan-500 text-white p-3 rounded-full shadow-lg">💬</button>
+    <div id="chatDrawer" class="hidden fixed inset-0 bg-black/60 flex-col justify-end z-50 md:hidden">
+      <div class="bg-slate-800 rounded-t-2xl p-4 h-2/3 flex flex-col">
+        <div class="flex justify-between items-center mb-2">
+          <span class="font-semibold text-lg">💬 Chat</span>
+          <button id="closeChatDrawer" class="text-slate-300">✖️</button>
+        </div>
+        <div id="chatMessagesMobile" class="flex-1 overflow-y-auto mb-2 space-y-1 text-sm"></div>
+        <div class="flex">
+          <input type="text" id="chatInputMobile" class="flex-1 bg-slate-700 border border-slate-600 rounded-l px-2 py-1 text-sm" placeholder="Digite sua mensagem..." maxlength="200">
+          <button id="chatSendMobile" class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-1 rounded-r">Enviar</button>
+        </div>
+      </div>
     </div>
 
     <div id="overlay" class="overlay"></div>
@@ -791,7 +817,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
     <!-- ====================================================== -->
     <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
 import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -816,6 +842,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
     window.getDoc = getDoc;
     window.onSnapshot = onSnapshot;
     window.updateDoc = updateDoc;
+    window.arrayUnion = arrayUnion;
     window.userId = auth.currentUser.uid;
 
     console.log("🔥 Firebase pronto:", window.userId);
@@ -2037,6 +2064,8 @@ function drawBoardFromData(newBoardData) {
                 showOverlay("", false);
                 document.getElementById('menuContainer').style.display = 'none';
                 initBoard();
+                // Exibe o chat (painel ou botão) quando o jogo online iniciar
+                showChat(true);
             }, 2000);
           }
 
@@ -2076,6 +2105,11 @@ function drawBoardFromData(newBoardData) {
             // ficar incorreta se não for reajustada. Usamos a cor do jogador atual para
             // garantir que a rotação do tabuleiro e contra-rotação das peças permaneçam coerentes.
             ajustarOrientacao(myColor);
+          }
+
+          // 🌐 Atualiza as mensagens do chat
+          if (data.Chat) {
+            updateChatUI(Array.isArray(data.Chat) ? data.Chat : []);
           }
 
           if (data.Status === "Encerrado") {
@@ -2157,7 +2191,8 @@ function drawBoardFromData(newBoardData) {
               Tabuleiro: null, // Tabuleiro inicial será enviado no initBoard
               JogadorDaVez: WHITE, // Branco sempre começa
               Status: "Esperando",
-              Timestamp: Date.now()
+              Timestamp: Date.now(),
+              Chat: [] // Lista inicial de mensagens do chat
             });
           } catch (error) {
             console.error("Erro ao criar sala:", error);
@@ -4228,6 +4263,8 @@ if (window.drawReason) {
           currentRoom = null;
           // 🌐 Reinicia flag de inicio do online ao voltar para o menu
           onlineStarted = false;
+          // Esconde o chat ao sair de uma partida online
+          try { showChat(false); } catch (_) {}
           
           // 🧠 Esconde o botão de opções (⋮) com fade
           showOptionsButton(false);
@@ -7172,6 +7209,119 @@ if (window.drawReason) {
     }
   }
 
+  // === Funções de Chat ===
+  // Escapa caracteres HTML para evitar injeção de markup
+  function escapeHtml(str) {
+    return (str || '').toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  // Atualiza a UI do chat tanto no desktop quanto no mobile
+  function updateChatUI(chatArr) {
+    if (!Array.isArray(chatArr)) chatArr = [];
+    // ordena pela data (timestamp)
+    chatArr = chatArr.slice().sort((a,b)=>{
+      return ((a.ts || 0) - (b.ts || 0));
+    });
+    const msgs = chatArr.map(m => {
+      const author = (m.uid === window.userId) ? 'Você' : 'Oponente';
+      const alignment = (m.uid === window.userId) ? 'text-right' : 'text-left';
+      const bubbleClass = (m.uid === window.userId) ? 'bg-cyan-600 text-white' : 'bg-slate-700 text-white';
+      const safe = escapeHtml(m.text || '');
+      return `<div class="${alignment}"><span class="inline-block px-2 py-1 rounded ${bubbleClass}">${author}: ${safe}</span></div>`;
+    }).join('');
+    const desk = document.getElementById('chatMessages');
+    const mob  = document.getElementById('chatMessagesMobile');
+    if (desk) {
+      desk.innerHTML = msgs;
+      desk.scrollTop = desk.scrollHeight;
+    }
+    if (mob) {
+      mob.innerHTML = msgs;
+      mob.scrollTop = mob.scrollHeight;
+    }
+  }
+  // Envia uma mensagem do chat para o Firestore
+  async function enviarMensagemChat(txt) {
+    if (!isOnline || !currentRoom) return;
+    const message = (txt || '').trim();
+    if (!message) return;
+    const limited = message.substring(0, 200);
+    try {
+      const { db, doc, updateDoc, arrayUnion } = window;
+      const salaRef = doc(db, "salas", currentRoom);
+      await updateDoc(salaRef, {
+        Chat: arrayUnion({ uid: window.userId, text: limited, ts: Date.now() })
+      });
+    } catch (e) {
+      console.error('Erro ao enviar mensagem:', e);
+    }
+  }
+  // Mostra ou esconde o painel de chat e o botão de chat
+  function showChat(show) {
+    const panel  = document.getElementById('chatPanel');
+    const btn    = document.getElementById('openChatMobile');
+    const drawer = document.getElementById('chatDrawer');
+    if (show) {
+      // Se estiver em modo desktop (largura >= 768px), mostra o painel
+      if (panel) {
+        if (window.innerWidth >= 768) panel.classList.remove('hidden');
+        else panel.classList.add('hidden');
+      }
+      // Se estiver em modo mobile (<768px), mostra o botão flutuante
+      if (btn) {
+        if (window.innerWidth < 768) btn.classList.remove('hidden');
+        else btn.classList.add('hidden');
+      }
+    } else {
+      // Esconde ambos e a gaveta de chat
+      if (panel) panel.classList.add('hidden');
+      if (btn)   btn.classList.add('hidden');
+      if (drawer) drawer.classList.add('hidden');
+    }
+  }
+  // Configura os eventos do chat (desktop/mobile)
+  function setupChatUI() {
+    const sendDesktop = document.getElementById('chatSend');
+    const inputDesktop = document.getElementById('chatInput');
+    if (sendDesktop && inputDesktop) {
+      sendDesktop.addEventListener('click', () => {
+        enviarMensagemChat(inputDesktop.value);
+        inputDesktop.value = '';
+      });
+      inputDesktop.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendDesktop.click();
+        }
+      });
+    }
+    const sendMobile  = document.getElementById('chatSendMobile');
+    const inputMobile = document.getElementById('chatInputMobile');
+    if (sendMobile && inputMobile) {
+      sendMobile.addEventListener('click', () => {
+        enviarMensagemChat(inputMobile.value);
+        inputMobile.value = '';
+      });
+      inputMobile.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendMobile.click();
+        }
+      });
+    }
+    const openBtn  = document.getElementById('openChatMobile');
+    const drawer   = document.getElementById('chatDrawer');
+    const closeBtn = document.getElementById('closeChatDrawer');
+    if (openBtn && drawer) {
+      openBtn.addEventListener('click', () => {
+        drawer.classList.remove('hidden');
+      });
+    }
+    if (closeBtn && drawer) {
+      closeBtn.addEventListener('click', () => {
+        drawer.classList.add('hidden');
+      });
+    }
+  }
   window.addEventListener('load', () => {
     const trainingMenuScreen = document.getElementById('trainingMenuScreen');
     const aiDebugScreen      = document.getElementById('aiDebugScreen');
@@ -7200,6 +7350,8 @@ if (window.drawReason) {
         stopAiDebugLoop();
       });
     }
+    // Inicializa o chat quando a página carrega
+    try { setupChatUI(); } catch(e) { console.warn('Erro ao iniciar chat UI:', e); }
   });
 })();
 </script>
