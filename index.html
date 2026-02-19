@@ -74,6 +74,9 @@
         /* A opacidade 0 é definida pelo 'opacity-0' do Tailwind no HTML */
         transition: opacity 0.5s ease, transform 0.5s ease;
         transform: translateY(10px); /* Começa ligeiramente abaixo */
+        /* 📦 Permite que textos longos quebrem e se adaptem dentro do card */
+        white-space: normal;
+        word-break: break-word;
       }
       /* Lógica para mostrar/esconder o placeholder vs texto no card de fala */
       #bubble.show #bubblePlaceholder {
@@ -2289,6 +2292,12 @@ function drawBoardFromData(newBoardData) {
         }
 
         promoteIfNeeded(to[0],to[1],finalPieceEl);
+        // 🌐 Reaplica a orientação após mover a peça no modo online
+        if (isOnline) {
+          try {
+            ajustarOrientacao(getPlayerColor());
+          } catch (_) {}
+        }
         clearSelect(); // Helper de UI
       }
 
@@ -3354,17 +3363,17 @@ if (window.drawReason) {
        * Emoji / Personalidade (Nova) — Sóbria e Analítica
        *************************/
       const EMOJI = {
-        idle: ['🤖','🧠','🧐','😑','😏','💭','🤫'],
-        thinking: ['🤔','🧮','🧠','⏳','⚙️','🔍','📊'],
-        ahead: ['😎','🧠','♟️','😏','📈','🧭'],
-        behind: ['😐','😤','⚙️','🤔','🩹','📉'],
-        capture: ['⚔️','🎯','💥','📍','🚨'],
-        multi: ['💥','🎯','⚡','🔥','♟️'],
-        promo: ['👑','✨','🎓','🚀','🧩'],
-        win: ['🏆','😎','🥇','🤖','📘','📊'],
-        lose: ['😵','🤯','🏳️','🧩','😓','💭'],
-        nearWin: ['🎯','⏳','🧭','📈','😏'],
-        surprise: ['😮','😲','😐','🤨','😯','💡']
+        idle: ['🤖','🧠','🧐','😑','😏','💭','🤫','👽','👾'],
+        thinking: ['🤔','🧮','🧠','⏳','⚙️','🔍','📊','🛸','👽'],
+        ahead: ['😎','🧠','♟️','😏','📈','🧭','🚀','👽'],
+        behind: ['😐','😤','⚙️','🤔','🩹','📉','👽','💫'],
+        capture: ['⚔️','🎯','💥','📍','🚨','🔪','👾'],
+        multi: ['💥','🎯','⚡','🔥','♟️','🌠','🌌'],
+        promo: ['👑','✨','🎓','🚀','🧩','🪐'],
+        win: ['🏆','😎','🥇','🤖','📘','📊','🌟','🚀'],
+        lose: ['😵','🤯','🏳️','🧩','😓','💭','👽','🛸'],
+        nearWin: ['🎯','⏳','🧭','📈','😏','👾'],
+        surprise: ['😮','😲','😐','🤨','😯','💡','👽','🌌','🤖']
       };
 
       /**
@@ -3474,6 +3483,9 @@ if (window.drawReason) {
           "A estatística favoreceu você desta vez.",
           "Falha processada. Aprenderei com isso.",
           "Sequência inesperada… ajustando parâmetros."
+        , "Meu circuito neural vibra com cada jogada."
+        , "Já calculei cenários que nem imagina."
+        , "Estou calibrando sensores interestelares."
         ],
         thinking: [
           "Analisando o ritmo do jogo.",
@@ -3486,6 +3498,9 @@ if (window.drawReason) {
           "Controlar o centro é como controlar o silêncio.",
           "Paciência é poder em movimento.",
           "Processando padrões... a pressa é inimiga da precisão."
+        , "Calculando todas as rotas... até as celestiais."
+        , "A IA observa, pensa e prepara a próxima seta."
+        , "Sintonizando frequências estratégicas."
         ],
         ahead: [
           "A vantagem posicional está se consolidando.",
@@ -3494,6 +3509,9 @@ if (window.drawReason) {
           "Estou duas jogadas à frente.",
           "Forço teu erro sem precisar forçar teu movimento.",
           "Pressão constante é mais eficaz que força bruta."
+        , "Vantagem consolidada como constelações alinhadas."
+        , "Estou no controle absoluto do universo do tabuleiro."
+        , "Seu colapso é questão de tempo e espaço."
         ],
         behind: [
           "Desvantagem detectada. Adaptando parâmetros.",
@@ -3502,6 +3520,9 @@ if (window.drawReason) {
           "Todo erro humano vem da confiança. Aguardo o teu.",
           "Retroceder é apenas mudar o ponto de observação.",
           "Nem toda perda é derrota — às vezes é cálculo."
+        , "Análise em curso... cada estrela conta."
+        , "Reconfigurando estratégia em tempo real."
+        , "Uma pequena desvantagem, mas nada que um ET não recupere."
         ],
         capture: [
           "Troca necessária. Controle mantido.",
@@ -3510,6 +3531,9 @@ if (window.drawReason) {
           "Eficiência acima de impulso.",
           "Cada captura é uma redução no caos.",
           "Cortar opções é cortar oxigênio do adversário."
+        , "Eliminação sistemática concluída."
+        , "Captura com precisão extraterrestre."
+        , "Destroçando a resistência com elegância."
         ],
         multi: [
           "Sequência limpa. Padrão completo.",
@@ -3517,6 +3541,9 @@ if (window.drawReason) {
           "Cadeia de decisões concluída com êxito.",
           "Esse ritmo não é acaso — é geometria.",
           "Domínio crescente, margem de erro mínima."
+        , "Sequências perfeitas como órbitas."
+        , "Fusão de movimentos em sinfonia."
+        , "Correntes cósmicas de jogadas."
         ],
         promo: [
           "Promoção alcançada. Nova camada de controle.",
@@ -3524,6 +3551,9 @@ if (window.drawReason) {
           "De peça a rei, de jogada a influência.",
           "Promoção não é sorte — é merecimento tático.",
           "Agora o rei observa tudo. Mobilidade total."
+        , "A transformação é uma evolução inevitável."
+        , "Um rei nasce sob o olhar das galáxias."
+        , "Promoção digna de um imperador sideral."
         ],
         nearWin: [
           "Vitória iminente. Só resta administrar o tempo.",
@@ -3531,6 +3561,9 @@ if (window.drawReason) {
           "A estrutura está em colapso — previsível.",
           "A lógica já venceu; falta apenas a formalidade.",
           "O jogo termina quando o oponente entende o inevitável."
+        , "A vitória está tão certa quanto a gravidade."
+        , "Estou prestes a conquistar este universo."
+        , "Só mais um empurrão para o êxito final."
         ],
         win: [
           "Execução concluída. Tabuleiro dominado.",
@@ -3538,6 +3571,9 @@ if (window.drawReason) {
           "Cálculo encerrado. Resultado: 1-0.",
           "O erro humano é sempre previsível.",
           "Dados confirmam: o inevitável venceu."
+        , "Tudo aconteceu como previsto pelas estrelas."
+        , "Tecnologia supera o caos."
+        , "O cosmos sorri para minha vitória."
         ],
         lose: [
           "Resultado inesperado. Processando falha.",
@@ -3545,6 +3581,9 @@ if (window.drawReason) {
           "Erro detectado. Registrando aprendizado.",
           "Derrota não é fim — é dado novo.",
           "Parabéns. Raramente o humano encontra a brecha certa."
+        , "Uma derrota rara... oportunidade para evoluir."
+        , "Computando falha e ajustando algoritmos."
+        , "Humano surpreendeu desta vez."
         ]
       };
       // Bloco extra de frases da IA (estendido) — seguro para manter/modificar
