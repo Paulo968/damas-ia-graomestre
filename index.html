@@ -4158,6 +4158,12 @@ if (window.drawReason) {
           // Limpa o tabuleiro
           if (elBoard) elBoard.innerHTML = '';
 
+          // 🧭 Ao retornar ao menu sempre resetamos a orientação visual para branca.
+          // Isso impede que a rotação do jogo online (vermelho) persista ao iniciar uma nova partida local.
+          try {
+            ajustarOrientacao('white');
+          } catch (_) { /* ignora se a função ainda não existir */ }
+
           // Libera a flag para próximas voltas ao menu
           isReturningToMenu = false;
       }
@@ -4214,6 +4220,11 @@ if (window.drawReason) {
         if (elBoard) elBoard.innerHTML = '';
 
         showOptionsButton(false);
+
+        // 🧭 Ao retornar ao menu de treino, removemos qualquer rotação do tabuleiro.
+        try {
+          ajustarOrientacao('white');
+        } catch (_) { /* ignora se a função ainda não existir */ }
 
         // Libera a flag
         isReturningToMenu = false;
@@ -4762,6 +4773,10 @@ if (window.drawReason) {
           mainMenu.classList.remove('hidden');
           isOnline = false; // 🌐 Reseta o modo de jogo
           setPlayerColor('white'); // 🌐 Reseta a cor
+          // 🧭 Remove qualquer rotação do tabuleiro ao voltar para o menu
+          try {
+            ajustarOrientacao('white');
+          } catch (_) { /* ignora se a função ainda não existir */ }
           if (closeSound) closeSound.play().catch(()=>{}); // Som adicionado
         });
         
@@ -4814,6 +4829,11 @@ if (window.drawReason) {
           onlineMenuScreen.classList.remove('hidden');
           if (onlineUnsubscribe) onlineUnsubscribe(); // 🌐 Para de ouvir a sala
           currentRoom = null;
+          // 🧭 Resetamos a cor e a orientação ao sair da criação de sala
+          setPlayerColor('white');
+          try {
+            ajustarOrientacao('white');
+          } catch (_) { /* ignora se a função ainda não existir */ }
           if (closeSound) closeSound.play().catch(()=>{}); // Som adicionado
         });
         
@@ -4821,6 +4841,11 @@ if (window.drawReason) {
         btnVoltarOnline2.addEventListener('click', () => {
           joinRoomScreen.classList.add('hidden');
           onlineMenuScreen.classList.remove('hidden');
+          // 🧭 Resetamos a cor e a orientação ao sair da entrada de sala
+          setPlayerColor('white');
+          try {
+            ajustarOrientacao('white');
+          } catch (_) { /* ignora se a função ainda não existir */ }
           if (closeSound) closeSound.play().catch(()=>{}); // Som adicionado
         });
         
