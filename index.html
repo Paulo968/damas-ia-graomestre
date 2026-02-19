@@ -1848,11 +1848,9 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         const inner=document.createElement('div');
         inner.className='w-1/2 h-1/2 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 border-2 border-white/50';
         piece.appendChild(inner);
-        // 🔄 Ajusta rotação inicial conforme orientação do tabuleiro
-        const boardEl = document.getElementById('board');
-        if (boardEl && boardEl.classList.contains('rot-180')) {
-          piece.classList.add('counter-rot');
-        }
+        // Não aplica mais contra‑rotação baseada em classes CSS; a orientação
+        // visual do tabuleiro é tratada pelas funções de conversão de
+        // coordenadas (toViewCoords/fromViewCoords).
         return piece;
       }
 
@@ -1883,15 +1881,40 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         // No modo IA, BRANCO (humano) começa
         current = WHITE; 
 
-        for(let r=0;r<8;r++){
-          for(let c=0;c<8;c++){
-            const sq=document.createElement('div');
-            const dark=(r+c)%2!==0;
-            sq.className=`aspect-square relative ${dark?COR_ESCURA:COR_CLARA}`;
-            sq.dataset.r=r; sq.dataset.c=c;
-            if(dark){
-              if(r<3){ const p=createPiece(P_VERMELHA,RED); sq.appendChild(p); board[r][c]=RED; }
-              else if(r>4){ const p=createPiece(P_BRANCA,WHITE); sq.appendChild(p); board[r][c]=WHITE; }
+        // Determina a cor do jogador para orientar o tabuleiro. Em modo online,
+        // utiliza getPlayerColor(); para jogos locais ou treino, assume 'white'.
+        let myColor;
+        try {
+          myColor = isOnline ? getPlayerColor() : WHITE;
+        } catch (_) {
+          myColor = WHITE;
+        }
+
+        // Constrói o tabuleiro usando coordenadas de visualização. A ordem dos
+        // elementos no DOM é determinada por vRow/vCol, garantindo que o
+        // primeiro elemento corresponda ao canto superior esquerdo da visão
+        // atual. A partir de vRow/vCol convertemos para r/c (interno) para
+        // inicializar as peças na matriz `board`.
+        for (let vRow = 0; vRow < 8; vRow++) {
+          for (let vCol = 0; vCol < 8; vCol++) {
+            const [r, c] = fromViewCoords(vRow, vCol, myColor);
+            const sq = document.createElement('div');
+            const dark = ((r + c) % 2) !== 0;
+            sq.className = `aspect-square relative ${dark ? COR_ESCURA : COR_CLARA}`;
+            // Armazena as coordenadas de visualização no dataset para uso nos cliques
+            sq.dataset.r = vRow;
+            sq.dataset.c = vCol;
+            // Povoamento inicial de peças com base nas coordenadas internas
+            if (dark) {
+              if (r < 3) {
+                const p = createPiece(P_VERMELHA, RED);
+                sq.appendChild(p);
+                board[r][c] = RED;
+              } else if (r > 4) {
+                const p = createPiece(P_BRANCA, WHITE);
+                sq.appendChild(p);
+                board[r][c] = WHITE;
+              }
             }
             elBoard.appendChild(sq);
             sq.addEventListener('click', onSquareClick);
@@ -3827,23 +3850,67 @@ if (window.drawReason) {
 
       // 🌐 PASSO 4 (JS): Função de Orientação
       function ajustarOrientacao(playerColor){
-        const boardEl = document.getElementById('board');
-        if (!boardEl) return;
-        const isRed = playerColor === 'red';
-        // Atualiza a rotação do tabuleiro de forma idempotente.
-        if (isRed) {
-          boardEl.classList.add('rot-180');
-        } else {
-          boardEl.classList.remove('rot-180');
-        }
-        // Atualiza a contra-rotação das peças.
-        boardEl.querySelectorAll('.piece').forEach(p => {
-          if (isRed) {
-            p.classList.add('counter-rot');
-          } else {
-            p.classList.remove('counter-rot');
+        /**
+         * Esta função originalmente rotacionava o tabuleiro via CSS para o
+         * jogador vermelho. No entanto, isso faz com que as coordenadas
+         * internas do tabuleiro e as coordenadas de clique entrem em
+         * conflito. Agora a orientação do tabuleiro é tratada nas
+         * conversões de coordenadas (toViewCoords e fromViewCoords).
+         * Portanto, esta função passa a ser um no‑op. Ela permanece para
+         * compatibilidade com chamadas espalhadas pelo código mas não
+         * aplica mais nenhuma transformação visual.
+         */
+        // Guardamos a cor do jogador para referência, mas não alteramos o DOM.
+        try {
+          // Atualiza a cor em memória para orientar as funções de visão.
+          if (typeof setPlayerColor === 'function') {
+            setPlayerColor(playerColor);
           }
-        });
+        } catch (_) {}
+        // Remove rotação e contra‑rotação caso existam de versões anteriores.
+        const boardEl = document.getElementById('board');
+        if (boardEl) {
+          boardEl.classList.remove('rot-180');
+          boardEl.querySelectorAll('.piece').forEach(p => p.classList.remove('counter-rot'));
+        }
+      }
+
+      /**
+       * Converte coordenadas internas do tabuleiro (0–7) para coordenadas
+       * de visualização de acordo com a cor do jogador. Para o jogador
+       * vermelho, as peças devem aparecer na parte inferior e à direita
+       * do tabuleiro. Assim, espelhamos as linhas e colunas. Para o
+       * jogador branco (ou jogos locais), as coordenadas são mantidas.
+       *
+       * @param {number} row Linha interna (0–7)
+       * @param {number} col Coluna interna (0–7)
+       * @param {string} myColor Cor do jogador ('white' ou 'red')
+       * @returns {Array<number>} [linha de visualização, coluna de visualização]
+       */
+      function toViewCoords(row, col, myColor) {
+        if (myColor === 'red') {
+          return [7 - row, 7 - col];
+        }
+        return [row, col];
+      }
+
+      /**
+       * Converte coordenadas de visualização (dataset.r/dataset.c) para
+       * coordenadas internas do tabuleiro. Este é o inverso de
+       * toViewCoords() e é usado ao tratar cliques ou arrastos de
+       * elementos do tabuleiro. Sempre retorne coordenadas dentro do
+       * intervalo 0–7.
+       *
+       * @param {number} vRow Linha de visualização
+       * @param {number} vCol Coluna de visualização
+       * @param {string} myColor Cor do jogador ('white' ou 'red')
+       * @returns {Array<number>} [linha interna, coluna interna]
+       */
+      function fromViewCoords(vRow, vCol, myColor) {
+        if (myColor === 'red') {
+          return [7 - vRow, 7 - vCol];
+        }
+        return [vRow, vCol];
       }
 
       /**
@@ -3858,15 +3925,18 @@ if (window.drawReason) {
        * @returns {HTMLElement|null} Elemento de quadrado correspondente
        */
       function squareEl(r,c){
-        // Converte da coordenada lógica para a coordenada de visualização quando online e o jogador for vermelho
-        let rr = r, cc = c;
+        // Utiliza toViewCoords() para mapear a posição interna (r,c) para
+        // a coordenada de visualização de acordo com a cor do jogador. No
+        // modo online, a cor é obtida de getPlayerColor(); em jogos locais
+        // ou treino a cor é sempre branca.
+        let myColor;
         try {
-          if (isOnline && getPlayerColor() === 'red') {
-            rr = 7 - r;
-            cc = 7 - c;
-          }
-        } catch(_) {}
-        return document.querySelector(`[data-r="${rr}"][data-c="${cc}"]`);
+          myColor = isOnline ? getPlayerColor() : WHITE;
+        } catch (_) {
+          myColor = WHITE;
+        }
+        const [vr, vc] = toViewCoords(r, c, myColor);
+        return document.querySelector(`[data-r="${vr}"][data-c="${vc}"]`);
       }
 
       /**
@@ -3880,10 +3950,17 @@ if (window.drawReason) {
        * @returns {Array<number>} [linha lógica, coluna lógica]
        */
       function viewToLogicalCoords(r, c) {
-        if (isOnline && getPlayerColor() === 'red') {
-          return [7 - r, 7 - c];
+        // Converte da coordenada de visualização (dataset) para a
+        // coordenada interna usando fromViewCoords(). A cor do
+        // jogador é considerada apenas no modo online; em jogos
+        // locais assume-se cor branca.
+        let myColor;
+        try {
+          myColor = isOnline ? getPlayerColor() : WHITE;
+        } catch (_) {
+          myColor = WHITE;
         }
-        return [r, c];
+        return fromViewCoords(r, c, myColor);
       }
 
       function explodeAt(x,y){
