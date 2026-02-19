@@ -1827,6 +1827,11 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         const inner=document.createElement('div');
         inner.className='w-1/2 h-1/2 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 border-2 border-white/50';
         piece.appendChild(inner);
+        // 🔄 Ajusta rotação inicial conforme orientação do tabuleiro
+        const boardEl = document.getElementById('board');
+        if (boardEl && boardEl.classList.contains('rot-180')) {
+          piece.classList.add('counter-rot');
+        }
         return piece;
       }
 
@@ -1909,24 +1914,45 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       
 // substitua inteira a função drawBoardFromData pelo código abaixo
 function drawBoardFromData(newBoardData) {
-  // Recebe um array[][] puro (retorno de deserializeBoard).
-  // Apenas redesenha o DOM — current e legal são gerenciados pelo caller (ouvirSala).
+  // Recebe um array[][] puro (retorno de deserializeBoard) e atualiza somente diferenças para evitar flicker.
   if (!newBoardData) return;
   board = Array.isArray(newBoardData) ? newBoardData : (newBoardData.board || newBoardData);
 
-  for(let r=0;r<8;r++){
-    for(let c=0;c<8;c++){
-      const sq = squareEl(r,c);
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const sq = squareEl(r, c);
       if (!sq) continue;
-      sq.innerHTML = '';
-      const piece = board[r][c];
-      if (piece) {
-        const colorClass = piece.startsWith(WHITE) ? P_BRANCA : P_VERMELHA;
-        const el = createPiece(colorClass, piece.startsWith(WHITE) ? WHITE : RED);
-        sq.appendChild(el);
+
+      const desired = board[r][c]; // null, "white", "red", "white-king", "red-king"
+      const existing = sq.querySelector('.piece');
+
+      // Se deveria estar vazio
+      if (!desired) {
+        if (existing) sq.innerHTML = '';
+        continue;
       }
+
+      const desiredPlayer = desired.startsWith(WHITE) ? WHITE : RED;
+      const desiredIsKing = desired.endsWith(KING);
+
+      // Se já tem peça igual, não mexe (evita flicker)
+      if (existing) {
+        const exPlayer = existing.dataset.player;
+        const exIsKing = existing.classList.contains('king');
+        if (exPlayer === desiredPlayer && exIsKing === desiredIsKing) continue;
+      }
+
+      // Caso mudou: troca a peça
+      sq.innerHTML = '';
+      const colorClass = desiredPlayer === WHITE ? P_BRANCA : P_VERMELHA;
+      const el = createPiece(colorClass, desiredPlayer);
+      if (desiredIsKing) el.classList.add('king');
+      sq.appendChild(el);
     }
   }
+
+  // Reforça orientação (caso alguém reconecte e o DOM seja recriado)
+  if (isOnline) ajustarOrientacao(getPlayerColor());
 }
 
 
@@ -4053,6 +4079,8 @@ if (window.drawReason) {
           trainingMode = false; // 🔁 Garante que sai do modo treino
           setPlayerColor('white');
           currentRoom = null;
+          // 🌐 Reinicia flag de inicio do online ao voltar para o menu
+          onlineStarted = false;
           
           // 🧠 Esconde o botão de opções (⋮) com fade
           showOptionsButton(false);
@@ -4674,6 +4702,9 @@ if (window.drawReason) {
           
           isOnline = true;
           onlineStarted = false; // 🌐 reseta a flag de inicialização online
+          // 🧹 garante board “vazio” ao criar sala
+          const boardEl = document.getElementById('board');
+          if (boardEl) boardEl.innerHTML = '';
           setPlayerColor('white'); // dono = branco
           
           onlineMenuScreen.classList.add('hidden');
@@ -4730,6 +4761,9 @@ if (window.drawReason) {
           
           isOnline = true;
           onlineStarted = false; // 🌐 reseta a flag de inicialização online
+          // 🧹 garante board “vazio” ao entrar na sala
+          const boardEl = document.getElementById('board');
+          if (boardEl) boardEl.innerHTML = '';
           setPlayerColor('red'); // visitante = vermelho
           
           const code = inputRoomCode.value.trim().toUpperCase();
