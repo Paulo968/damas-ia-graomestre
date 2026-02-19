@@ -2029,6 +2029,12 @@ function drawBoardFromData(newBoardData) {
             } else {
               setBubblePlaceholder(`Sala: ${currentRoom} | Vez do oponente...`);
             }
+
+            // 🧭 Reaplica a orientação após qualquer atualização de estado no modo online.
+            // Mesmo quando o tabuleiro não muda (apenas troca de turno), a orientação pode
+            // ficar incorreta se não for reajustada. Usamos a cor do jogador atual para
+            // garantir que a rotação do tabuleiro e contra-rotação das peças permaneçam coerentes.
+            ajustarOrientacao(myColor);
           }
 
           if (data.Status === "Encerrado") {
