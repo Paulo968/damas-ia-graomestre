@@ -250,6 +250,34 @@
     </style>
   
 <script>
+// 🚧 DEBUG: se a URL contiver ?testRed=1, força o modo online como jogador vermelho
+(() => {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('testRed')) {
+      // Sinaliza modo online e define a cor vermelha antes de inicializar o tabuleiro.
+      window.isOnline = true;
+      window.trainingMode = false;
+      const initAsRed = () => {
+        setPlayerColor('red');
+        // Oculta menus iniciais e mostra o tabuleiro
+        const menu = document.getElementById('menuContainer');
+        if (menu) menu.style.display = 'none';
+        if (typeof initBoard === 'function') {
+          initBoard();
+        }
+      };
+      // Aguarda o carregamento completo do DOM e scripts
+      if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(initAsRed, 0);
+      } else {
+        window.addEventListener('DOMContentLoaded', () => setTimeout(initAsRed, 0));
+      }
+    }
+  } catch (_) {
+    /* Ignora se ambiente de teste não suportar URLSearchParams */
+  }
+})();
 // Liga tudo por padrão; pode desabilitar via console se quiser.
 window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:true, antiloop:true, miniEG:true };
 </script>
@@ -1731,11 +1759,33 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       }
 
       // 🌐 PASSO 3 (JS): Helpers de Cor do Jogador
+      // Para suportar a orientação estável no modo online, mantemos a cor do jogador
+      // em uma variável global em memória. Isso evita que eventos do menu ou de
+      // outros modos sobrescrevam localStorage e façam o tabuleiro girar de forma
+      // incorreta durante uma partida online. Ao definir a cor, salvamos tanto
+      // no localStorage (para persistência em sessões futuras) quanto em uma
+      // variável global (playerColorMem) que será consultada por todas as funções
+      // que dependem da cor atual. A função getPlayerColor retorna primeiro
+      // dessa variável, somente caindo para o localStorage se a variável não
+      // estiver definida.
+      let playerColorMem = null;
       function setPlayerColor(color){ // 'white' ou 'red'
-        localStorage.setItem('playerColor', color);
+        try {
+          localStorage.setItem('playerColor', color);
+        } catch (_) {}
+        playerColorMem = color;
       }
       function getPlayerColor(){
-        return localStorage.getItem('playerColor') || 'white';
+        // Usa a cor em memória se disponível; caso contrário cai para o localStorage
+        if (playerColorMem) return playerColorMem;
+        try {
+          const c = localStorage.getItem('playerColor');
+          if (c) {
+            playerColorMem = c;
+            return c;
+          }
+        } catch (_) {}
+        return 'white';
       }
 
       // ⭐️ ADIÇÃO: Helper para a nova regra de captura
@@ -1824,16 +1874,31 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
 
       // 🌐 PASSO 2 (JS): Adicionar classe .piece
       function createPiece(colorClass, player){
-        const piece=document.createElement('div');
-        piece.className=`piece w-[70%] h-[70%] rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 shadow-lg border-4 cursor-pointer hover:opacity-90 transition ${colorClass}`;
-        piece.dataset.player=player;
-        const inner=document.createElement('div');
-        inner.className='w-1/2 h-1/2 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 border-2 border-white/50';
+        const piece = document.createElement('div');
+        piece.className =
+          `piece w-[70%] h-[70%] rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 shadow-lg border-4 cursor-pointer hover:opacity-90 transition ${colorClass}`;
+        // Salva a cor do dono da peça ("white" ou "red")
+        piece.dataset.player = player;
+        // Elemento interior decorativo
+        const inner = document.createElement('div');
+        inner.className =
+          'w-1/2 h-1/2 rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 border-2 border-white/50';
         piece.appendChild(inner);
-        // 🔄 Ajusta rotação inicial conforme orientação do tabuleiro
-        const boardEl = document.getElementById('board');
-        if (boardEl && boardEl.classList.contains('rot-180')) {
-          piece.classList.add('counter-rot');
+        /*
+         * Garanta a contra-rotação correta das peças no modo online. Em vez de depender
+         * do estado atual da classe CSS rot-180, usamos a cor do jogador armazenada
+         * no localStorage (getPlayerColor()) para decidir se devemos adicionar a
+         * classe counter-rot. Isso evita cenários em que as peças são criadas antes
+         * da rotação do tabuleiro ocorrer e acabam ficando de cabeça para baixo.
+         */
+        try {
+          if (isOnline && getPlayerColor() === 'red') {
+            piece.classList.add('counter-rot');
+          }
+        } catch (_) {
+          /* Se getPlayerColor falhar, não aplicamos a contra-rotação aqui. A função
+           * ajustarOrientacao se encarregará de corrigir qualquer inconsistência
+           * posteriormente. */
         }
         return piece;
       }
