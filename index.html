@@ -1597,6 +1597,49 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       // 🔥 FIM DA INTEGRAÇÃO FIREBASE
       // ======================================================
 
+      /* ======================================================
+       * 🤖 IA Persistência (Debounce e Flush)
+       * Adiciona um mecanismo de debounce de 3s nas gravações da IA e flush imediato ao término.
+       * Variáveis globais aiSaveTimer e aiDirty controlam o estado.
+       * Função scheduleAISave() agenda um salvamento após 3000ms.
+       * Função flushAISave() executa um salvamento imediato se houver mudanças pendentes.
+       * Listeners de beforeunload/pagehide realizam flush para não perder dados.
+       * ====================================================== */
+      let aiSaveTimer = null;
+      let aiDirty = false;
+      function scheduleAISave() {
+        aiDirty = true;
+        if (aiSaveTimer) {
+          clearTimeout(aiSaveTimer);
+        }
+        aiSaveTimer = setTimeout(() => {
+          aiSaveTimer = null;
+          aiDirty = false;
+          try {
+            salvarInteligenciaIA();
+          } catch(_) {}
+        }, 3000);
+      }
+      function flushAISave() {
+        if (aiDirty) {
+          if (aiSaveTimer) {
+            clearTimeout(aiSaveTimer);
+            aiSaveTimer = null;
+          }
+          aiDirty = false;
+          try {
+            salvarInteligenciaIA();
+          } catch(_) {}
+        }
+      }
+      // Garante flush ao fechar/ocultar a página
+      window.addEventListener('beforeunload', function() {
+        try { flushAISave(); } catch(_) {}
+      });
+      window.addEventListener('pagehide', function() {
+        try { flushAISave(); } catch(_) {}
+      });
+
       /*
        * =====================================================
        * 🧠 Sincronização Persistente da Inteligência e Perfis da IA
@@ -2536,6 +2579,14 @@ if (window.drawReason) {
         // Exibe painel de fim de jogo (overlay)
         showOverlay(overlayMsg, true);
 
+        // 🚦 Após um empate, volta automaticamente ao menu em ~4 segundos
+        // e garante que a inteligência da IA seja salva imediatamente (flush)
+        setTimeout(() => {
+          try { flushAISave(); } catch(_) {}
+          if (typeof showOverlay === 'function') showOverlay("", false);
+          if (typeof returnToMenu === 'function') returnToMenu();
+        }, 4000);
+
         // Opcional: fala leve da IA (apenas modo IA local)
         if (!isOnline && !trainingMode && typeof say === 'function') {
           setTimeout(() => {
@@ -2641,8 +2692,8 @@ if (window.drawReason) {
             }
             // Reseta alvo de treino para próxima sessão
             trainingTargetGames = null;
-            // Salva a inteligência global ao final do lote de treino
-            try { salvarInteligenciaIA(); } catch(_) {}
+            // Flush imediato das alterações da IA ao final do lote de treino
+            try { flushAISave(); } catch(_) {}
           }, 2000);
 
           return;
@@ -2772,8 +2823,8 @@ if (window.drawReason) {
           adjustNeuralWeights(winner);
           // 🧠 NOVO: Ajuste de pesos de fim de jogo (se aplicável)
           adjustEndgameWeights(winner);
-          // Salva a inteligência global após cada partida local (humano vs IA)
-          try { salvarInteligenciaIA(); } catch(_) {}
+          // Flush imediato da IA ao final da partida
+          try { flushAISave(); } catch(_) {}
         }
 
         // 🧠 ETAPA 4: Salva partida no histórico e Gera análise (só no modo IA)
@@ -2994,9 +3045,10 @@ if (window.drawReason) {
                 localStorage.setItem('patternMemory_red', JSON.stringify(data.patternMemory_red));
               }
               
-              // 🔥 PARTE 2 (GATILHO): Salva no Firestore CADA VEZ que o worker aprende
+              // 🔥 PARTE 2 (GATILHO): Salva no Firestore de maneira controlada
               // (Isso cobre o modo IA vs IA e o fim de jogo normal)
-              salvarInteligenciaIA();
+              // Use debounce de 3 segundos: agenda um salvamento em vez de salvar imediatamente
+              scheduleAISave();
               
             } catch (err) {
               console.warn("Falha ao salvar patternMemory no localStorage:", err);
@@ -3700,6 +3752,748 @@ if (window.drawReason) {
         ]
       };
 
+      /* ======================================================
+       * 🗣️ SpeechManager (Regional / Anime / Técnico)
+       *
+       * Este gerenciador seleciona falas com base no modoFala, dificuldade e evento.
+       * - modoFala: "regional" | "anime" | "tecnico" (padrão "regional", salvo em localStorage)
+       * - dificuldade: "facil" | "medio" | "dificil" | "mestre"
+       * - evento: "inicio" | "captura" | "promocao" | "ganhando" | "perdendo" | "equilibrado" | "vitoria" | "derrota" | "empate" | "desistencia"
+       * Mantém um buffer com as últimas 5 falas por chave para evitar repetição.
+       * ====================================================== */
+      // Se não houver definição, define modoFala padrão regional
+      try {
+        if (!localStorage.getItem('modoFala')) {
+          localStorage.setItem('modoFala', 'regional');
+        }
+      } catch(_) {}
+
+      const SpeechManager = (function() {
+        // Pacote de frases completo fornecido pelo usuário
+        const frases = {
+          regional: {
+            facil: {
+              inicio: [
+                'Bora na maciota 😄','Jogo leve, sem estresse.','Só vem, meu parceiro.',
+                'Hoje é dia de treino.','Vamo ver qual é.','Chega mais.',
+                'No respeito, hein 😌','Quero ver sua visão.','Partiu.','Tá preparado?',
+                'Sem pressa, mas sem vacilo.','Começou!'
+              ],
+              ganhando: [
+                'Aí sim 😄','Tô curtindo isso.','Tá fluindo.','Boa sequência.',
+                'Calma que dá.','Tá ficando bonito.','Gostei!','Tá indo.',
+                'Que delícia de lance.','Tamo bem.','Sem correria.','Segue o baile.'
+              ],
+              perdendo: [
+                'Eita 😅','Ok, boa.','Dá pra virar.','Calma.',
+                'Agora eu acordo.','Boa jogada.','Você tá bem.',
+                'Interessante.','Tá dando trabalho.','Gostei do lance.',
+                'Vamo ajustar.','Sem desespero.'
+              ],
+              equilibrado: [
+                'Tá parelho 😄','Tamo junto.','Equilíbrio bom.',
+                'Tá bonito.','Jogo limpo.','Isso é jogo.',
+                'Tá divertido.','Boa troca.','Sem vantagem ainda.',
+                'Tá em aberto.','Vamo ver.','Calma.'
+              ],
+              captura: [
+                'Uma foi 😏','Valeu.','Obrigado.','Você deixou.',
+                'Vacilou.','Caiu.','Quebrou a linha.',
+                'Era essa.','Na boa? Era óbvio.','Abriu espaço.',
+                'Tá vendo?','Peguei.','Essa doeu.',
+                'Isso aqui é pressão.','Não dá brecha.','Eu avisei.',
+                'Canto aberto.','Pegadinha.','Toma.','A conta chegou.','Sem dó.'
+              ],
+              promocao: [
+                'Subiu de nível 👑','Agora complicou.','Virei dama.',
+                'Ascensão.','Agora é outro jogo.','Cheguei no topo.',
+                'Agora eu mando.','Isso muda tudo.','Respeita.','Agora segura.'
+              ],
+              vitoria: [
+                'GG! 😄','Foi isso.','No respeito.','Joguei firme.',
+                'Boa partida.','Tá pago.','Aprendi contigo.',
+                'Vamo de novo?','Trabalho feito.','Era meu dia.',
+                'Sem erro.','Do começo ao fim.','Partida limpa.','Valeu!',
+                'Terminou.'
+              ],
+              derrota: [
+                'Boa! 👏','Você jogou muito.','Aí sim.','Me pegou.',
+                'Aprendi.','Foi justo.','Não foi hoje.',
+                'Na próxima eu volto.','Tá forte.','Mandou bem.',
+                'Respeito.','Que partida.','Caramba.','Ok, você venceu.',
+                'GG.'
+              ],
+              empate: [
+                'Empatou. Justo.','Parelho demais.','Ninguém caiu.',
+                'Tá equilibrado.','Deu empate.','Foi no detalhe.',
+                'Hoje ficou igual.','Duelo justo.','Sem vencedor.',
+                'Jogo travado (no bom).'
+              ],
+              desistencia: {
+                facil: ['Ah não 😭','Bora outra?','Sem essa.','Volta aí.',
+                        'Que isso…','Calma.','Mais uma.','Dá não.',
+                        'Aí é duro.','Ok 😅'],
+                medio: ['Tá suave.','Volta mais forte.','Beleza.',
+                        'Sem crise.','Entendi.','Outra hora.',
+                        'Tá valendo.','Ok.','Acontece.','Tranquilo.'],
+                dificil: ['Pesou, né? 😏','Sabia.','Ficou difícil.',
+                          'Era questão de tempo.','Entregou.','Tá vendo.',
+                          'Ok.','Sem saída.','Eu senti.','Foi.'],
+                mestre: ['Encerrado.','Final.','Conclusão.',
+                         'Fuga.','Registro.','Ok.','Fim.',
+                         'Silêncio.','Fechado.','Encerramento.']
+              }
+            },
+            medio: {
+              inicio: [
+                'Agora é sério 😏','Fica ligeiro.','Quero ver se aguenta.',
+                'Olho no lance.','Sem erro bobo.','Bora medir força.',
+                'Concentra.','Aqui é xadrez de rua.','Vamo conversar com o tabuleiro.',
+                'Joga limpo.','Mostra tua estratégia.','Sem choro depois.'
+              ],
+              ganhando: [
+                'Tá apertando aí? 😏','Você sentiu o peso.','Eu tô na frente.',
+                'Agora segura.','Pressão constante.','Vamo manter.',
+                'Tá no controle.','Cuidado com o canto.','Você tá reagindo?',
+                'Ficou perigoso.','É isso.','Não vacila.'
+              ],
+              perdendo: [
+                'Boa… eu vi.','Você tá esperto.','Complicou um pouco.',
+                'Vou reagir.','Tá equilibrando.','Ok, respeito.',
+                'Agora ficou sério.','Você achou um caminho.','Beleza.',
+                'Eu ajusto.','Não acabou.','Ainda tem jogo.'
+              ],
+              equilibrado: [
+                'Tá pegado.','Qualquer erro pesa.','Equilíbrio tenso.',
+                'Ninguém respira.','Um lance muda tudo.','Foco.',
+                'Sem vacilo.','Tá no detalhe.','Jogo fino.',
+                'Eu tô de olho.','Vai decidir já.','Segue.'
+              ],
+              captura: [
+                'Uma foi 😏','Valeu.','Obrigado.','Você deixou.',
+                'Vacilou.','Caiu.','Quebrou a linha.',
+                'Era essa.','Na boa? Era óbvio.','Abriu espaço.',
+                'Tá vendo?','Peguei.','Essa doeu.',
+                'Isso aqui é pressão.','Não dá brecha.','Eu avisei.',
+                'Canto aberto.','Pegadinha.','Toma.','A conta chegou.','Sem dó.'
+              ],
+              promocao: [
+                'Subiu de nível 👑','Agora complicou.','Virei dama.',
+                'Ascensão.','Agora é outro jogo.','Cheguei no topo.',
+                'Agora eu mando.','Isso muda tudo.','Respeita.','Agora segura.'
+              ],
+              vitoria: [
+                'GG! 😄','Foi isso.','No respeito.','Joguei firme.',
+                'Boa partida.','Tá pago.','Aprendi contigo.',
+                'Vamo de novo?','Trabalho feito.','Era meu dia.',
+                'Sem erro.','Do começo ao fim.','Partida limpa.','Valeu!',
+                'Terminou.'
+              ],
+              derrota: [
+                'Boa! 👏','Você jogou muito.','Aí sim.','Me pegou.',
+                'Aprendi.','Foi justo.','Não foi hoje.',
+                'Na próxima eu volto.','Tá forte.','Mandou bem.',
+                'Respeito.','Que partida.','Caramba.','Ok, você venceu.',
+                'GG.'
+              ],
+              empate: [
+                'Empatou. Justo.','Parelho demais.','Ninguém caiu.',
+                'Tá equilibrado.','Deu empate.','Foi no detalhe.',
+                'Hoje ficou igual.','Duelo justo.','Sem vencedor.',
+                'Jogo travado (no bom).'
+              ],
+              desistencia: {
+                facil: ['Tá suave.','Volta mais forte.','Beleza.',
+                        'Sem crise.','Entendi.','Outra hora.',
+                        'Tá valendo.','Ok.','Acontece.','Tranquilo.'],
+                medio: ['Tá suave.','Volta mais forte.','Beleza.',
+                        'Sem crise.','Entendi.','Outra hora.',
+                        'Tá valendo.','Ok.','Acontece.','Tranquilo.'],
+                dificil: ['Pesou, né? 😏','Sabia.','Ficou difícil.',
+                          'Era questão de tempo.','Entregou.','Tá vendo.',
+                          'Ok.','Sem saída.','Eu senti.','Foi.'],
+                mestre: ['Encerrado.','Final.','Conclusão.',
+                         'Fuga.','Registro.','Ok.','Fim.',
+                         'Silêncio.','Fechado.','Encerramento.']
+              }
+            },
+            dificil: {
+              inicio: [
+                'Não pisca.','Você vai me dar brecha.','Eu tô vendo teu plano.',
+                'Hoje eu vim pra cobrar.','Um vacilo e já era.',
+                'Teu canto tá aberto.','Eu gosto assim: pressão.',
+                'Tenta acompanhar.','Vai doer.','Cê tá confiante? 😂',
+                'Começa que eu tô pronto.'
+              ],
+              ganhando: [
+                'A casa caiu.','Era questão de tempo.','Eu te conduzi pra isso.',
+                'Você abriu a guarda.','Agora eu fecho.','Teu erro custou caro.',
+                'Eu já tava esperando.','Você deixou na bandeja.',
+                'Agora aguenta.','Eu mando no ritmo.',
+                'Pressão total.','Sem saída.'
+              ],
+              perdendo: [
+                'Não comemora.','Eu tô recalculando.','Você ganhou espaço, só isso.',
+                'Eu ainda controlo.','Eu volto no próximo.','Você quer guerra? Tá.',
+                'Eu aceito.','Vai custar caro.','Eu não caio fácil.',
+                'Ainda dá.','Continua.'
+              ],
+              equilibrado: [
+                'Um erro acaba.','Pressão nos dois.','Tá no limite.',
+                'Eu sinto o perigo.','Tá no fio.','Eu também.',
+                'Ninguém dorme.','Detalhe decide.','Sem espaço.',
+                'Último aviso.','Vai.'
+              ],
+              captura: [
+                'Uma foi 😏','Valeu.','Obrigado.','Você deixou.',
+                'Vacilou.','Caiu.','Quebrou a linha.',
+                'Era essa.','Na boa? Era óbvio.','Abriu espaço.',
+                'Tá vendo?','Peguei.','Essa doeu.',
+                'Isso aqui é pressão.','Não dá brecha.','Eu avisei.',
+                'Canto aberto.','Pegadinha.','Toma.','A conta chegou.','Sem dó.'
+              ],
+              promocao: [
+                'Subiu de nível 👑','Agora complicou.','Virei dama.',
+                'Ascensão.','Agora é outro jogo.','Cheguei no topo.',
+                'Agora eu mando.','Isso muda tudo.','Respeita.','Agora segura.'
+              ],
+              vitoria: [
+                'GG! 😄','Foi isso.','No respeito.','Joguei firme.',
+                'Boa partida.','Tá pago.','Aprendi contigo.',
+                'Vamo de novo?','Trabalho feito.','Era meu dia.',
+                'Sem erro.','Do começo ao fim.','Partida limpa.','Valeu!',
+                'Terminou.'
+              ],
+              derrota: [
+                'Boa! 👏','Você jogou muito.','Aí sim.','Me pegou.',
+                'Aprendi.','Foi justo.','Não foi hoje.',
+                'Na próxima eu volto.','Tá forte.','Mandou bem.',
+                'Respeito.','Que partida.','Caramba.','Ok, você venceu.',
+                'GG.'
+              ],
+              empate: [
+                'Empatou. Justo.','Parelho demais.','Ninguém caiu.',
+                'Tá equilibrado.','Deu empate.','Foi no detalhe.',
+                'Hoje ficou igual.','Duelo justo.','Sem vencedor.',
+                'Jogo travado (no bom).'
+              ],
+              desistencia: {
+                facil: ['Pesou, né? 😏','Sabia.','Ficou difícil.',
+                        'Era questão de tempo.','Entregou.','Tá vendo.',
+                        'Ok.','Sem saída.','Eu senti.','Foi.'],
+                medio: ['Pesou, né? 😏','Sabia.','Ficou difícil.',
+                        'Era questão de tempo.','Entregou.','Tá vendo.',
+                        'Ok.','Sem saída.','Eu senti.','Foi.'],
+                dificil: ['Pesou, né? 😏','Sabia.','Ficou difícil.',
+                          'Era questão de tempo.','Entregou.','Tá vendo.',
+                          'Ok.','Sem saída.','Eu senti.','Foi.'],
+                mestre: ['Encerrado.','Final.','Conclusão.',
+                         'Fuga.','Registro.','Ok.','Fim.',
+                         'Silêncio.','Fechado.','Encerramento.']
+              }
+            },
+            mestre: {
+              inicio: [
+                'Começa.','Escolhe bem.','Sem margem.','Foco.',
+                'Eu não perdoo.','Uma chance.','Respira.',
+                'Vai.','Silêncio. Joga.','O tabuleiro decide.',
+                'Mostra serviço.','Tenta.'
+              ],
+              ganhando: [
+                'Controle.','Inevitável.','Concluindo.','Sem resposta.',
+                'Dominância.','Resolvido.','Fim anunciado.',
+                'Você já perdeu.','Só execução.','Encaminhado.',
+                'Check.','Fechado.'
+              ],
+              perdendo: [
+                'Recalculando.','Erro corrigível.','Ajuste.','Ainda não.',
+                'Persistência.','Sem pânico.','Linha alternativa.',
+                'Resposta encontrada.','Retomando.','Resiliência.',
+                'Ok.','Segue.'
+              ],
+              equilibrado: [
+                'Detalhe.','Fio.','Tensão.','Silêncio.',
+                'Decisão.','Limite.','Agora.','Peso.',
+                'Equilíbrio.','Clínico.','Preciso.','Frio.'
+              ],
+              captura: [
+                'Uma foi 😏','Valeu.','Obrigado.','Você deixou.',
+                'Vacilou.','Caiu.','Quebrou a linha.',
+                'Era essa.','Na boa? Era óbvio.','Abriu espaço.',
+                'Tá vendo?','Peguei.','Essa doeu.',
+                'Isso aqui é pressão.','Não dá brecha.','Eu avisei.',
+                'Canto aberto.','Pegadinha.','Toma.','A conta chegou.','Sem dó.'
+              ],
+              promocao: [
+                'Subiu de nível 👑','Agora complicou.','Virei dama.',
+                'Ascensão.','Agora é outro jogo.','Cheguei no topo.',
+                'Agora eu mando.','Isso muda tudo.','Respeita.','Agora segura.'
+              ],
+              vitoria: [
+                'GG! 😄','Foi isso.','No respeito.','Joguei firme.',
+                'Boa partida.','Tá pago.','Aprendi contigo.',
+                'Vamo de novo?','Trabalho feito.','Era meu dia.',
+                'Sem erro.','Do começo ao fim.','Partida limpa.','Valeu!',
+                'Terminou.'
+              ],
+              derrota: [
+                'Boa! 👏','Você jogou muito.','Aí sim.','Me pegou.',
+                'Aprendi.','Foi justo.','Não foi hoje.',
+                'Na próxima eu volto.','Tá forte.','Mandou bem.',
+                'Respeito.','Que partida.','Caramba.','Ok, você venceu.',
+                'GG.'
+              ],
+              empate: [
+                'Empatou. Justo.','Parelho demais.','Ninguém caiu.',
+                'Tá equilibrado.','Deu empate.','Foi no detalhe.',
+                'Hoje ficou igual.','Duelo justo.','Sem vencedor.',
+                'Jogo travado (no bom).'
+              ],
+              desistencia: {
+                facil: ['Encerrado.','Final.','Conclusão.',
+                        'Fuga.','Registro.','Ok.','Fim.',
+                        'Silêncio.','Fechado.','Encerramento.'],
+                medio: ['Encerrado.','Final.','Conclusão.',
+                        'Fuga.','Registro.','Ok.','Fim.',
+                        'Silêncio.','Fechado.','Encerramento.'],
+                dificil: ['Encerrado.','Final.','Conclusão.',
+                          'Fuga.','Registro.','Ok.','Fim.',
+                          'Silêncio.','Fechado.','Encerramento.'],
+                mestre: ['Encerrado.','Final.','Conclusão.',
+                         'Fuga.','Registro.','Ok.','Fim.',
+                         'Silêncio.','Fechado.','Encerramento.']
+              }
+            }
+          },
+          anime: {
+            facil: {
+              inicio: [
+                'Treino leve? 😄','Hehe… vamo.','Sem rancor.',
+                'Só um aquecimento.','Começou a saga!','Bora!',
+                'Mostra teu poder.','Sem pressão.','Vai lá.',
+                'Eu acredito.'
+              ],
+              ganhando: [
+                'Eu já vi esse final.','Seu destino foi traçado.','Você sente a pressão?',
+                'Inevitável.','Isso é domínio.','Você abriu a guarda.',
+                'Sem retorno.','Eu conduzo.','Esse é meu ritmo.',
+                'Não há saída.','A vantagem cresceu.','Um passo do fim.',
+                'Chegou a hora.','Eu controlo tudo.'
+              ],
+              perdendo: [
+                'Interessante…','Então você também enxerga.','Agora ficou sério.',
+                'Eu aceito o desafio.','Você me forçou a evoluir.','Eu não caio fácil.',
+                'Ainda não acabou.','Boa…','Você é forte.',
+                'Isso me anima.','Ok.','Vamos virar.','Eu me ajusto.',
+                'Por enquanto.'
+              ],
+              equilibrado: [
+                'Equilíbrio perfeito.','Qualquer passo decide.','Tá no limite.',
+                'Sem respiro.','Duas vontades colidindo.','O duelo tá vivo.',
+                'Tensão.','Eu sinto.','Agora decide.','Fio da lâmina.'
+              ],
+              captura: [
+                'Uma alma caiu.','Erro fatal.','Brecha explorada.',
+                'Você baixou a guarda.','Golpe limpo.','Foi previsível.',
+                'Caiu.','Sem piedade.','Você vacilou.',
+                'Isso dói.','Um a menos.','Perda confirmada.',
+                'Sem retorno.','Corte certeiro.','Eu vi.',
+                'Agora é tarde.','A conta chegou.','Toma.'
+              ],
+              promocao: [
+                'Despertar 👑','Forma final.','Ascensão.',
+                'Evolução concluída.','Agora eu mudei.','Nível acima.',
+                'Você não tá pronto.','Isso é poder.','Agora começa.',
+                'Transformação.'
+              ],
+              vitoria: [
+                'GG! ⚔️','Duelo encerrado.','Você lutou bem.','Até a próxima.',
+                'Foi uma boa batalha.','O destino escolheu.','Vitória confirmada.',
+                'Eu venci.','Você foi digno.','Belo combate.','Respeito.',
+                'Terminou.'
+              ],
+              derrota: [
+                'Você venceu…','Boa luta.','Você foi além.','Eu reconheço.',
+                'Hoje não.','Eu volto mais forte.','Isso não termina aqui.',
+                'Respeito.','Você é forte.','GG.','Aprendi.'
+              ],
+              empate: [
+                'Empate…','Nem você, nem eu.','Esse duelo continua.',
+                'Equilíbrio absoluto.','Hoje ficou igual.','Sem vencedor.',
+                'A história segue.','Empate justo.','Outro dia.'
+              ],
+              desistencia: [
+                'Recuar também é estratégia.','Você vai voltar mais forte.',
+                'Ok…','Então era só isso?','Partida encerrada.',
+                'Fuga confirmada.','Até a próxima.','Sem rancor.','Fim.'
+              ]
+            },
+            medio: {
+              inicio: [
+                'O duelo começa ⚔️','Mostre seu espírito.','Sem hesitar.',
+                'Não desvie o olhar.','Vamos ver.','A arena tá pronta.',
+                'Jogue sério.','Sem vacilo.','Agora!','Sem medo.'
+              ],
+              ganhando: [
+                'Eu já vi esse final.','Seu destino foi traçado.','Você sente a pressão?',
+                'Inevitável.','Isso é domínio.','Você abriu a guarda.',
+                'Sem retorno.','Eu conduzo.','Esse é meu ritmo.',
+                'Não há saída.','A vantagem cresceu.','Um passo do fim.',
+                'Chegou a hora.','Eu controlo tudo.'
+              ],
+              perdendo: [
+                'Interessante…','Então você também enxerga.','Agora ficou sério.',
+                'Eu aceito o desafio.','Você me forçou a evoluir.','Eu não caio fácil.',
+                'Ainda não acabou.','Boa…','Você é forte.',
+                'Isso me anima.','Ok.','Vamos virar.','Eu me ajusto.',
+                'Por enquanto.'
+              ],
+              equilibrado: [
+                'Equilíbrio perfeito.','Qualquer passo decide.','Tá no limite.',
+                'Sem respiro.','Duas vontades colidindo.','O duelo tá vivo.',
+                'Tensão.','Eu sinto.','Agora decide.','Fio da lâmina.'
+              ],
+              captura: [
+                'Uma alma caiu.','Erro fatal.','Brecha explorada.',
+                'Você baixou a guarda.','Golpe limpo.','Foi previsível.',
+                'Caiu.','Sem piedade.','Você vacilou.',
+                'Isso dói.','Um a menos.','Perda confirmada.',
+                'Sem retorno.','Corte certeiro.','Eu vi.',
+                'Agora é tarde.','A conta chegou.','Toma.'
+              ],
+              promocao: [
+                'Despertar 👑','Forma final.','Ascensão.',
+                'Evolução concluída.','Agora eu mudei.','Nível acima.',
+                'Você não tá pronto.','Isso é poder.','Agora começa.',
+                'Transformação.'
+              ],
+              vitoria: [
+                'GG! ⚔️','Duelo encerrado.','Você lutou bem.','Até a próxima.',
+                'Foi uma boa batalha.','O destino escolheu.','Vitória confirmada.',
+                'Eu venci.','Você foi digno.','Belo combate.','Respeito.',
+                'Terminou.'
+              ],
+              derrota: [
+                'Você venceu…','Boa luta.','Você foi além.','Eu reconheço.',
+                'Hoje não.','Eu volto mais forte.','Isso não termina aqui.',
+                'Respeito.','Você é forte.','GG.','Aprendi.'
+              ],
+              empate: [
+                'Empate…','Nem você, nem eu.','Esse duelo continua.',
+                'Equilíbrio absoluto.','Hoje ficou igual.','Sem vencedor.',
+                'A história segue.','Empate justo.','Outro dia.'
+              ],
+              desistencia: [
+                'Recuar também é estratégia.','Você vai voltar mais forte.',
+                'Ok…','Então era só isso?','Partida encerrada.',
+                'Fuga confirmada.','Até a próxima.','Sem rancor.','Fim.'
+              ]
+            },
+            dificil: {
+              inicio: [
+                'Você quer com ou sem Susanoo? 😏','Eu vim sério.','Não me decepcione.',
+                'Eu já li teu movimento.','Seu fim começa agora.','Você tá pronto?',
+                'Sem piedade.','Foco total.','Comece.','Sem choro.'
+              ],
+              ganhando: [
+                'Eu já vi esse final.','Seu destino foi traçado.','Você sente a pressão?',
+                'Inevitável.','Isso é domínio.','Você abriu a guarda.',
+                'Sem retorno.','Eu conduzo.','Esse é meu ritmo.',
+                'Não há saída.','A vantagem cresceu.','Um passo do fim.',
+                'Chegou a hora.','Eu controlo tudo.'
+              ],
+              perdendo: [
+                'Interessante…','Então você também enxerga.','Agora ficou sério.',
+                'Eu aceito o desafio.','Você me forçou a evoluir.','Eu não caio fácil.',
+                'Ainda não acabou.','Boa…','Você é forte.',
+                'Isso me anima.','Ok.','Vamos virar.','Eu me ajusto.',
+                'Por enquanto.'
+              ],
+              equilibrado: [
+                'Equilíbrio perfeito.','Qualquer passo decide.','Tá no limite.',
+                'Sem respiro.','Duas vontades colidindo.','O duelo tá vivo.',
+                'Tensão.','Eu sinto.','Agora decide.','Fio da lâmina.'
+              ],
+              captura: [
+                'Uma alma caiu.','Erro fatal.','Brecha explorada.',
+                'Você baixou a guarda.','Golpe limpo.','Foi previsível.',
+                'Caiu.','Sem piedade.','Você vacilou.',
+                'Isso dói.','Um a menos.','Perda confirmada.',
+                'Sem retorno.','Corte certeiro.','Eu vi.',
+                'Agora é tarde.','A conta chegou.','Toma.'
+              ],
+              promocao: [
+                'Despertar 👑','Forma final.','Ascensão.',
+                'Evolução concluída.','Agora eu mudei.','Nível acima.',
+                'Você não tá pronto.','Isso é poder.','Agora começa.',
+                'Transformação.'
+              ],
+              vitoria: [
+                'GG! ⚔️','Duelo encerrado.','Você lutou bem.','Até a próxima.',
+                'Foi uma boa batalha.','O destino escolheu.','Vitória confirmada.',
+                'Eu venci.','Você foi digno.','Belo combate.','Respeito.',
+                'Terminou.'
+              ],
+              derrota: [
+                'Você venceu…','Boa luta.','Você foi além.','Eu reconheço.',
+                'Hoje não.','Eu volto mais forte.','Isso não termina aqui.',
+                'Respeito.','Você é forte.','GG.','Aprendi.'
+              ],
+              empate: [
+                'Empate…','Nem você, nem eu.','Esse duelo continua.',
+                'Equilíbrio absoluto.','Hoje ficou igual.','Sem vencedor.',
+                'A história segue.','Empate justo.','Outro dia.'
+              ],
+              desistencia: [
+                'Recuar também é estratégia.','Você vai voltar mais forte.',
+                'Ok…','Então era só isso?','Partida encerrada.',
+                'Fuga confirmada.','Até a próxima.','Sem rancor.','Fim.'
+              ]
+            },
+            mestre: {
+              inicio: [
+                'Eu já vi seu futuro.','Silêncio.','Decisão.',
+                'Destino.','Execução.','Sem falhas.',
+                'Você não escapa.','Agora.','Mostra.','Comece.'
+              ],
+              ganhando: [
+                'Eu já vi esse final.','Seu destino foi traçado.','Você sente a pressão?',
+                'Inevitável.','Isso é domínio.','Você abriu a guarda.',
+                'Sem retorno.','Eu conduzo.','Esse é meu ritmo.',
+                'Não há saída.','A vantagem cresceu.','Um passo do fim.',
+                'Chegou a hora.','Eu controlo tudo.'
+              ],
+              perdendo: [
+                'Interessante…','Então você também enxerga.','Agora ficou sério.',
+                'Eu aceito o desafio.','Você me forçou a evoluir.','Eu não caio fácil.',
+                'Ainda não acabou.','Boa…','Você é forte.',
+                'Isso me anima.','Ok.','Vamos virar.','Eu me ajusto.',
+                'Por enquanto.'
+              ],
+              equilibrado: [
+                'Equilíbrio perfeito.','Qualquer passo decide.','Tá no limite.',
+                'Sem respiro.','Duas vontades colidindo.','O duelo tá vivo.',
+                'Tensão.','Eu sinto.','Agora decide.','Fio da lâmina.'
+              ],
+              captura: [
+                'Uma alma caiu.','Erro fatal.','Brecha explorada.',
+                'Você baixou a guarda.','Golpe limpo.','Foi previsível.',
+                'Caiu.','Sem piedade.','Você vacilou.',
+                'Isso dói.','Um a menos.','Perda confirmada.',
+                'Sem retorno.','Corte certeiro.','Eu vi.',
+                'Agora é tarde.','A conta chegou.','Toma.'
+              ],
+              promocao: [
+                'Despertar 👑','Forma final.','Ascensão.',
+                'Evolução concluída.','Agora eu mudei.','Nível acima.',
+                'Você não tá pronto.','Isso é poder.','Agora começa.',
+                'Transformação.'
+              ],
+              vitoria: [
+                'GG! ⚔️','Duelo encerrado.','Você lutou bem.','Até a próxima.',
+                'Foi uma boa batalha.','O destino escolheu.','Vitória confirmada.',
+                'Eu venci.','Você foi digno.','Belo combate.','Respeito.',
+                'Terminou.'
+              ],
+              derrota: [
+                'Você venceu…','Boa luta.','Você foi além.','Eu reconheço.',
+                'Hoje não.','Eu volto mais forte.','Isso não termina aqui.',
+                'Respeito.','Você é forte.','GG.','Aprendi.'
+              ],
+              empate: [
+                'Empate…','Nem você, nem eu.','Esse duelo continua.',
+                'Equilíbrio absoluto.','Hoje ficou igual.','Sem vencedor.',
+                'A história segue.','Empate justo.','Outro dia.'
+              ],
+              desistencia: [
+                'Recuar também é estratégia.','Você vai voltar mais forte.',
+                'Ok…','Então era só isso?','Partida encerrada.',
+                'Fuga confirmada.','Até a próxima.','Sem rancor.','Fim.'
+              ]
+            }
+          },
+          tecnico: {
+            facil: {
+              inicio: ['Simulação iniciada.','Boa sorte.','Processando.','Rodando modelo.','Inicializando.'],
+              ganhando: ['Vantagem consolidada.','Controle posicional.','Resultado projetado.',
+                         'Evolução favorável.','Sem risco.','Pressão mantida.','Dominância.',
+                         'Vantagem crescente.','Controle total.','Conclusão provável.'],
+              perdendo: ['Desvantagem detectada.','Reavaliação em curso.','Ajustando rota.',
+                         'Risco elevado.','Mudança necessária.','Linha alternativa.',
+                         'Correção aplicada.','Resposta calculada.','Recuperação possível.',
+                         'Mantendo chances.'],
+              equilibrado: ['Equilíbrio estável.','Sem vantagem clara.','Estado neutro.',
+                            'Jogo no detalhe.','Risco simétrico.','Decisão pendente.',
+                            'Condições iguais.','Tensão controlada.','Sem margem.',
+                            'Aguardando erro.'],
+              captura: ['Peça removida.','Material reduzido.','Troca favorável.',
+                        'Captura confirmada.','Ganho material.','Execução bem-sucedida.',
+                        'Remoção concluída.','Vantagem material.','Ação concluída.',
+                        'Ponto ganho.'],
+              promocao: ['Promoção concluída.','Dama ativa.','Potencial ampliado.',
+                         'Escala aumentada.','Nova capacidade.','Promoção confirmada.',
+                         'Ativo elevado.','Aumento de mobilidade.','Mudança de fase.',
+                         'Upgrade completo.'],
+              vitoria: ['Vitória confirmada.','Partida concluída.','Resultado final.',
+                         'Encerramento.','Processo finalizado.','Objetivo atingido.',
+                         'Conclusão.','Finalizado.','Fechamento.','Registro concluído.'],
+              derrota: ['Derrota registrada.','Resultado adverso.','Encerramento.',
+                         'Partida finalizada.','Falha detectada.','Aprendizado coletado.',
+                         'Registro concluído.','Fim.','Ok.','Revisão necessária.'],
+              empate: ['Empate confirmado.','Sem vencedor.','Estabilidade final.',
+                        'Conclusão neutra.','Resultado neutro.','Encerramento.',
+                        'Registro de empate.','Fim.','Ok.','Partida neutra.'],
+              desistencia: ['Encerramento voluntário.','Interrupção detectada.',
+                             'Partida encerrada.','Finalização.','Sessão concluída.',
+                             'Ok.','Registro final.','Encerrado.','Fim.','Conclusão.']
+            },
+            medio: {
+              inicio: ['Estratégia carregada.','Plano definido.','Execução iniciada.',
+                       'Análise ativa.','Início confirmado.'],
+              ganhando: ['Vantagem consolidada.','Controle posicional.','Resultado projetado.',
+                         'Evolução favorável.','Sem risco.','Pressão mantida.','Dominância.',
+                         'Vantagem crescente.','Controle total.','Conclusão provável.'],
+              perdendo: ['Desvantagem detectada.','Reavaliação em curso.','Ajustando rota.',
+                         'Risco elevado.','Mudança necessária.','Linha alternativa.',
+                         'Correção aplicada.','Resposta calculada.','Recuperação possível.',
+                         'Mantendo chances.'],
+              equilibrado: ['Equilíbrio estável.','Sem vantagem clara.','Estado neutro.',
+                            'Jogo no detalhe.','Risco simétrico.','Decisão pendente.',
+                            'Condições iguais.','Tensão controlada.','Sem margem.',
+                            'Aguardando erro.'],
+              captura: ['Peça removida.','Material reduzido.','Troca favorável.',
+                        'Captura confirmada.','Ganho material.','Execução bem-sucedida.',
+                        'Remoção concluída.','Vantagem material.','Ação concluída.',
+                        'Ponto ganho.'],
+              promocao: ['Promoção concluída.','Dama ativa.','Potencial ampliado.',
+                         'Escala aumentada.','Nova capacidade.','Promoção confirmada.',
+                         'Ativo elevado.','Aumento de mobilidade.','Mudança de fase.',
+                         'Upgrade completo.'],
+              vitoria: ['Vitória confirmada.','Partida concluída.','Resultado final.',
+                         'Encerramento.','Processo finalizado.','Objetivo atingido.',
+                         'Conclusão.','Finalizado.','Fechamento.','Registro concluído.'],
+              derrota: ['Derrota registrada.','Resultado adverso.','Encerramento.',
+                         'Partida finalizada.','Falha detectada.','Aprendizado coletado.',
+                         'Registro concluído.','Fim.','Ok.','Revisão necessária.'],
+              empate: ['Empate confirmado.','Sem vencedor.','Estabilidade final.',
+                        'Conclusão neutra.','Resultado neutro.','Encerramento.',
+                        'Registro de empate.','Fim.','Ok.','Partida neutra.'],
+              desistencia: ['Encerramento voluntário.','Interrupção detectada.',
+                             'Partida encerrada.','Finalização.','Sessão concluída.',
+                             'Ok.','Registro final.','Encerrado.','Fim.','Conclusão.']
+            },
+            dificil: {
+              inicio: ['Margem mínima de erro.','Jogo sob pressão.','Cenários calculados.',
+                       'Sem espaço.','Foco.'],
+              ganhando: ['Vantagem consolidada.','Controle posicional.','Resultado projetado.',
+                         'Evolução favorável.','Sem risco.','Pressão mantida.','Dominância.',
+                         'Vantagem crescente.','Controle total.','Conclusão provável.'],
+              perdendo: ['Desvantagem detectada.','Reavaliação em curso.','Ajustando rota.',
+                         'Risco elevado.','Mudança necessária.','Linha alternativa.',
+                         'Correção aplicada.','Resposta calculada.','Recuperação possível.',
+                         'Mantendo chances.'],
+              equilibrado: ['Equilíbrio estável.','Sem vantagem clara.','Estado neutro.',
+                            'Jogo no detalhe.','Risco simétrico.','Decisão pendente.',
+                            'Condições iguais.','Tensão controlada.','Sem margem.',
+                            'Aguardando erro.'],
+              captura: ['Peça removida.','Material reduzido.','Troca favorável.',
+                        'Captura confirmada.','Ganho material.','Execução bem-sucedida.',
+                        'Remoção concluída.','Vantagem material.','Ação concluída.',
+                        'Ponto ganho.'],
+              promocao: ['Promoção concluída.','Dama ativa.','Potencial ampliado.',
+                         'Escala aumentada.','Nova capacidade.','Promoção confirmada.',
+                         'Ativo elevado.','Aumento de mobilidade.','Mudança de fase.',
+                         'Upgrade completo.'],
+              vitoria: ['Vitória confirmada.','Partida concluída.','Resultado final.',
+                         'Encerramento.','Processo finalizado.','Objetivo atingido.',
+                         'Conclusão.','Finalizado.','Fechamento.','Registro concluído.'],
+              derrota: ['Derrota registrada.','Resultado adverso.','Encerramento.',
+                         'Partida finalizada.','Falha detectada.','Aprendizado coletado.',
+                         'Registro concluído.','Fim.','Ok.','Revisão necessária.'],
+              empate: ['Empate confirmado.','Sem vencedor.','Estabilidade final.',
+                        'Conclusão neutra.','Resultado neutro.','Encerramento.',
+                        'Registro de empate.','Fim.','Ok.','Partida neutra.'],
+              desistencia: ['Encerramento voluntário.','Interrupção detectada.',
+                             'Partida encerrada.','Finalização.','Sessão concluída.',
+                             'Ok.','Registro final.','Encerrado.','Fim.','Conclusão.']
+            },
+            mestre: {
+              inicio: ['Execução.','Clínico.','Precisão.','Sem falhas.','Processo.'],
+              ganhando: ['Vantagem consolidada.','Controle posicional.','Resultado projetado.',
+                         'Evolução favorável.','Sem risco.','Pressão mantida.','Dominância.',
+                         'Vantagem crescente.','Controle total.','Conclusão provável.'],
+              perdendo: ['Desvantagem detectada.','Reavaliação em curso.','Ajustando rota.',
+                         'Risco elevado.','Mudança necessária.','Linha alternativa.',
+                         'Correção aplicada.','Resposta calculada.','Recuperação possível.',
+                         'Mantendo chances.'],
+              equilibrado: ['Equilíbrio estável.','Sem vantagem clara.','Estado neutro.',
+                            'Jogo no detalhe.','Risco simétrico.','Decisão pendente.',
+                            'Condições iguais.','Tensão controlada.','Sem margem.',
+                            'Aguardando erro.'],
+              captura: ['Peça removida.','Material reduzido.','Troca favorável.',
+                        'Captura confirmada.','Ganho material.','Execução bem-sucedida.',
+                        'Remoção concluída.','Vantagem material.','Ação concluída.',
+                        'Ponto ganho.'],
+              promocao: ['Promoção concluída.','Dama ativa.','Potencial ampliado.',
+                         'Escala aumentada.','Nova capacidade.','Promoção confirmada.',
+                         'Ativo elevado.','Aumento de mobilidade.','Mudança de fase.',
+                         'Upgrade completo.'],
+              vitoria: ['Vitória confirmada.','Partida concluída.','Resultado final.',
+                         'Encerramento.','Processo finalizado.','Objetivo atingido.',
+                         'Conclusão.','Finalizado.','Fechamento.','Registro concluído.'],
+              derrota: ['Derrota registrada.','Resultado adverso.','Encerramento.',
+                         'Partida finalizada.','Falha detectada.','Aprendizado coletado.',
+                         'Registro concluído.','Fim.','Ok.','Revisão necessária.'],
+              empate: ['Empate confirmado.','Sem vencedor.','Estabilidade final.',
+                        'Conclusão neutra.','Resultado neutro.','Encerramento.',
+                        'Registro de empate.','Fim.','Ok.','Partida neutra.'],
+              desistencia: ['Encerramento voluntário.','Interrupção detectada.',
+                             'Partida encerrada.','Finalização.','Sessão concluída.',
+                             'Ok.','Registro final.','Encerrado.','Fim.','Conclusão.']
+            }
+          }
+        };
+        // Buffer de falas: armazena as últimas 5 por (modo, dificuldade, evento)
+        const lastUsed = {};
+        function getPhrase(modo, dificuldade, evento) {
+          const modeKey = (modo || 'regional').toLowerCase();
+          const diffKey = (dificuldade || 'facil').toLowerCase();
+          const eventKey = (evento || 'inicio').toLowerCase();
+          const modeData = frases[modeKey] || frases['regional'];
+          // Trata desistencia separadamente se definido como objeto
+          if (eventKey === 'desistencia') {
+            if (modeData[diffKey] && modeData[diffKey].desistencia) {
+              const obj = modeData[diffKey].desistencia;
+              const arr = Array.isArray(obj) ? obj : (obj[diffKey] || obj.facil || []);
+              return pickUnique(arr, `${modeKey}_${diffKey}_${eventKey}`);
+            }
+            // fallback genérico
+            const arr = frases.tecnico.facil.desistencia || [];
+            return pickUnique(arr, `${modeKey}_${diffKey}_${eventKey}`);
+          }
+          let diffData = modeData[diffKey];
+          if (!diffData) {
+            diffData = modeData['facil'];
+          }
+          const arr = (diffData && diffData[eventKey]) || [];
+          return pickUnique(arr, `${modeKey}_${diffKey}_${eventKey}`);
+        }
+        function pickUnique(arr, key) {
+          if (!Array.isArray(arr) || arr.length === 0) return '';
+          lastUsed[key] = lastUsed[key] || [];
+          let candidate = arr[Math.floor(Math.random() * arr.length)];
+          let attempts = 0;
+          while (arr.length > 1 && lastUsed[key].includes(candidate) && attempts < 10) {
+            candidate = arr[Math.floor(Math.random() * arr.length)];
+            attempts++;
+          }
+          lastUsed[key].push(candidate);
+          if (lastUsed[key].length > 5) lastUsed[key].shift();
+          return candidate;
+        }
+        return { getPhrase };
+      })();
+
       // Mescla EXTRA_TAUNTS em TAUNTS sem quebrar nada existente
       Object.keys(EXTRA_TAUNTS).forEach((key) => {
         const extraArr = EXTRA_TAUNTS[key];
@@ -3728,40 +4522,71 @@ if (window.drawReason) {
 
         const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-        // Determina a base da fala: pode ser um array customizado, um grupo de TAUNTS ou uma string simples
-        let base;
+        // Determina a base da fala a ser exibida
+        let base = '';
+        let usedSpeechManager = false;
+
         if (Array.isArray(group)) {
           base = pick(group);
-        } else if (TAUNTS[group]) {
-          base = pick(TAUNTS[group]);
-        } else {
-          base = typeof group === 'string' ? group : '';
+        } else if (typeof group === 'string') {
+          const key = group.toLowerCase();
+          // Mapeamento de grupos simples (em inglês e português) para eventos do SpeechManager
+          const eventMap = {
+            start: 'inicio', inicio: 'inicio',
+            capture: 'captura', captura: 'captura',
+            promo: 'promocao', promotion: 'promocao', promocao: 'promocao',
+            ahead: 'ganhando', ganhando: 'ganhando', winning: 'ganhando',
+            behind: 'perdendo', perdendo: 'perdendo', losing: 'perdendo',
+            even: 'equilibrado', equilibrado: 'equilibrado', balanced: 'equilibrado',
+            win: 'vitoria', victory: 'vitoria', vitoria: 'vitoria',
+            lose: 'derrota', loss: 'derrota', defeat: 'derrota', derrota: 'derrota',
+            draw: 'empate', empate: 'empate',
+            resign: 'desistencia', resignation: 'desistencia', desistir: 'desistencia', desistencia: 'desistencia'
+          };
+          const eventKey = eventMap[key];
+          if (eventKey) {
+            usedSpeechManager = true;
+            try {
+              const modo = (localStorage.getItem('modoFala') || 'regional').toLowerCase();
+              const diffRaw = (localStorage.getItem('difficulty') || 'easy').toLowerCase();
+              const diffMap = { easy: 'facil', fácil: 'facil', facil: 'facil', medium: 'medio', medio: 'medio', hard: 'dificil', dificil: 'dificil', master: 'mestre' };
+              const diffKey = diffMap[diffRaw] || 'facil';
+              const phrase = SpeechManager.getPhrase(modo, diffKey, eventKey);
+              base = phrase || '';
+            } catch (_) {
+              base = '';
+            }
+          } else if (TAUNTS[group]) {
+            base = pick(TAUNTS[group]);
+          } else {
+            base = group;
+          }
         }
 
-        // Recupera a sigla de região e normaliza
-        const region = (localStorage.getItem('region') || '').toLowerCase();
-        let regionPhrase = '';
-        if (region && REGIONAL_PHRASES[region]) {
-          // Seleciona categoria conforme o grupo: ahead/behind usam suas próprias listas
-          let cat = 'generic';
-          if (group === 'ahead' && REGIONAL_PHRASES[region].ahead) cat = 'ahead';
-          else if (group === 'behind' && REGIONAL_PHRASES[region].behind) cat = 'behind';
-          const arr = REGIONAL_PHRASES[region][cat] || REGIONAL_PHRASES[region].generic;
-          regionPhrase = pick(arr);
-        }
-
-        // Recupera a dificuldade para escolher uma frase correspondente
-        const diff = (localStorage.getItem('difficulty') || '').toLowerCase();
-        let diffPhrase = '';
-        if (diff && DIFFICULTY_PHRASES[diff]) {
-          diffPhrase = pick(DIFFICULTY_PHRASES[diff]);
-        }
-
-        // Constrói o texto completo, concatenando as partes disponíveis
+        // Constrói o texto completo. Se usou SpeechManager, evita concatenar frases adicionais
         const parts = [];
         if (base) parts.push(base);
-        if (regionPhrase) parts.push(regionPhrase);
-        if (diffPhrase) parts.push(diffPhrase);
+
+        if (!usedSpeechManager) {
+          // Frases regionais adicionais (opcional)
+          const region = (localStorage.getItem('region') || '').toLowerCase();
+          if (region && REGIONAL_PHRASES[region]) {
+            let cat = 'generic';
+            if (group === 'ahead' && REGIONAL_PHRASES[region].ahead) cat = 'ahead';
+            else if (group === 'behind' && REGIONAL_PHRASES[region].behind) cat = 'behind';
+            const arr = REGIONAL_PHRASES[region][cat] || REGIONAL_PHRASES[region].generic;
+            const regionPhrase = pick(arr);
+            if (regionPhrase) parts.push(regionPhrase);
+          }
+
+          // Frases baseadas na dificuldade (opcional)
+          const diffStored = (localStorage.getItem('difficulty') || '').toLowerCase();
+          if (diffStored && DIFFICULTY_PHRASES[diffStored]) {
+            const diffPhrase = pick(DIFFICULTY_PHRASES[diffStored]);
+            if (diffPhrase) parts.push(diffPhrase);
+          }
+        }
+
         if (extra) parts.push(extra);
         const text = parts.join(' ');
 
@@ -4354,6 +5179,10 @@ if (window.drawReason) {
             }
 
             // 💡 Em jogo IA normal, IA provoca
+            // Fala da IA no balão usando SpeechManager para o evento 'desistencia'
+            try {
+              say('desistencia');
+            } catch(_) {}
             const frasesDesistencia = [
               "Fugindo da lógica? Eu ainda estava me aquecendo.",
               "Abandonar é uma jogada... previsível.",
@@ -4393,6 +5222,8 @@ if (window.drawReason) {
 
             // ⭐️ MODIFICAÇÃO: Aumentado o tempo para 4s para dar tempo de ler
             setTimeout(() => {
+              // Garante flush imediato da IA ao desistir, se houver alterações pendentes
+              try { flushAISave(); } catch(_) {}
               showOverlay("", false);
               returnToMenu(); // Chama a função helper
             }, 4000); // Era 3000
