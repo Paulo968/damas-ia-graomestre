@@ -319,20 +319,21 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           </div>
         </div>
 
-        <!-- Seletor de Região (NOVO) -->
-        <div class="text-center mb-4 w-60" id="regionContainer">
-          <p class="mb-2 text-slate-400">Sua Região:</p>
-          <select id="regionSelect" class="bg-slate-800 border border-cyan-400/40 text-white px-4 py-2 rounded-lg w-60">
-            <option value="">Padrão (Brasil)</option>
-            <option value="mg">Minas Gerais</option>
-            <option value="ba">Bahia</option>
-            <option value="sp">São Paulo</option>
-            <option value="rj">Rio de Janeiro</option>
-            <option value="rs">Rio Grande do Sul</option>
-            <option value="pe">Pernambuco</option>
-            <option value="ce">Ceará</option>
-            <option value="pa">Pará</option>
+        <!-- Seletor de Modo de Fala -->
+        <div class="text-center mb-4 w-60" id="speechModeContainer">
+          <p class="mb-2 text-slate-400">Modo de Fala:</p>
+          <!-- Select escondido que armazena o modo -->
+          <select id="speechMode" class="hidden bg-slate-800 border border-cyan-400/40 text-white px-4 py-2 rounded-lg w-60">
+            <option value="brasil">Brasil</option>
+            <option value="anime">Anime</option>
+            <option value="tecnico">Técnico</option>
           </select>
+          <!-- Botões para escolher o modo de fala -->
+          <div class="btn-group grid grid-cols-3" data-target-select="speechMode">
+            <button type="button" data-value="brasil">Brasil</button>
+            <button type="button" data-value="anime">Anime</button>
+            <button type="button" data-value="tecnico">Técnico</button>
+          </div>
         </div>
 
         <!-- 
@@ -4949,14 +4950,14 @@ if (window.drawReason) {
         const savedDiff = localStorage.getItem('difficulty') || 'medium';
         const savedRule = localStorage.getItem('captureRule') || 'sim';
 
-        // 🔹 Lê a região salva e define o valor do seletor
-        const selectRegion = document.getElementById('regionSelect');
-        const savedRegion = localStorage.getItem('region') || '';
-        if (selectRegion) {
-          selectRegion.value = savedRegion;
+        // 🔹 Lê o modo de fala salvo e define o valor do seletor (padrão: 'brasil')
+        const selectSpeechMode = document.getElementById('speechMode');
+        const savedSpeechMode = localStorage.getItem('speechMode') || 'brasil';
+        if (selectSpeechMode) {
+          selectSpeechMode.value = savedSpeechMode;
           // ao alterar, atualiza o localStorage
-          selectRegion.addEventListener('change', (e) => {
-            localStorage.setItem('region', e.target.value);
+          selectSpeechMode.addEventListener('change', (e) => {
+            localStorage.setItem('speechMode', e.target.value);
           });
         }
 
@@ -4999,8 +5000,18 @@ if (window.drawReason) {
             const newValue = clickedButton.dataset.value;
             
             // 🎯 Atualiza o <select> oculto (AQUI ESTÁ A MÁGICA)
-            // A lógica de "Iniciar Jogo" vai ler isso e funcionar perfeitamente
+            // A lógica de "Iniciar Jogo" e o listener de mudança vão ler isso e funcionar perfeitamente
             targetSelect.value = newValue;
+            // 🚀 Dispara evento de mudança para que o modo de fala seja persistido no localStorage
+            // e quaisquer outras lógicas baseadas em "change" sejam executadas.
+            try {
+              targetSelect.dispatchEvent(new Event('change'));
+            } catch (err) {
+              // Fallback para navegadores antigos
+              const evt = document.createEvent('HTMLEvents');
+              evt.initEvent('change', true, true);
+              targetSelect.dispatchEvent(evt);
+            }
             
             // 🎨 ADIÇÃO: Atualiza o texto da explicação (Pedido 2)
             if (selectId === 'captureRule' && ruleExplanation) {
