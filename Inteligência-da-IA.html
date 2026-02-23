@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Damas vs IA // Arquivos do Sistema v3.6 (Fixed)</title>
 
     <!-- Tailwind CSS -->
@@ -22,14 +22,25 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        html, body {
+            height: 100%;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #020617;
             color: #e2e8f0;
             margin: 0;
-            overflow-x: hidden;
-            overflow-y: auto;
+            overflow: hidden; /* Scroll do sistema travado, app assume o controle */
         }
+        
+        #root {
+            height: 100dvh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -51,10 +62,10 @@
     </style>
 </head>
 <body>
-    <div id="root" class="min-h-[100dvh] w-full flex flex-col"></div>
+    <div id="root" class="h-[100dvh] w-full flex flex-col overflow-y-auto overflow-x-hidden custom-scrollbar"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
 
         // --- ÍCONES SVG ---
         const Icons = {
@@ -468,6 +479,25 @@
         // --- VISUALIZADOR DE MAPA MENTAL VIVO ---
         const MindMapView = ({ onBack }) => {
             const [activeNodeId, setActiveNodeId] = useState(null);
+            const containerRef = useRef(null);
+            const [mapScale, setMapScale] = useState(1);
+
+            const hex = {
+                cyan: '#22d3ee', emerald: '#34d399', orange: '#fb923c', purple: '#c084fc',
+                red: '#f87171', yellow: '#facc15', pink: '#f472b6', indigo: '#818cf8',
+                blue: '#60a5fa', teal: '#14b8a6', rose: '#f43f5e', green: '#22c55e', slate: '#94a3b8'
+            };
+
+            useEffect(() => {
+                const handleResize = () => {
+                    // Cálculo inteligente da escala usando a largura real do contêiner e não apenas a janela toda
+                    const w = containerRef.current?.clientWidth || window.innerWidth;
+                    setMapScale(Math.max(0.85, w / 1000));
+                };
+                handleResize();
+                window.addEventListener('resize', handleResize);
+                return () => window.removeEventListener('resize', handleResize);
+            }, []);
 
             const getNodeData = (id) => {
                 const mod = modules.find(m => m.id === id);
@@ -540,6 +570,12 @@
                                   linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px)`,
             };
 
+            const BASE_W = 1000;
+            // Expandido para 900 para dar espaço ao nó de Coach (y=600 + labels/glow)
+            const BASE_H = 900;
+            const scaledW = Math.round(BASE_W * mapScale);
+            const scaledH = Math.round(BASE_H * mapScale);
+
             return (
                 <div className="fixed inset-0 z-50 bg-[#050a10] flex flex-col animate-in">
                     <div className="absolute top-0 left-0 w-full p-4 sm:p-6 flex justify-between items-start z-40 pointer-events-none">
@@ -556,74 +592,89 @@
                     <div className="w-full h-full relative flex" style={bgStyle}>
                          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-900/5 to-transparent pointer-events-none"></div>
                          
-                         {/* Container com scroll nativo para o SVG não esmagar no mobile */}
-                         <div className="flex-1 relative overflow-auto custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }} onClick={() => activeNodeId && setActiveNodeId(null)}>
-                             <svg className="min-w-[900px] min-h-[700px] w-full h-full" style={{ transform: 'translateZ(0)', willChange: 'transform' }} viewBox="0 -80 1000 780" preserveAspectRatio="xMidYMid slice">
-                                {/* Defs Removidos: Filtros feGaussianBlur causam gargalos massivos de CPU/GPU em animações vetoriais e foram substituídos por camadas opacas. */}
+                         {/* Container destravado com zoom calculado na dimensão física */}
+                         <div 
+                            ref={containerRef} 
+                            className="flex-1 relative overflow-auto custom-scrollbar" 
+                            style={{ WebkitOverflowScrolling: 'touch' }} 
+                            onClick={(e) => {
+                                // só fecha se clicar exatamente no container de fundo
+                                if (e.target === e.currentTarget && activeNodeId) setActiveNodeId(null);
+                            }}
+                        >
+                             <div style={{ width: scaledW, height: scaledH, transform: 'translateZ(0)', willChange: 'transform' }}>
+                                 <svg width={scaledW} height={scaledH} viewBox="0 -80 1000 900" preserveAspectRatio="xMidYMid meet">
+                                    {/* Connections */}
+                                    {topologyData.connections.map((conn, i) => {
+                                        const start = topologyData.nodes[conn.from];
+                                        const end = topologyData.nodes[conn.to];
+                                        if(!start || !end) return null; 
+                                        const isActive = activeNodeId && (conn.from === activeNodeId || conn.to === activeNodeId);
+                                        const isDimmed = activeNodeId && !isActive;
+                                        const hexColor = hex[start.color] || '#94a3b8';
 
-                                {/* Connections */}
-                                {topologyData.connections.map((conn, i) => {
-                                    const start = topologyData.nodes[conn.from];
-                                    const end = topologyData.nodes[conn.to];
-                                    if(!start || !end) return null; 
-                                    const isActive = activeNodeId && (conn.from === activeNodeId || conn.to === activeNodeId);
-                                    const isDimmed = activeNodeId && !isActive;
-                                    const hexColor = { cyan: '#22d3ee', emerald: '#34d399', orange: '#fb923c', purple: '#c084fc', red: '#f87171', yellow: '#facc15', pink: '#f472b6', indigo: '#818cf8', blue: '#60a5fa', teal: '#14b8a6', rose: '#f43f5e', green: '#22c55e' }[start.color] || '#94a3b8';
+                                        const pathD = `M${start.x},${start.y} L${end.x},${end.y}`;
 
-                                    const pathD = `M${start.x},${start.y} L${end.x},${end.y}`;
-
-                                    return (<g key={`conn-${i}-${conn.from}-${conn.to}`} className="transition-all duration-500" style={{opacity: isDimmed ? 0.1 : 1}}>
-                                        <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke={isActive ? '#334155' : '#1e293b'} strokeWidth={isActive ? 3 : 2} />
-                                        {/* Removido o filtro de blur no pacote móvel para ganho massivo de FPS */}
-                                        <circle r={isActive ? 4 : 2.5} fill={hexColor}>
-                                            <animateMotion 
-                                                dur={`${1.5 + (i % 3) * 0.5}s`} 
-                                                repeatCount="indefinite" 
-                                                path={pathD} 
-                                                calcMode="linear"
-                                            />
-                                        </circle>
-                                    </g>);
-                                })}
-
-                                {/* Nodes */}
-                                {Object.entries(topologyData.nodes).map(([key, node]) => {
-                                    if(!node) return null;
-                                    const isActive = activeNodeId === key;
-                                    const isDimmed = activeNodeId && !isActive && !activeConnections.some(c => c.from === key || c.to === key);
-                                    const hexColor = { cyan: '#22d3ee', emerald: '#34d399', orange: '#fb923c', purple: '#c084fc', red: '#f87171', yellow: '#facc15', pink: '#f472b6', indigo: '#818cf8', blue: '#60a5fa', teal: '#14b8a6', rose: '#f43f5e', green: '#22c55e' }[node.color] || '#94a3b8';
-
-                                    return (
-                                        <g key={`node-${key}`} onClick={(e) => { e.stopPropagation(); handleNodeClick(key); }} className="cursor-pointer transition-all duration-300" style={{opacity: isDimmed ? 0.2 : 1}}>
-                                            <circle cx={node.x} cy={node.y} r="50" fill={hexColor} opacity="0">
-                                                <animate attributeName="opacity" values="0;0.15;0" dur="3s" repeatCount="indefinite" begin={`${(node.x % 5) / 5}s`} />
-                                                <animate attributeName="r" values="35;55;35" dur="3s" repeatCount="indefinite" begin={`${(node.y % 5) / 5}s`} />
+                                        return (<g key={`conn-${i}-${conn.from}-${conn.to}`} className="transition-all duration-500" style={{opacity: isDimmed ? 0.1 : 1}}>
+                                            <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke={isActive ? '#334155' : '#1e293b'} strokeWidth={isActive ? 3 : 2} />
+                                            
+                                            {/* Desktop motion */}
+                                            <circle r={isActive ? 4 : 2.5} fill={hexColor} className="hidden sm:block">
+                                                <animateMotion 
+                                                    dur={`${1.5 + (i % 3) * 0.5}s`} 
+                                                    repeatCount="indefinite" 
+                                                    path={pathD} 
+                                                    calcMode="linear"
+                                                />
                                             </circle>
 
-                                            {/* Fake Glow estático super leve para GPU em vez de feGaussianBlur */}
-                                            <circle cx={node.x} cy={node.y} r={isActive ? 48 : 42} fill={hexColor} opacity={isActive ? "0.25" : "0.08"} className="transition-all duration-300" />
-                                            
-                                            {/* Core Node */}
-                                            <circle cx={node.x} cy={node.y} r={isActive ? 40 : 35} fill="#0f172a" stroke={hexColor} strokeWidth={isActive ? 3 : 2} className="transition-all duration-300" />
+                                            {/* Mobile fallback (fixo no meio da linha pulsando, zero impacto de FPS) */}
+                                            <circle
+                                                cx={(start.x + end.x) / 2}
+                                                cy={(start.y + end.y) / 2}
+                                                r={2.5}
+                                                fill={hexColor}
+                                                className="sm:hidden animate-pulse"
+                                            />
+                                        </g>);
+                                    })}
 
-                                            <foreignObject x={node.x - 15} y={node.y - 15} width="30" height="30">
-                                                <div className="text-white flex justify-center items-center h-full pointer-events-none">
-                                                    <Icon name={node.iconName} size={30} className="drop-shadow-lg" style={{color: isActive ? '#fff' : hexColor}} />
-                                                </div>
-                                            </foreignObject>
+                                    {/* Nodes */}
+                                    {Object.entries(topologyData.nodes).map(([key, node]) => {
+                                        if(!node) return null;
+                                        const isActive = activeNodeId === key;
+                                        const isDimmed = activeNodeId && !isActive && !activeConnections.some(c => c.from === key || c.to === key);
+                                        const hexColor = hex[node.color] || '#94a3b8';
 
-                                            <text x={node.x} y={node.y + 60} textAnchor="middle" fill={isActive ? "#fff" : hexColor} fontSize="12" fontWeight="bold" letterSpacing="1" style={{textShadow: `0 0 15px ${hexColor}`}}>{node.label}</text>
-                                        </g>
-                                    );
-                                })}
-                             </svg>
+                                        return (
+                                            <g key={`node-${key}`} onClick={(e) => { e.stopPropagation(); handleNodeClick(key); }} className="cursor-pointer transition-all duration-300" style={{opacity: isDimmed ? 0.2 : 1}}>
+                                                <circle cx={node.x} cy={node.y} r="50" fill={hexColor} opacity="0">
+                                                    <animate attributeName="opacity" values="0;0.15;0" dur="3s" repeatCount="indefinite" begin={`${(node.x % 5) / 5}s`} />
+                                                    <animate attributeName="r" values="35;55;35" dur="3s" repeatCount="indefinite" begin={`${(node.y % 5) / 5}s`} />
+                                                </circle>
+
+                                                <circle cx={node.x} cy={node.y} r={isActive ? 48 : 42} fill={hexColor} opacity={isActive ? "0.25" : "0.08"} className="transition-all duration-300" />
+                                                
+                                                <circle cx={node.x} cy={node.y} r={isActive ? 40 : 35} fill="#0f172a" stroke={hexColor} strokeWidth={isActive ? 3 : 2} className="transition-all duration-300" />
+
+                                                <foreignObject x={node.x - 15} y={node.y - 15} width="30" height="30">
+                                                    <div className="text-white flex justify-center items-center h-full pointer-events-none">
+                                                        <Icon name={node.iconName} size={30} className="drop-shadow-lg" style={{color: isActive ? '#fff' : hexColor}} />
+                                                    </div>
+                                                </foreignObject>
+
+                                                <text x={node.x} y={node.y + 60} textAnchor="middle" fill={isActive ? "#fff" : hexColor} fontSize="12" fontWeight="bold" letterSpacing="1" style={{textShadow: `0 0 15px ${hexColor}`}}>{node.label}</text>
+                                            </g>
+                                        );
+                                    })}
+                                 </svg>
+                             </div>
                          </div>
                          
                          {/* Painel Lateral Mobile/Desktop */}
                          {activeNodeId && (
                              <div className="fixed inset-0 md:absolute md:inset-auto md:right-0 md:top-0 md:bottom-0 w-full md:w-96 bg-black/80 md:bg-slate-900/95 border-l border-slate-800 p-6 overflow-y-auto backdrop-blur-md shadow-2xl animate-[fadeIn_0.3s_ease-out] pt-20 md:pt-24 z-50 custom-scrollbar">
                                 
-                                {/* Botão Voltar para Mobile Exclusivo */}
                                 <button onClick={(e) => { e.stopPropagation(); setActiveNodeId(null); }} className="md:hidden flex items-center gap-2 text-slate-400 mb-6 bg-slate-800/50 p-3 rounded-lg active:scale-95 transition-transform duration-150 w-full justify-center">
                                     <Icon name="ChevronLeft" size={16} /> 
                                     <span className="text-xs font-bold tracking-widest uppercase">Fechar Painel</span>
@@ -631,7 +682,8 @@
 
                                 <div className="mb-6 pb-4 border-b border-slate-800">
                                     <h3 className="text-sm text-slate-500 font-mono uppercase mb-1">Nó Selecionado</h3>
-                                    <h2 className="text-2xl font-black text-white" style={{color: topologyData.nodes[activeNodeId].color}}>{topologyData.nodes[activeNodeId].title}</h2>
+                                    {/* Mapeamento de cor HEX agora corrige o bug do CSS inválido */}
+                                    <h2 className="text-2xl font-black text-white" style={{color: hex[topologyData.nodes[activeNodeId].color] || '#fff'}}>{topologyData.nodes[activeNodeId].title}</h2>
                                     <p className="text-xs text-slate-400 mt-1">{topologyData.nodes[activeNodeId].creator.role}</p>
                                 </div>
                                 <div className="space-y-4">
@@ -664,15 +716,31 @@
             const colorClass = themeColors[module.color] || themeColors.cyan;
             const baseColor = colorClass.split(' ')[0]; 
 
+            const toColor = {
+                cyan: 'to-cyan-500',
+                emerald: 'to-emerald-500',
+                orange: 'to-orange-500',
+                purple: 'to-purple-500',
+                red: 'to-red-500',
+                yellow: 'to-yellow-500',
+                pink: 'to-pink-500',
+                indigo: 'to-indigo-500',
+                blue: 'to-blue-500',
+                teal: 'to-teal-500',
+                rose: 'to-rose-500',
+                green: 'to-green-500',
+                slate: 'to-slate-500',
+            }[module.color] || 'to-cyan-500';
+
             const isStatusGuide = module.id === 'status_guide';
 
             return (
-                <div className="animate-in h-full flex flex-col relative overflow-hidden"> 
+                <div className="animate-in flex-1 min-h-0 flex flex-col relative"> 
                     <div className="shrink-0 flex items-center justify-between mb-4 border-b border-slate-800 pb-4">
                         <button onClick={onBack} className="flex items-center gap-2 text-slate-400 hover:text-white transition-all duration-150 active:scale-95 group px-3 py-2 rounded hover:bg-slate-900"><Icon name="ChevronLeft" className="group-hover:-translate-x-1 transition-transform" size={20} /><span className="text-xs font-mono uppercase tracking-widest">Voltar ao Hub</span></button>
                         <div className="hidden md:flex gap-2"><span className="text-[10px] font-mono text-slate-600 uppercase self-center mr-2">Secure Connection</span><div className="w-2 h-2 bg-green-500 rounded-full self-center animate-pulse"></div></div>
                     </div>
-                    <div className="flex-1 overflow-y-auto pb-32 pr-2 custom-scrollbar">
+                    <div className="flex-1 min-h-0 pb-32 pr-2">
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                             <div className="lg:col-span-8 space-y-6">
                                 <div className="flex flex-col sm:flex-row items-start gap-6">
@@ -715,7 +783,7 @@
                                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-5">
                                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2"><Icon name="BarChart" size={14} /> Carga Computacional</h3>
                                     <div className="relative h-2 bg-slate-800 rounded-full overflow-hidden mb-1">
-                                        <div className={`absolute top-0 left-0 h-full bg-gradient-to-r from-slate-500 to-${module.color}-500`} style={{width: `${module.complexity || 50}%`}}></div>
+                                        <div className={`absolute top-0 left-0 h-full bg-gradient-to-r from-slate-500 ${toColor}`} style={{width: `${module.complexity || 50}%`}}></div>
                                     </div>
                                     <div className="flex justify-between text-[10px] font-mono text-slate-500"><span>Idle</span><span>Max Load: {module.complexity}%</span></div>
                                 </div>
@@ -745,7 +813,7 @@
         };
 
         const MainGrid = ({ onSelect }) => (
-            <div className="h-full overflow-y-auto pb-32 pr-2 custom-scrollbar">
+            <div className="flex-1 min-h-0 pb-32 pr-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 animate-in">
                     {modules.map((mod) => {
                         const colorClasses = { cyan: 'hover:border-cyan-500/50 group-hover:text-cyan-400', emerald: 'hover:border-emerald-500/50 group-hover:text-emerald-400', orange: 'hover:border-orange-500/50 group-hover:text-orange-400', purple: 'hover:border-purple-500/50 group-hover:text-purple-400', red: 'hover:border-red-500/50 group-hover:text-red-400', yellow: 'hover:border-yellow-500/50 group-hover:text-yellow-400', pink: 'hover:border-pink-500/50 group-hover:text-pink-400', indigo: 'hover:border-indigo-500/50 group-hover:text-indigo-400', blue: 'hover:border-blue-500/50 group-hover:text-blue-400', teal: 'hover:border-teal-500/50 group-hover:text-teal-400', rose: 'hover:border-rose-500/50 group-hover:text-rose-400', green: 'hover:border-green-500/50 group-hover:text-green-400', slate: 'hover:border-slate-500/50 group-hover:text-slate-400' };
@@ -772,8 +840,8 @@
             if (hasError) return <div className="text-red-500 p-10">Erro Crítico no Sistema. Recarregue a página.</div>;
 
             return (
-                <div className="flex-1 flex flex-col text-slate-200 font-sans selection:bg-cyan-500/30 bg-[#050a10] pb-16">
-                    <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 relative z-10 overflow-hidden flex flex-col">
+                <div className="flex-1 flex flex-col text-slate-200 font-sans selection:bg-cyan-500/30 bg-[#050a10]">
+                    <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 md:p-8 relative z-10 flex flex-col pb-[calc(72px+env(safe-area-inset-bottom))]">
                         {!activeModule && (
                             <header className="shrink-0 mb-4 border-b border-slate-800/50 pb-4 animate-in px-2 md:px-0">
                                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -808,11 +876,14 @@
                             </div>
                         )}
 
-                        <div className="flex-1 overflow-hidden relative">
+                        {/* min-h-0 é crucial aqui para as barras de rolagem dos filhos funcionarem corretamente */}
+                        <div className="flex-1 relative min-h-0 flex flex-col">
                             {activeModule && activeModule.id === 'mindmap' ? (<MindMapView onBack={() => setActiveModule(null)} />) : activeModule ? (<DetailView module={activeModule} onBack={() => setActiveModule(null)} />) : (<MainGrid onSelect={setActiveModule} />)}
                         </div>
                     </div>
-                    <div className="fixed bottom-0 left-0 w-full bg-[#020617] border-t border-slate-800 px-4 sm:px-6 py-2 z-50 flex justify-between items-center text-[10px] font-mono text-slate-500 uppercase tracking-wider select-none">
+                    
+                    {/* Footer com cálculo de env safe-area para evitar sobreposição */}
+                    <div className="fixed bottom-0 left-0 w-full bg-[#020617] border-t border-slate-800 px-4 sm:px-6 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))] z-50 flex justify-between items-center text-[10px] font-mono text-slate-500 uppercase tracking-wider select-none">
                         <div className="flex items-center gap-2 sm:gap-4">
                             <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div> SYSTEM: STABLE</span>
                             <span className="hidden md:inline">MEM: 128.4 MB</span>
