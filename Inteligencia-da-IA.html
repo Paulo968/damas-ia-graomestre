@@ -476,11 +476,22 @@
             }
         ];
 
-        // --- VISUALIZADOR DE MAPA MENTAL VIVO ---
+        // --- VISUALIZADOR DE MAPA MENTAL VIVO (ÁRVORE HIERÁRQUICA E RESPONSIVA) ---
         const MindMapView = ({ onBack }) => {
             const [activeNodeId, setActiveNodeId] = useState(null);
             const containerRef = useRef(null);
-            const [mapScale, setMapScale] = useState(1);
+            
+            // Estado para gerenciar qual conjunto de coordenadas usar
+            const [mobileLayout, setMobileLayout] = useState(false);
+
+            useEffect(() => {
+                const handleResize = () => {
+                    setMobileLayout(window.innerWidth < 768);
+                };
+                handleResize();
+                window.addEventListener('resize', handleResize);
+                return () => window.removeEventListener('resize', handleResize);
+            }, []);
 
             const hex = {
                 cyan: '#22d3ee', emerald: '#34d399', orange: '#fb923c', purple: '#c084fc',
@@ -488,69 +499,82 @@
                 blue: '#60a5fa', teal: '#14b8a6', rose: '#f43f5e', green: '#22c55e', slate: '#94a3b8'
             };
 
-            useEffect(() => {
-                const handleResize = () => {
-                    // Cálculo inteligente da escala usando a largura real do contêiner e não apenas a janela toda
-                    const w = containerRef.current?.clientWidth || window.innerWidth;
-                    setMapScale(Math.max(0.85, w / 1000));
-                };
-                handleResize();
-                window.addEventListener('resize', handleResize);
-                return () => window.removeEventListener('resize', handleResize);
-            }, []);
-
             const getNodeData = (id) => {
                 const mod = modules.find(m => m.id === id);
                 return mod ? { ...mod, label: mod.title.split(' ')[0] } : null;
             };
 
+            // Função helper que resolve as coordenadas dinamicamente
+            const getPos = (desktopX, desktopY, mobileX, mobileY) => {
+                return mobileLayout ? { x: mobileX, y: mobileY } : { x: desktopX, y: desktopY };
+            };
+
+            // TOPOLOGIA DINÂMICA: Organizada em Árvore
+            // Desktop: Grafo largo (espinha dorsal central Y=400)
+            // Mobile: Grafo longo (scroll vertical fluido, 3 colunas baseadas no X)
             const topologyData = {
                 nodes: {
-                    // Eixo Central (Motor)
-                    multicore: { x: 450, y: 100, ...getNodeData('multicore') },
-                    core: { x: 450, y: 350, ...getNodeData('core') },
-                    coach: { x: 450, y: 600, ...getNodeData('coach') },
+                    // CAMADA 1: Controles e Motores Iniciais
+                    reset:         { ...getNodeData('smart_reset'),      ...getPos(150, 150,  150, 250) },
+                    status:        { ...getNodeData('status_guide'),     ...getPos(375, 150,  150, 400) },
+                    multicore:     { ...getNodeData('multicore'),        ...getPos(600, 150,  300, 100) },
+                    selector:      { ...getNodeData('region_selector'),  ...getPos(825, 150,  450, 250) },
+                    debug:         { ...getNodeData('debug_profile'),    ...getPos(1050, 150, 450, 400) },
                     
-                    // Lado Esquerdo (Otimização e Engine)
-                    time: { x: 200, y: 200, ...getNodeData('time_adapt') },
-                    depth: { x: 200, y: 350, ...getNodeData('depth_adapt') },
-                    symmetry: { x: 200, y: 500, ...getNodeData('symmetry') },
+                    // CAMADA 2: IA Core e Otimizações de Engine
+                    depth:         { ...getNodeData('depth_adapt'),      ...getPos(150, 400,  150, 700) },
+                    symmetry:      { ...getNodeData('symmetry'),         ...getPos(375, 400,  450, 700) },
+                    core:          { ...getNodeData('core'),             ...getPos(600, 400,  300, 550) },
+                    time:          { ...getNodeData('time_adapt'),       ...getPos(825, 400,  150, 850) },
+                    taunts:        { ...getNodeData('regional_taunts'),  ...getPos(1050, 400, 450, 850) },
                     
-                    // Lado Direito (Dados e Memória)
-                    telemetry: { x: 700, y: 350, ...getNodeData('telemetry') },
-                    consolidation: { x: 700, y: 500, ...getNodeData('consolidation') },
-                    persistence: { x: 850, y: 425, ...getNodeData('state_persistence') },
+                    // CAMADA 3: Análises de Estado e Nuvem
+                    telemetry:     { ...getNodeData('telemetry'),        ...getPos(466, 700,  300, 1000) },
+                    context:       { ...getNodeData('context_speech'),   ...getPos(733, 700,  300, 1450) },
+                    coach:         { ...getNodeData('coach'),            ...getPos(200, 700,  150, 1150) },
+                    enhanced:      { ...getNodeData('context_enhanced'), ...getPos(1000, 700, 300, 1600) },
                     
-                    // Seção de Contexto e UX (Canto Superior Direito)
-                    context: { x: 700, y: 200, ...getNodeData('context_speech') },
-                    enhanced: { x: 850, y: 100, ...getNodeData('context_enhanced') },
-                    taunts: { x: 850, y: 250, ...getNodeData('regional_taunts') },
-                    
-                    // Menus e Interfaces (Canto Esquerdo e Extremos)
-                    selector: { x: 50, y: 150, ...getNodeData('region_selector') },
-                    status: { x: 50, y: 350, ...getNodeData('status_guide') },
-                    debug: { x: 50, y: 550, ...getNodeData('debug_profile') },
-                    reset: { x: 450, y: -20, ...getNodeData('smart_reset') }
+                    // CAMADA 4: Banco de Dados e Consciência
+                    consolidation: { ...getNodeData('consolidation'),    ...getPos(466, 1000, 450, 1150) },
+                    persistence:   { ...getNodeData('state_persistence'),...getPos(733, 1000, 300, 1300) }
                 },
                 connections: [
-                    { from: 'multicore', to: 'core', desc: 'Distribuição de Chunks' },
-                    { from: 'core', to: 'telemetry', desc: 'Envio de Métricas' },
-                    { from: 'core', to: 'depth', desc: 'Ajuste de Horizonte' },
-                    { from: 'core', to: 'time', desc: 'Orçamento de Tempo' },
+                    // Fluxo Principal (Espinha Dorsal)
+                    { from: 'multicore', to: 'core', desc: 'Distribuição Chunks' },
+                    { from: 'core', to: 'telemetry', desc: 'Envio Métricas' },
+                    { from: 'core', to: 'depth', desc: 'Ajuste Horizonte' },
+                    { from: 'core', to: 'time', desc: 'Orçamento Tempo' },
                     { from: 'core', to: 'symmetry', desc: 'Filtro Geométrico' },
-                    { from: 'telemetry', to: 'coach', desc: 'Dados de Partida' },
-                    { from: 'multicore', to: 'consolidation', desc: 'Merge de Treino' },
-                    { from: 'telemetry', to: 'persistence', desc: 'Sincronização Cloud' },
-                    { from: 'consolidation', to: 'persistence', desc: 'Salvar Pesos Híbridos' },
-                    { from: 'core', to: 'context', desc: 'Estado -> Narrativa' },
-                    { from: 'context', to: 'enhanced', desc: 'Análise de Sacrifícios' },
-                    { from: 'context', to: 'taunts', desc: 'Modulador de Personalidade' },
-                    { from: 'selector', to: 'taunts', desc: 'Preferência do Usuário' },
-                    { from: 'status', to: 'core', desc: 'Monitor de Estabilidade' },
-                    { from: 'core', to: 'debug', desc: 'Vazamento de Variáveis' },
-                    { from: 'reset', to: 'multicore', desc: 'Purga de Memória' }
+                    
+                    // Nuvem / Dados
+                    { from: 'telemetry', to: 'coach', desc: 'Dados Partida' },
+                    { from: 'multicore', to: 'consolidation', desc: 'Merge Pesos' },
+                    { from: 'telemetry', to: 'persistence', desc: 'Sync Cloud' },
+                    { from: 'consolidation', to: 'persistence', desc: 'Salvar Híbrido' },
+                    
+                    // Narrativa
+                    { from: 'core', to: 'context', desc: 'Estado -> Fala' },
+                    { from: 'context', to: 'enhanced', desc: 'Análise Extra' },
+                    { from: 'context', to: 'taunts', desc: 'Modulador' },
+                    { from: 'selector', to: 'taunts', desc: 'Preferência' },
+                    
+                    // Sistema
+                    { from: 'status', to: 'core', desc: 'Monitor' },
+                    { from: 'core', to: 'debug', desc: 'Variáveis Livres' },
+                    { from: 'reset', to: 'multicore', desc: 'Purga Memória' }
                 ]
             };
+
+            // Cálculo automatizado do ViewBox perfeito baseado na topologia ativa
+            const padding = 150; 
+            const nodesArr = Object.values(topologyData.nodes);
+            const minX = Math.min(...nodesArr.map(n => n.x));
+            const maxX = Math.max(...nodesArr.map(n => n.x));
+            const minY = Math.min(...nodesArr.map(n => n.y));
+            const maxY = Math.max(...nodesArr.map(n => n.y));
+            const vbWidth = (maxX - minX) + (padding * 2);
+            const vbHeight = (maxY - minY) + (padding * 2);
+            const viewBox = `${minX - padding} ${minY - padding} ${vbWidth} ${vbHeight}`;
 
             const activeConnections = useMemo(() => {
                 if (!activeNodeId) return [];
@@ -563,18 +587,6 @@
                 if (activeNodeId) setActiveNodeId(null);
                 else onBack();
             };
-
-            const bgStyle = {
-                backgroundSize: '50px 50px',
-                backgroundImage: `linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                                  linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px)`,
-            };
-
-            const BASE_W = 1000;
-            // Expandido para 900 para dar espaço ao nó de Coach (y=600 + labels/glow)
-            const BASE_H = 900;
-            const scaledW = Math.round(BASE_W * mapScale);
-            const scaledH = Math.round(BASE_H * mapScale);
 
             return (
                 <div className="fixed inset-0 z-50 bg-[#050a10] flex flex-col animate-in">
@@ -589,86 +601,111 @@
                         </div>
                     </div>
                     
-                    <div className="w-full h-full relative flex" style={bgStyle}>
-                         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-blue-900/5 to-transparent pointer-events-none"></div>
-                         
-                         {/* Container destravado com zoom calculado na dimensão física */}
-                         <div 
-                            ref={containerRef} 
-                            className="flex-1 relative overflow-auto custom-scrollbar" 
-                            style={{ WebkitOverflowScrolling: 'touch' }} 
-                            onClick={(e) => {
-                                // só fecha se clicar exatamente no container de fundo
-                                if (e.target === e.currentTarget && activeNodeId) setActiveNodeId(null);
-                            }}
-                        >
-                             <div style={{ width: scaledW, height: scaledH, transform: 'translateZ(0)', willChange: 'transform' }}>
-                                 <svg width={scaledW} height={scaledH} viewBox="0 -80 1000 900" preserveAspectRatio="xMidYMid meet">
-                                    {/* Connections */}
-                                    {topologyData.connections.map((conn, i) => {
-                                        const start = topologyData.nodes[conn.from];
-                                        const end = topologyData.nodes[conn.to];
-                                        if(!start || !end) return null; 
-                                        const isActive = activeNodeId && (conn.from === activeNodeId || conn.to === activeNodeId);
-                                        const isDimmed = activeNodeId && !isActive;
-                                        const hexColor = hex[start.color] || '#94a3b8';
+                    <div 
+                        ref={containerRef} 
+                        className="flex-1 w-full flex flex-col relative overflow-y-auto overflow-x-hidden custom-scrollbar"
+                        style={{ WebkitOverflowScrolling: 'touch' }}
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget && activeNodeId) setActiveNodeId(null);
+                        }}
+                    >
+                         {/* O SVG responsivo: Altura gerida via flex, gerando native scroll apenas quando mobileLayout expandir */}
+                         <div className="w-full flex-1 flex flex-col items-center pointer-events-none">
+                             <svg 
+                                viewBox={viewBox} 
+                                preserveAspectRatio="xMidYMid meet" 
+                                className="w-full pointer-events-auto block mx-auto max-w-[1400px]"
+                                style={{ 
+                                    height: mobileLayout ? 'auto' : '100%', 
+                                    maxHeight: mobileLayout ? 'none' : '85vh',
+                                    background: 'radial-gradient(circle at 50% 20%, rgba(30,41,59,0.3) 0%, transparent 70%)'
+                                }}
+                                onClick={(e) => { if (e.target === e.currentTarget && activeNodeId) setActiveNodeId(null); }}
+                             >
+                                {/* Fundo Tech Grid */}
+                                <defs>
+                                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1"/>
+                                    </pattern>
+                                </defs>
+                                <rect x={minX - padding} y={minY - padding} width={vbWidth} height={vbHeight} fill="url(#grid)" />
 
-                                        const pathD = `M${start.x},${start.y} L${end.x},${end.y}`;
+                                {/* Curvas Bézier (Efeito Circuito) */}
+                                {topologyData.connections.map((conn, i) => {
+                                    const start = topologyData.nodes[conn.from];
+                                    const end = topologyData.nodes[conn.to];
+                                    if(!start || !end) return null; 
+                                    const isActive = activeNodeId && (conn.from === activeNodeId || conn.to === activeNodeId);
+                                    const isDimmed = activeNodeId && !isActive;
+                                    const hexColor = hex[start.color] || '#94a3b8';
 
-                                        return (<g key={`conn-${i}-${conn.from}-${conn.to}`} className="transition-all duration-500" style={{opacity: isDimmed ? 0.1 : 1}}>
-                                            <line x1={start.x} y1={start.y} x2={end.x} y2={end.y} stroke={isActive ? '#334155' : '#1e293b'} strokeWidth={isActive ? 3 : 2} />
-                                            
-                                            {/* Desktop motion */}
-                                            <circle r={isActive ? 4 : 2.5} fill={hexColor} className="hidden sm:block">
-                                                <animateMotion 
-                                                    dur={`${1.5 + (i % 3) * 0.5}s`} 
-                                                    repeatCount="indefinite" 
-                                                    path={pathD} 
-                                                    calcMode="linear"
-                                                />
+                                    // Algoritmo de Bézier Dinâmico para fluxo de árvore elegante
+                                    const isHorizontal = Math.abs(start.y - end.y) < 50;
+                                    let pathD;
+                                    if (isHorizontal) {
+                                        const midX = (start.x + end.x) / 2;
+                                        pathD = `M${start.x},${start.y} C${midX},${start.y} ${midX},${end.y} ${end.x},${end.y}`;
+                                    } else {
+                                        const midY = (start.y + end.y) / 2;
+                                        pathD = `M${start.x},${start.y} C${start.x},${midY} ${end.x},${midY} ${end.x},${end.y}`;
+                                    }
+
+                                    return (<g key={`conn-${i}-${conn.from}-${conn.to}`} className="transition-all duration-500" style={{opacity: isDimmed ? 0.1 : 1}}>
+                                        <path d={pathD} fill="none" stroke={isActive ? '#334155' : '#1e293b'} strokeWidth={isActive ? 3 : 2} />
+                                        
+                                        {/* Texto descritivo na trilha (invisível no mobile pra não poluir, visível no hover/ativo) */}
+                                        <text 
+                                            x={(start.x + end.x)/2} 
+                                            y={(start.y + end.y)/2 - 8} 
+                                            fontSize="10" 
+                                            fill={isActive ? '#cbd5e1' : '#64748b'} 
+                                            textAnchor="middle"
+                                            className="hidden sm:block transition-colors pointer-events-none"
+                                        >
+                                            {conn.desc}
+                                        </text>
+
+                                        {/* Animação do pacote de dados fluindo pelo circuito (habilitada em mobile e desktop) */}
+                                        <circle r={isActive ? 4 : 2.5} fill={hexColor}>
+                                            <animateMotion 
+                                                dur={`${1.5 + (i % 3) * 0.5}s`} 
+                                                repeatCount="indefinite" 
+                                                path={pathD} 
+                                                calcMode="linear"
+                                            />
+                                        </circle>
+                                    </g>);
+                                })}
+
+                                {/* Nodes da Árvore */}
+                                {Object.entries(topologyData.nodes).map(([key, node]) => {
+                                    if(!node) return null;
+                                    const isActive = activeNodeId === key;
+                                    const isDimmed = activeNodeId && !isActive && !activeConnections.some(c => c.from === key || c.to === key);
+                                    const hexColor = hex[node.color] || '#94a3b8';
+
+                                    return (
+                                        <g key={`node-${key}`} onClick={(e) => { e.stopPropagation(); handleNodeClick(key); }} className="cursor-pointer transition-all duration-300" style={{opacity: isDimmed ? 0.2 : 1}}>
+                                            <circle cx={node.x} cy={node.y} r="50" fill={hexColor} opacity="0">
+                                                <animate attributeName="opacity" values="0;0.15;0" dur="3s" repeatCount="indefinite" begin={`${(node.x % 5) / 5}s`} />
+                                                <animate attributeName="r" values="35;55;35" dur="3s" repeatCount="indefinite" begin={`${(node.y % 5) / 5}s`} />
                                             </circle>
 
-                                            {/* Mobile fallback (fixo no meio da linha pulsando, zero impacto de FPS) */}
-                                            <circle
-                                                cx={(start.x + end.x) / 2}
-                                                cy={(start.y + end.y) / 2}
-                                                r={2.5}
-                                                fill={hexColor}
-                                                className="sm:hidden animate-pulse"
-                                            />
-                                        </g>);
-                                    })}
+                                            <circle cx={node.x} cy={node.y} r={isActive ? 48 : 42} fill={hexColor} opacity={isActive ? "0.25" : "0.08"} className="transition-all duration-300" />
+                                            
+                                            <circle cx={node.x} cy={node.y} r={isActive ? 40 : 35} fill="#0f172a" stroke={hexColor} strokeWidth={isActive ? 3 : 2} className="transition-all duration-300 hover:stroke-white hover:stroke-4" />
 
-                                    {/* Nodes */}
-                                    {Object.entries(topologyData.nodes).map(([key, node]) => {
-                                        if(!node) return null;
-                                        const isActive = activeNodeId === key;
-                                        const isDimmed = activeNodeId && !isActive && !activeConnections.some(c => c.from === key || c.to === key);
-                                        const hexColor = hex[node.color] || '#94a3b8';
+                                            <foreignObject x={node.x - 15} y={node.y - 15} width="30" height="30">
+                                                <div className="text-white flex justify-center items-center h-full pointer-events-none">
+                                                    <Icon name={node.iconName} size={30} className="drop-shadow-lg" style={{color: isActive ? '#fff' : hexColor}} />
+                                                </div>
+                                            </foreignObject>
 
-                                        return (
-                                            <g key={`node-${key}`} onClick={(e) => { e.stopPropagation(); handleNodeClick(key); }} className="cursor-pointer transition-all duration-300" style={{opacity: isDimmed ? 0.2 : 1}}>
-                                                <circle cx={node.x} cy={node.y} r="50" fill={hexColor} opacity="0">
-                                                    <animate attributeName="opacity" values="0;0.15;0" dur="3s" repeatCount="indefinite" begin={`${(node.x % 5) / 5}s`} />
-                                                    <animate attributeName="r" values="35;55;35" dur="3s" repeatCount="indefinite" begin={`${(node.y % 5) / 5}s`} />
-                                                </circle>
-
-                                                <circle cx={node.x} cy={node.y} r={isActive ? 48 : 42} fill={hexColor} opacity={isActive ? "0.25" : "0.08"} className="transition-all duration-300" />
-                                                
-                                                <circle cx={node.x} cy={node.y} r={isActive ? 40 : 35} fill="#0f172a" stroke={hexColor} strokeWidth={isActive ? 3 : 2} className="transition-all duration-300" />
-
-                                                <foreignObject x={node.x - 15} y={node.y - 15} width="30" height="30">
-                                                    <div className="text-white flex justify-center items-center h-full pointer-events-none">
-                                                        <Icon name={node.iconName} size={30} className="drop-shadow-lg" style={{color: isActive ? '#fff' : hexColor}} />
-                                                    </div>
-                                                </foreignObject>
-
-                                                <text x={node.x} y={node.y + 60} textAnchor="middle" fill={isActive ? "#fff" : hexColor} fontSize="12" fontWeight="bold" letterSpacing="1" style={{textShadow: `0 0 15px ${hexColor}`}}>{node.label}</text>
-                                            </g>
-                                        );
-                                    })}
-                                 </svg>
-                             </div>
+                                            <text x={node.x} y={node.y + 60} textAnchor="middle" fill={isActive ? "#fff" : hexColor} fontSize="14" fontWeight="bold" letterSpacing="1" style={{textShadow: `0 0 15px ${hexColor}`}} className="pointer-events-none">{node.label}</text>
+                                        </g>
+                                    );
+                                })}
+                             </svg>
                          </div>
                          
                          {/* Painel Lateral Mobile/Desktop */}
@@ -682,7 +719,6 @@
 
                                 <div className="mb-6 pb-4 border-b border-slate-800">
                                     <h3 className="text-sm text-slate-500 font-mono uppercase mb-1">Nó Selecionado</h3>
-                                    {/* Mapeamento de cor HEX agora corrige o bug do CSS inválido */}
                                     <h2 className="text-2xl font-black text-white" style={{color: hex[topologyData.nodes[activeNodeId].color] || '#fff'}}>{topologyData.nodes[activeNodeId].title}</h2>
                                     <p className="text-xs text-slate-400 mt-1">{topologyData.nodes[activeNodeId].creator.role}</p>
                                 </div>
@@ -876,13 +912,11 @@
                             </div>
                         )}
 
-                        {/* min-h-0 é crucial aqui para as barras de rolagem dos filhos funcionarem corretamente */}
                         <div className="flex-1 relative min-h-0 flex flex-col">
                             {activeModule && activeModule.id === 'mindmap' ? (<MindMapView onBack={() => setActiveModule(null)} />) : activeModule ? (<DetailView module={activeModule} onBack={() => setActiveModule(null)} />) : (<MainGrid onSelect={setActiveModule} />)}
                         </div>
                     </div>
                     
-                    {/* Footer com cálculo de env safe-area para evitar sobreposição */}
                     <div className="fixed bottom-0 left-0 w-full bg-[#020617] border-t border-slate-800 px-4 sm:px-6 pt-2 pb-[calc(8px+env(safe-area-inset-bottom))] z-50 flex justify-between items-center text-[10px] font-mono text-slate-500 uppercase tracking-wider select-none">
                         <div className="flex items-center gap-2 sm:gap-4">
                             <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div> SYSTEM: STABLE</span>
