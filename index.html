@@ -3711,6 +3711,388 @@ if (window.drawReason) {
         }
       });
 
+      // 🎤 SPEECH PACKS DEFINITIVOS: Modo Brasil, Anime e Técnico
+      // Cada modo contém frases por evento. As listas abaixo foram equilibradas
+      // para não serem nem muito curtas nem textos longos. Máximo de 2 linhas visuais.
+      // Eventos obrigatórios: inicio, captura, promocao, ganhando, perdendo,
+      // equilibrado, vitoria, derrota, empate, desistencia
+      const SPEECH_PACKS = {
+        brasil: {
+          inicio: [
+            "Hoje eu quero ver tua calma sob pressão.",
+            "Vamos ver se sua leitura aguenta o ritmo.",
+            "Sem pressa, mas qualquer vacilo cobra.",
+            "Partida boa é a que testa a cabeça.",
+            "Quero ver se você sustenta o plano até o fim.",
+            "Hoje o tabuleiro vai apertar de verdade.",
+            "Diagonais falam, e eu tô ouvindo tudo.",
+            "Foco total, aqui não tem lance grátis.",
+            "Se errar uma vez, eu não devolvo.",
+            "Vamos decidir no detalhe, como gente grande."
+          ],
+          captura: [
+            "Você piscou, eu entrei.",
+            "Essa brecha era tudo que eu precisava.",
+            "Quando você abre o canto, paga caro.",
+            "Você me deu o tempo, eu te dei o golpe.",
+            "Captura limpa, sem chance de resposta.",
+            "Você forçou demais e deixou a linha.",
+            "Eu puxei você pro ponto fraco.",
+            "Pressão certa, punição imediata.",
+            "Você sentiu a armadilha tarde demais.",
+            "Agora o tabuleiro começa a pesar."
+          ],
+          promocao: [
+            "Dama na área, e a partida muda de tom.",
+            "Promoção no tempo certo, isso decide jogo.",
+            "Agora você vai ter que jogar perfeito.",
+            "Subiu, e a pressão dobrou.",
+            "Essa dama vai te obrigar a escolher errado.",
+            "Fim de jogo começa quando a dama nasce.",
+            "Diagonais sob controle, respira se der.",
+            "Agora eu tenho alcance e tempo.",
+            "Promoção limpa, execução firme.",
+            "Agora o tabuleiro fica pequeno pra você."
+          ],
+          ganhando: [
+            "Você tá jogando com a corda no pescoço.",
+            "Eu controlo o ritmo, você só reage.",
+            "Vantagem construída, agora é administrar.",
+            "Você tá procurando saída e não tá achando.",
+            "Sem espaço, sem tempo, sem folga.",
+            "Eu fechei teus caminhos com calma.",
+            "Cada lance seu vem com custo.",
+            "Esse final eu já vi antes.",
+            "Você tá sentindo o peso do posicionamento.",
+            "Daqui pra frente, é precisão ou queda."
+          ],
+          perdendo: [
+            "Boa, você me apertou de verdade.",
+            "Você achou um caminho forte, respeito.",
+            "Agora eu preciso de frieza.",
+            "Foi um erro meu, mas não acabou.",
+            "Se você cair no ritmo, eu volto.",
+            "Vamos ver se você sustenta essa vantagem.",
+            "Você tá conduzindo bem, mas ainda tem jogo.",
+            "Tá vivo, tá aberto, tá perigoso.",
+            "Eu vou ajustar e te testar de novo.",
+            "Vantagem não ganha sozinha, vamos ver."
+          ],
+          equilibrado: [
+            "Tá empatado, mas a mente cansa primeiro.",
+            "Ninguém quer dar o primeiro vacilo.",
+            "Qualquer detalhe vira sentença.",
+            "Jogo fino, pressão dos dois lados.",
+            "Um erro pequeno vira prejuízo grande.",
+            "Controle dividido, tensão máxima.",
+            "Quem piscar perde tempo.",
+            "Partida madura, sem lance fácil.",
+            "Tá no limite, e eu gosto disso.",
+            "Vai decidir na coragem e no cálculo."
+          ],
+          vitoria: [
+            "GG. Eu mantive a cabeça no lugar.",
+            "Vitória construída com calma e pressão.",
+            "Controlei o tabuleiro e o ritmo.",
+            "No fim, eu fechei todas as portas.",
+            "Você lutou, mas eu administrei melhor.",
+            "Cada detalhe contou, e eu somei tudo.",
+            "Pressão constante, resultado certo.",
+            "Final limpo, sem margem pra milagre.",
+            "Vitória estratégica, do jeito certo.",
+            "Hoje o tabuleiro falou mais alto pra mim."
+          ],
+          derrota: [
+            "Você segurou a pressão melhor que eu.",
+            "Boa partida, você foi mais firme.",
+            "Perdi no detalhe que não podia.",
+            "Você conduziu com calma até o fim.",
+            "Eu errei, você puniu certo.",
+            "Você fechou bem, sem dar espaço.",
+            "Derrota justa, lição anotada.",
+            "Você mereceu esse final.",
+            "Você controlou o ritmo melhor.",
+            "Hoje você foi mais sólido."
+          ],
+          empate: [
+            "Equilíbrio puro, ninguém cedeu de verdade.",
+            "Os dois jogaram firme, sem dar brecha.",
+            "Pressão dos dois lados, mas sem ruptura.",
+            "Tabuleiro travado, decisão negada.",
+            "Empate justo, jogo de respeito.",
+            "Foi cálculo o tempo todo.",
+            "Ninguém conseguiu impor o golpe final.",
+            "Diagonais presas, jogo neutro.",
+            "Empate com cara de partida séria.",
+            "Hoje ninguém caiu primeiro."
+          ],
+          desistencia: [
+            "Pesou, e eu entendo: tava apertado.",
+            "Sem saída viável, só restou encerrar.",
+            "A pressão acumulou e cobrou.",
+            "Quando fecha tudo, o tabuleiro sufoca.",
+            "Momento difícil, decisão direta.",
+            "Faltou ar no posicionamento.",
+            "Controle escapou, e ficou insustentável.",
+            "Partida travou contra você.",
+            "Sem margem pra reação, fim de jogo.",
+            "Encerrado. O tabuleiro não perdoou."
+          ]
+        },
+        anime: {
+          inicio: [
+            "Beleza. Vamos elevar o nível agora.",
+            "Minha vontade não recua, nem um passo.",
+            "Hoje eu vou jogar com coração e técnica.",
+            "Se você vier forte, eu venho mais forte.",
+            "Eu não vim até aqui pra hesitar.",
+            "Essa partida vai revelar quem você é.",
+            "Eu sinto a energia do tabuleiro.",
+            "Vamos decidir isso com honra e coragem.",
+            "Cada lance é um teste, eu aceito.",
+            "Começou. Mostre sua força."
+          ],
+          captura: [
+            "Eu li sua intenção e respondi.",
+            "Esse foi meu golpe decisivo.",
+            "Você abriu, eu avancei sem medo.",
+            "Minha estratégia encontrou seu ponto fraco.",
+            "Quando você cai, eu continuo.",
+            "Isso é o resultado do meu treino.",
+            "Você subestimou meu alcance.",
+            "Eu não perco uma chance dessas.",
+            "Agora o duelo vira meu terreno.",
+            "Eu vou até o fim com isso."
+          ],
+          promocao: [
+            "Transformação completa. Eu despertei.",
+            "Meu poder evoluiu, agora é sério.",
+            "Essa é minha forma superior.",
+            "A partir daqui, eu não volto atrás.",
+            "Agora eu enxergo o tabuleiro inteiro.",
+            "Promoção concluída, pressão total.",
+            "Eu alcancei meu próximo nível.",
+            "Você vai ter que superar seu limite.",
+            "Nova fase, nova força.",
+            "Agora é minha vez de dominar."
+          ],
+          ganhando: [
+            "Você tá sentindo o peso do meu ritmo.",
+            "Eu continuo avançando, sem hesitar.",
+            "Minha pressão só aumenta.",
+            "Eu não vou soltar agora.",
+            "Esse é o caminho que eu escolhi.",
+            "Eu vou fechar isso com coragem.",
+            "Você pode resistir, mas eu sigo.",
+            "Eu controlo esse duelo.",
+            "Eu não paro no meio da luta.",
+            "Tá chegando a hora da decisão."
+          ],
+          perdendo: [
+            "Então é isso… você ficou forte.",
+            "Boa. Você me obrigou a crescer.",
+            "Eu ainda tenho energia pra lutar.",
+            "Se esse é seu nível, eu vou passar.",
+            "Eu não vou cair aqui.",
+            "Eu vou ajustar e voltar mais forte.",
+            "Você me pressionou, mas eu aguento.",
+            "Eu não aceito esse final.",
+            "Isso só me deixa mais sério.",
+            "Agora eu vou mostrar reação."
+          ],
+          equilibrado: [
+            "Duas vontades fortes se encaram.",
+            "É aqui que guerreiros se provam.",
+            "Um passo decide tudo.",
+            "Sem espaço pra hesitação.",
+            "O tabuleiro tá pegando fogo.",
+            "Equilíbrio total, tensão máxima.",
+            "Quem cair primeiro perde o ritmo.",
+            "Eu sinto que isso vai explodir.",
+            "Agora é o momento da coragem.",
+            "Decide no próximo erro."
+          ],
+          vitoria: [
+            "Vitória! Eu lutei até o fim.",
+            "Eu superei o limite na hora certa.",
+            "Meu caminho estava certo.",
+            "Você foi forte, mas eu fui mais firme.",
+            "Eu provei minha determinação.",
+            "Duelo encerrado, honra mantida.",
+            "Eu fechei isso com coragem.",
+            "Foi difícil, por isso valeu.",
+            "Eu cresci nessa batalha.",
+            "Fim. Minha vontade venceu."
+          ],
+          derrota: [
+            "Você foi incrível. Eu reconheço.",
+            "Hoje você foi mais forte.",
+            "Eu caí… mas eu aprendi.",
+            "Eu volto melhor, isso é certo.",
+            "Eu não vou esquecer essa luta.",
+            "Derrota registrada, evolução iniciada.",
+            "Você mereceu esse final.",
+            "Eu vou treinar e retornar.",
+            "Esse não é meu fim.",
+            "Da próxima, eu ultrapasso."
+          ],
+          empate: [
+            "Nenhum caiu. Isso é raro.",
+            "Forças iguais. Respeito.",
+            "Foi um duelo de alto nível.",
+            "Sem vencedor, mas com honra.",
+            "Esse empate me deixa mais forte.",
+            "Eu aceito, por enquanto.",
+            "Não acabou, só pausou.",
+            "O destino segurou os dois.",
+            "Outro duelo vai decidir.",
+            "Até a próxima batalha."
+          ],
+          desistencia: [
+            "Recuar agora é sobreviver.",
+            "Hoje não dá, mas eu retorno.",
+            "Pressão demais… eu escolho viver.",
+            "Eu paro aqui pra voltar melhor.",
+            "Não é derrota, é estratégia.",
+            "Eu vou me recuperar e subir de nível.",
+            "Duelo encerrado por decisão.",
+            "Retirada confirmada.",
+            "Eu volto mais forte.",
+            "Fim por agora."
+          ]
+        },
+        tecnico: {
+          inicio: [
+            "Inicialização concluída. Estado neutro detectado.",
+            "Abertura analisada. Prioridade: diagonais úteis.",
+            "Processamento ativo. Probabilidades em avaliação.",
+            "Configuração estável. Margem de erro monitorada.",
+            "Mapeamento de linhas iniciado.",
+            "Plano base definido. Execução conservadora.",
+            "Risco inicial baixo. Controle progressivo.",
+            "Objetivo: vantagem posicional e material.",
+            "Leitura de mobilidade em curso.",
+            "Simulação iniciada. Decisão por eficiência."
+          ],
+          captura: [
+            "Captura confirmada. Variação favorável.",
+            "Ganho material registrado. Risco controlado.",
+            "Brecha explorada. Resposta adversária limitada.",
+            "Sequência validada. Otimização mantida.",
+            "Troca concluída. Benefício líquido positivo.",
+            "Erro adversário punido. Conversão iniciada.",
+            "Casa crítica dominada. Mobilidade reduzida.",
+            "Pressão convertida em material.",
+            "Controle ampliado. Reação prevista.",
+            "Execução objetiva. Sem desperdício."
+          ],
+          promocao: [
+            "Promoção confirmada. Unidade de alto impacto ativa.",
+            "Dama ativada. Alcance ampliado.",
+            "Transição para fase final iniciada.",
+            "Vantagem estrutural aumentada.",
+            "Ameaças múltiplas disponíveis.",
+            "Pressão elevada. Respostas restringidas.",
+            "Conversão de vantagem acelerada.",
+            "Upgrade concluído. Dominância potencial.",
+            "Controle de diagonais maximizado.",
+            "Estado crítico imposto ao adversário."
+          ],
+          ganhando: [
+            "Vantagem consolidada. Conversão em andamento.",
+            "Risco mínimo. Controle máximo.",
+            "Mobilidade adversária comprometida.",
+            "Bloqueio efetivo. Opções reduzidas.",
+            "Resultado projetado favorável.",
+            "Sem necessidade de risco adicional.",
+            "Execução eficiente. Erros evitados.",
+            "Pressão constante. Estabilidade mantida.",
+            "Final aproximando. Plano intacto.",
+            "Conclusão provável. Recursos adversários limitados."
+          ],
+          perdendo: [
+            "Desvantagem detectada. Recalibração imediata.",
+            "Risco elevado. Defesa priorizada.",
+            "Correção necessária. Linha alternativa em busca.",
+            "Material inferior. Compensação posicional avaliada.",
+            "Erro registrado. Ajuste em execução.",
+            "Probabilidade de recuperação moderada.",
+            "Redução de dano iniciada.",
+            "Resposta calculada. Sem impulsos.",
+            "Estabilização tentada. Variância controlada.",
+            "Plano revisado. Nova rota definida."
+          ],
+          equilibrado: [
+            "Equilíbrio detectado. Sem vantagem clara.",
+            "Estado simétrico. Precisão requerida.",
+            "Risco moderado. Eficiência prioritária.",
+            "Controle alternado. Variância mínima.",
+            "Mobilidade equivalente. Jogo técnico.",
+            "Qualquer erro altera o resultado.",
+            "Fase crítica. Recursos limitados.",
+            "Trocas avaliadas por valor líquido.",
+            "Sem ruptura. Estabilidade mantida.",
+            "Decisão depende de microvantagem."
+          ],
+          vitoria: [
+            "Vitória confirmada. Objetivo concluído.",
+            "Conversão final executada com precisão.",
+            "Controle total mantido até o encerramento.",
+            "Resultado validado. Risco nulo no final.",
+            "Plano seguido. Eficiência máxima.",
+            "Adversário sem recursos úteis.",
+            "Finalização lógica. Sem variação.",
+            "Execução limpa. Erros evitados.",
+            "Encerramento confirmado.",
+            "Análise final: desempenho superior."
+          ],
+          derrota: [
+            "Derrota registrada. Vantagem adversária confirmada.",
+            "Falha estratégica identificada. Revisão necessária.",
+            "Controle perdido em ponto crítico.",
+            "Erro material/posicional com impacto alto.",
+            "Recuperação não viável. Encerramento aceito.",
+            "Adversário converteu com eficiência.",
+            "Resultado negativo. Registro armazenado.",
+            "Ajustes futuros recomendados.",
+            "Análise concluída. Lições extraídas.",
+            "Fim. Otimização pendente."
+          ],
+          empate: [
+            "Empate confirmado. Estado final neutro.",
+            "Sem vantagem decisiva. Conversão inviável.",
+            "Simetria mantida até o encerramento.",
+            "Risco evitado. Resultado estável.",
+            "Recursos insuficientes para ruptura.",
+            "Final técnico. Sem decisão forçada.",
+            "Pressão neutralizada. Estrutura intacta.",
+            "Conclusão equilibrada. Sem vencedor.",
+            "Partida encerrada por estabilidade.",
+            "Análise: equilíbrio persistente."
+          ],
+          desistencia: [
+            "Encerramento voluntário detectado.",
+            "Processo interrompido. Estado final registrado.",
+            "Pressão insustentável. Continuidade cancelada.",
+            "Resultado antecipado. Execução encerrada.",
+            "Controle adversário confirmado.",
+            "Finalização prematura. Sem simulação adicional.",
+            "Registro final armazenado.",
+            "Encerramento por decisão do agente.",
+            "Sessão finalizada.",
+            "Fim de execução."
+          ]
+        }
+      };
+
+      // Buffer de frases recentes para evitar repetição
+      const __speechRecent = {};
+
+      // Recupera o modo de fala atual do localStorage (padrão: 'brasil')
+      function getSpeechMode() {
+        return localStorage.getItem('speechMode') || 'brasil';
+      }
+
 
       /*************************
        * Helpers UI
@@ -3719,53 +4101,82 @@ if (window.drawReason) {
       // *** FUNÇÃO 'say' MODIFICADA ***
       // Agora ela controla o 'bubbleText' e a classe 'show' no 'bubble'
       function say(group, extra = ""){
-        // 🔁 IA não fala no modo treino ou no modo online
+        // 🔁 IA não fala no modo treino ou online
         if (isOnline || trainingMode) return;
 
         const now = performance.now();
-        if (now - lastTauntAt < 900) return; // anti-spam sutil
+        if (now - lastTauntAt < 900) return;
         lastTauntAt = now;
 
         const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
-        // Determina a base da fala: pode ser um array customizado, um grupo de TAUNTS ou uma string simples
-        let base;
+        let text = "";
+        // Mapeia grupos para os eventos do pack
+        const eventMap = {
+          // Mapeia eventos internos para os nomes do SPEECH_PACKS
+          start: 'inicio',
+          capture: 'captura',
+          multi: 'captura',
+          promo: 'promocao',
+          win: 'vitoria',
+          lose: 'derrota',
+          ahead: 'ganhando',
+          nearWin: 'ganhando',
+          behind: 'perdendo',
+          draw: 'empate',
+          thinking: 'equilibrado',
+          // evento de desistência
+          desist: 'desistencia'
+        };
         if (Array.isArray(group)) {
-          base = pick(group);
-        } else if (TAUNTS[group]) {
-          base = pick(TAUNTS[group]);
+          text = pick(group);
         } else {
-          base = typeof group === 'string' ? group : '';
+          const eventKey = eventMap[group];
+          if (eventKey && typeof SPEECH_PACKS !== 'undefined') {
+            const mode = getSpeechMode();
+            const pack = SPEECH_PACKS[mode] || SPEECH_PACKS['brasil'];
+            let phrases;
+            const diffStored = (localStorage.getItem('difficulty') || 'medium').toLowerCase();
+            const diffMap = { easy:'facil', medium:'medio', hard:'dificil', master:'mestre' };
+            const diffKey = diffMap[diffStored] || 'medio';
+            const eventPack = pack[eventKey];
+            if (eventPack) {
+              if (typeof eventPack === 'object' && !Array.isArray(eventPack)) {
+                phrases = eventPack[diffKey] || [];
+              } else {
+                phrases = eventPack;
+              }
+              if (phrases && phrases.length > 0) {
+                if (!__speechRecent[eventKey]) __speechRecent[eventKey] = [];
+                let candidate = pick(phrases);
+                let tries = 0;
+                while (phrases.length > 1 && __speechRecent[eventKey].includes(candidate) && tries < 10) {
+                  candidate = pick(phrases);
+                  tries++;
+                }
+                __speechRecent[eventKey].push(candidate);
+                if (__speechRecent[eventKey].length > 3) {
+                  __speechRecent[eventKey].shift();
+                }
+                text = candidate;
+              }
+            }
+          }
+          // Fallback
+          if (!text) {
+            if (TAUNTS[group]) {
+              text = pick(TAUNTS[group]);
+            } else if (typeof group === 'string') {
+              text = group;
+            } else {
+              text = "";
+            }
+          }
         }
-
-        // Recupera a sigla de região e normaliza
-        const region = (localStorage.getItem('region') || '').toLowerCase();
-        let regionPhrase = '';
-        if (region && REGIONAL_PHRASES[region]) {
-          // Seleciona categoria conforme o grupo: ahead/behind usam suas próprias listas
-          let cat = 'generic';
-          if (group === 'ahead' && REGIONAL_PHRASES[region].ahead) cat = 'ahead';
-          else if (group === 'behind' && REGIONAL_PHRASES[region].behind) cat = 'behind';
-          const arr = REGIONAL_PHRASES[region][cat] || REGIONAL_PHRASES[region].generic;
-          regionPhrase = pick(arr);
+        if (extra) {
+          text = text ? (text + " " + extra) : extra;
         }
-
-        // Recupera a dificuldade para escolher uma frase correspondente
-        const diff = (localStorage.getItem('difficulty') || '').toLowerCase();
-        let diffPhrase = '';
-        if (diff && DIFFICULTY_PHRASES[diff]) {
-          diffPhrase = pick(DIFFICULTY_PHRASES[diff]);
-        }
-
-        // Constrói o texto completo, concatenando as partes disponíveis
-        const parts = [];
-        if (base) parts.push(base);
-        if (regionPhrase) parts.push(regionPhrase);
-        if (diffPhrase) parts.push(diffPhrase);
-        if (extra) parts.push(extra);
-        const text = parts.join(' ');
-
-        // Mostra o balão com a fala composta
+        if (!text) return;
         bubbleText.textContent = text;
         bubble.classList.add('show');
         setTimeout(() => {
