@@ -138,6 +138,9 @@
       /* 🎨 Estilo para os novos seletores de botão (BOTÕES DE OPÇÃO) */
       .btn-group {
         /* display: flex; (Removido) */
+        width: 100%;
+        max-width: 260px;
+        margin: 0 auto;
         border-radius: 0.5rem; /* 8px */
         overflow: hidden;
         border: 1px solid rgba(56, 189, 248, 0.4); /* border-cyan-400/40 */
@@ -247,6 +250,102 @@
       }
       
       /* 🚫 Regra 'html, body' anterior foi removida e substituída pela do usuário no topo */
+
+      /* ===== LAYOUT BASE (MOBILE) ===== */
+      .app-container {
+        width: 100%;
+        max-width: 100%;
+      }
+      .sidebar-left {
+        display: none;
+      }
+
+      /* ===== DESKTOP PREMIUM SEM QUEBRAR MOBILE ===== */
+      @media (min-width: 1024px) {
+        body {
+          background:
+            radial-gradient(circle at top left, rgba(168,85,247,0.18), transparent 35%),
+            radial-gradient(circle at bottom right, rgba(6,182,212,0.14), transparent 35%),
+            #020617;
+        }
+
+        .app-container {
+          width: 100%;
+          max-width: 1180px;
+          margin: 0 auto;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .sidebar-left {
+          display: block;
+          position: fixed;
+          top: 18px;
+          left: 18px;
+          min-height: auto;
+          width: 220px;
+          padding: 14px;
+          border-radius: 18px;
+          background: rgba(15,23,42,0.78);
+          border: 1px solid rgba(148,163,184,0.18);
+          box-shadow: 0 12px 35px rgba(0,0,0,0.35);
+          backdrop-filter: blur(12px);
+        }
+
+        .sidebar-right {
+          width: 100%;
+          max-width: 720px;
+          min-height: auto;
+          padding: 0;
+          background: transparent;
+          border: none;
+          box-shadow: none;
+          order: 1;
+        }
+
+        .main-center {
+          width: 100%;
+          max-width: 620px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          order: 2;
+        }
+
+        .main-center #board {
+          max-width: min(68vh, 560px);
+          transform: none;
+        }
+
+        .sidebar-right .w-full.max-w-2xl {
+          max-width: 720px;
+          height: 120px;
+          margin: 0 auto 20px auto;
+          display: flex;
+          flex-direction: row;
+          gap: 14px;
+        }
+
+        .sidebar-right #face,
+        .sidebar-right #bubble {
+          border-radius: 20px;
+          border: 1px solid rgba(168,85,247,0.25);
+          background: rgba(15,23,42,0.82);
+          box-shadow: 0 15px 40px rgba(0,0,0,0.35);
+          backdrop-filter: blur(12px);
+        }
+
+        .face-emoji {
+          font-size: 4rem;
+        }
+
+        #bubbleText {
+          font-size: 1rem;
+        }
+      }
     </style>
   
 <script>
@@ -258,8 +357,38 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
   <!-- O layout flex-col do body é mantido para empilhar os cards e o tabuleiro -->
   <body class="min-h-screen flex flex-col items-center justify-center p-4">
 
+    <div id="loginScreen" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950 text-slate-100 px-4">
+      <div class="w-full max-w-sm rounded-3xl border border-purple-500/30 bg-slate-900/90 p-6 shadow-[0_0_40px_rgba(168,85,247,0.25)]">
+        <div class="text-center mb-6">
+          <div class="text-5xl mb-3">♟️</div>
+          <h1 class="text-3xl font-black text-purple-300">Damas AI</h1>
+          <p class="text-sm text-slate-400 mt-2">Escolha seu nick para entrar</p>
+        </div>
+
+        <label class="text-xs text-slate-400 block mb-2">Nick do jogador</label>
+        <input id="loginNickInput"
+          maxlength="20"
+          placeholder="Ex: Paulo"
+          class="w-full rounded-xl bg-slate-800 border border-slate-700 px-4 py-3 text-white outline-none focus:border-purple-400 text-center mb-4" />
+
+        <button id="btnLoginNick"
+          class="w-full rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 shadow-[0_0_20px_rgba(168,85,247,0.35)] transition">
+          Entrar
+        </button>
+
+        <button id="btnLoginVisitante"
+          class="w-full mt-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-3 border border-slate-700 transition">
+          Continuar como visitante
+        </button>
+
+        <p class="text-[11px] text-slate-500 text-center mt-4">
+          Vamos lembrar seu nick neste dispositivo.
+        </p>
+      </div>
+    </div>
+
     <!-- 🎮 CONTAINER DO MENU (AGORA GUARDA VÁRIAS TELAS) -->
-    <div id="menuContainer" class="fixed inset-0 bg-slate-900 text-slate-200 z-50">
+    <div id="menuContainer" class="hidden fixed inset-0 bg-slate-900 text-slate-200 z-50">
       
       <!-- 
         MODIFICAÇÃO: Menu Principal (Main)
@@ -285,7 +414,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
 
       
         <!-- Seletor de Dificuldade (pertence ao modo IA) -->
-        <div class="text-center mb-4 w-60" id="difficultyContainer">
+        <div class="hidden w-full flex flex-col items-center text-center mb-4" id="difficultyContainer">
           <p class="mb-2 text-slate-400">Dificuldade:</p>
           <!-- select original oculto -->
           <select id="difficulty" class="hidden bg-slate-800 border border-cyan-400/40 text-white px-4 py-2 rounded-lg w-60">
@@ -304,7 +433,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         </div>
         
         <!-- Seletor de Regra de Captura -->
-        <div class="text-center mb-4 w-60" id="ruleContainer">
+        <div class="hidden w-full flex flex-col items-center text-center mb-4" id="ruleContainer">
           <p class="mb-2 text-slate-400">Regra de Captura (Pedra):</p>
           <select id="captureRule" class="hidden bg-slate-800 border border-cyan-400/40 text-white px-4 py-2 rounded-lg w-60">
             <option value="sim">Padrão (Captura p/ trás)</option>
@@ -314,13 +443,13 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
             <button type="button" class="" data-value="sim">Padrão</button>
             <button type="button" class="" data-value="nao">Clássica</button>
           </div>
-          <div id="ruleExplanation" class="mt-2 text-xs text-slate-400 text-center w-60 h-10 transition-all duration-300">
+          <div id="ruleExplanation" class="mt-2 text-xs text-slate-400 text-center max-w-[240px]">
             <!-- preenchido via JS -->
           </div>
         </div>
 
         <!-- Seletor de Modo de Fala -->
-        <div class="text-center mb-4 w-60" id="speechModeContainer">
+        <div class="hidden w-full flex flex-col items-center text-center mb-4" id="speechModeContainer">
           <p class="mb-2 text-slate-400">Modo de Fala:</p>
           <!-- Select escondido que armazena o modo -->
           <select id="speechMode" class="hidden bg-slate-800 border border-cyan-400/40 text-white px-4 py-2 rounded-lg w-60">
@@ -346,14 +475,45 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           class="bg-blue-600 hover:bg-blue-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(96,165,250,0.5)] transition w-60 mt-4">
           🌐 Jogar Online
         </button>
+
+        <button id="btnRanking"
+          class="bg-amber-600 hover:bg-amber-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.45)] transition w-60 mt-4">
+          🏆 Ranking
+        </button>
+
+        <button id="btnConfig"
+          class="bg-slate-700 hover:bg-slate-600 text-white text-lg px-6 py-3 rounded-xl shadow-md border border-slate-600 transition w-60 mt-4">
+          ⚙️ Configurações
+        </button>
       
         <!-- Botão de Instruções -->
         <button id="btnManualMenu"
-          class="mt-6 bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded-lg shadow-md border border-slate-600 transition-all w-60">
+          class="hidden mt-6 bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded-lg shadow-md border border-slate-600 transition-all w-60">
           ❓ Instruções
         </button>
       </div>
       <!-- Fim do Menu Principal -->
+
+      <!-- 🏆 Tela: Ranking -->
+      <div id="rankingScreen" class="menu-screen hidden">
+        <h2 class="text-3xl font-bold mb-2 text-amber-300 drop-shadow-lg">🏆 Ranking</h2>
+        <p class="text-slate-400 text-sm mb-5">Top jogadores por rating</p>
+
+        <div id="rankingList"
+          class="w-[90%] max-w-md bg-slate-900/80 border border-amber-400/30 rounded-2xl p-4 shadow-[0_0_25px_rgba(245,158,11,0.18)]">
+          <div class="text-center text-slate-400 py-6">Carregando ranking...</div>
+        </div>
+
+        <button id="btnAtualizarRanking"
+          class="mt-5 bg-amber-700 hover:bg-amber-600 text-white px-5 py-2 rounded-lg shadow-md border border-amber-400/60 w-60">
+          🔄 Atualizar
+        </button>
+
+        <button id="btnVoltarRanking"
+          class="mt-3 bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded-lg shadow-md border border-slate-600 w-60">
+          ⬅️ Voltar
+        </button>
+      </div>
 
       <!-- 🔹 Submenu: Modo Online (REFEITO) -->
       <div id="onlineMenuScreen" class="menu-screen hidden">
@@ -669,40 +829,81 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
     </div>
     <!-- FIM NOVO MENU -->
 
-    <!-- 
-      *** ESTRUTURA DE HTML MODIFICADA ***
-      Este é o novo container dos "Cards" acima do tabuleiro.
-      Usa Flexbox (flex) para alinhar os dois cards lado a lado.
-    -->
-    <!-- 🧩 3️⃣ Adiciona margem top (mt-6) para o botão desistir respirar -->
-    <div class="w-full max-w-2xl mx-auto flex justify-between items-stretch gap-4 px-1 mb-4 h-40 mt-6">
+    <!-- 💣 WRAPPER GERAL: grid no desktop, normal no mobile -->
+    <div class="app-container">
 
-      <!-- Card 1: Rosto da IA -->
-      <div id="face" class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl overflow-hidden relative">
-        <!-- O emoji vai aqui -->
-        <div id="faceEmoji" class="face-emoji">🤖</div>
+      <!-- ===== COLUNA ESQUERDA: Perfil / Ranking ===== -->
+      <div class="sidebar-left">
+        <h2 class="text-lg font-bold text-cyan-300 mb-2">👤 Jogador</h2>
+        <p id="player-name" class="text-sm text-slate-400">Carregando...</p>
       </div>
 
-      <!-- Card 2: Falas da IA -->
-      <div id="bubble" class="flex-[2] flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl relative text-center">
-        <!-- Placeholder (o que aparece por padrão) -->
-        <span id="bubblePlaceholder" class="text-slate-500 font-medium italic transition-opacity duration-300 opacity-100">IA está analisando...</span>
-        <!-- Texto da IA (invisível por padrão, aparece com a classe .show) -->
-        <span id="bubbleText" class="absolute inset-4 flex items-center justify-center text-lg font-semibold text-slate-100 transition-opacity duration-300 opacity-0"></span>
+      <!-- ===== COLUNA DIREITA: IA / Status ===== -->
+      <div class="sidebar-right">
+        <!-- 
+          *** CARDS DA IA ***
+          Rosto + Fala — mesmo conteúdo, reposicionado no desktop
+        -->
+        <div class="w-full max-w-2xl mx-auto flex justify-between items-stretch gap-4 px-1 mb-4 h-40 mt-6">
+
+          <!-- Card 1: Rosto da IA -->
+          <div id="face" class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl overflow-hidden relative">
+            <!-- O emoji vai aqui -->
+            <div id="faceEmoji" class="face-emoji">🤖</div>
+          </div>
+
+          <!-- Card 2: Falas da IA -->
+          <div id="bubble" class="flex-[2] flex items-center justify-center p-4 rounded-xl border-2 border-slate-700 bg-slate-800 shadow-xl relative text-center">
+            <!-- Placeholder (o que aparece por padrão) -->
+            <span id="bubblePlaceholder" class="text-slate-500 font-medium italic transition-opacity duration-300 opacity-100">IA está analisando...</span>
+            <!-- Texto da IA (invisível por padrão, aparece com a classe .show) -->
+            <span id="bubbleText" class="absolute inset-4 flex items-center justify-center text-lg font-semibold text-slate-100 transition-opacity duration-300 opacity-0"></span>
+          </div>
+
+        </div>
+        <!-- Fim dos cards da IA -->
+      </div>
+
+      <!-- ===== CENTRO: Tabuleiro ===== -->
+      <div class="main-center">
+        <!-- O container 'max-w-2xl' é mantido para alinhar com os cards
+            O 'id="board"' agora é controlado pelo CSS no <style> -->
+        <div class="relative w-full max-w-2xl">
+
+          <!-- 1️⃣ CLASSES REMOVIDAS: O CSS #board agora controla o layout -->
+          <div id="board"></div>
+        </div>
       </div>
 
     </div>
-    <!-- Fim da estrutura modificada -->
-
-    <!-- O container 'max-w-2xl' é mantido para alinhar com os cards
-        O 'id="board"' agora é controlado pelo CSS no <style> -->
-    <div class="relative w-full max-w-2xl">
-      
-      <!-- 1️⃣ CLASSES REMOVIDAS: O CSS #board agora controla o layout -->
-      <div id="board"></div>
-    </div>
+    <!-- FIM DO WRAPPER GERAL -->
 
     <div id="overlay" class="overlay"></div>
+
+    <!-- 🔸 Modal Configurações -->
+    <div id="configModal"
+      class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm px-4">
+
+      <div class="bg-gradient-to-b from-slate-900 to-slate-800 text-slate-200 border border-purple-400/40
+                  shadow-[0_0_30px_rgba(168,85,247,0.35)] p-6 rounded-2xl w-full max-w-sm mx-auto flex flex-col items-center">
+
+        <h2 class="text-2xl font-bold mb-5 text-center text-purple-300">
+          ⚙️ Configurações
+        </h2>
+
+        <div id="configContent" class="space-y-6 w-full flex flex-col items-center"></div>
+
+        <button id="btnOpenManualFromConfig"
+          class="mt-5 w-full bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-lg">
+          ❓ Instruções
+        </button>
+
+        <button id="btnCloseConfig"
+          class="mt-3 w-full bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg">
+          Fechar
+        </button>
+      </div>
+    </div>
 
     <!-- 🔸 Modal Manual -->
     <div id="manualModal" 
@@ -788,51 +989,276 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
     
 
     <!-- ====================================================== -->
-    <!-- ============ BLOCO 1: FIREBASE (firebase.js) ========= -->
+    <!-- ============ BLOCO 1: SUPABASE ADAPTADOR ============= -->
     <!-- ====================================================== -->
     <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyA6G1M1oUzQ-A-NkFYyrAjMwBRJEhLG3sI",
-  authDomain: "meu-jogo-damas.firebaseapp.com",
-  projectId: "meu-jogo-damas",
-  storageBucket: "meu-jogo-damas.firebasestorage.app",
-  messagingSenderId: "583407551751",
-  appId: "1:583407551751:web:0f610a1494f40d59c7b1a2"
+const SUPABASE_URL = "https://ynhlhdluafgmujfkrnlz.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_UxqBEJSBU__Z8ec123DTTg_qpiNLymf";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+window.supabase = supabase;
+window.db = supabase;
+
+let localUserId = localStorage.getItem("damas_user_id");
+if (!localUserId) {
+  localUserId = crypto.randomUUID();
+  localStorage.setItem("damas_user_id", localUserId);
+}
+window.userId = localUserId;
+
+const TABLE_MAP = {
+  aiProfiles: "memoria_ia",
+  ia: "memoria_ia",
+  opening_book: "memoria_ia",
+  salas: "salas"
 };
 
-window.firebaseReady = new Promise(async (resolve, reject) => {
-  try {
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    await signInAnonymously(auth);
-    const db = getFirestore(app);
+const FIELD_TO_DB = {
+  Jogador1: "jogador1",
+  Jogador2: "jogador2",
+  Tabuleiro: "tabuleiro",
+  JogadorDaVez: "jogador_da_vez",
+  Status: "status",
+  Vencedor: "vencedor",
+  UltimaJogada: "ultima_jogada",
+  Timestamp: "atualizado_em"
+};
 
-    window.db = db;
-    window.doc = doc;
-    window.setDoc = setDoc;
-    window.getDoc = getDoc;
-    window.onSnapshot = onSnapshot;
-    window.updateDoc = updateDoc;
-    window.userId = auth.currentUser.uid;
+const FIELD_FROM_DB = {
+  jogador1: "Jogador1",
+  jogador2: "Jogador2",
+  tabuleiro: "Tabuleiro",
+  jogador_da_vez: "JogadorDaVez",
+  status: "Status",
+  vencedor: "Vencedor",
+  ultima_jogada: "UltimaJogada",
+  atualizado_em: "Timestamp"
+};
 
-    console.log("🔥 Firebase pronto:", window.userId);
-    try {
-      if (typeof forceSyncAIProfiles === 'function') {
-        forceSyncAIProfiles();
-      }
-    } catch (e) {
-      console.warn("Falha ao sincronizar perfis de IA após Firebase pronto:", e);
+function normalizeTable(table) {
+  return TABLE_MAP[table] || table;
+}
+
+function toDbFields(data = {}) {
+  const out = {};
+
+  for (const [key, value] of Object.entries(data)) {
+    const dbKey = FIELD_TO_DB[key] || key;
+
+    if (dbKey === "atualizado_em") {
+      out[dbKey] = new Date().toISOString();
+    } else if ((dbKey === "jogador1" || dbKey === "jogador2") && value === "") {
+      out[dbKey] = null;
+    } else {
+      out[dbKey] = value;
     }
-    resolve(true);
-  } catch (err) {
-    console.error("Erro Firebase:", err);
-    reject(err);
   }
+
+  return out;
+}
+
+function fromDbFields(data = {}) {
+  const out = { ...data };
+
+  for (const [dbKey, jsKey] of Object.entries(FIELD_FROM_DB)) {
+    if (dbKey in data) out[jsKey] = data[dbKey];
+  }
+
+  if (data.atualizado_em) {
+    out.Timestamp = new Date(data.atualizado_em).getTime();
+  }
+
+  return out;
+}
+
+function inferMemoriaTipo(chave) {
+  if (chave === "inteligencia") return "inteligencia";
+  if (String(chave).startsWith("aiProfile_")) return "perfil";
+  return "geral";
+}
+
+function inferMemoriaCor(chave) {
+  const s = String(chave);
+  if (s.includes("_white")) return "white";
+  if (s.includes("_red")) return "red";
+  return null;
+}
+
+function makeSnap(data) {
+  return {
+    exists: () => !!data,
+    data: () => data || null
+  };
+}
+
+window.doc = function (_db, table, id) {
+  return {
+    table: normalizeTable(table),
+    originalTable: table,
+    id
+  };
+};
+
+window.setDoc = async function (ref, data, options = {}) {
+  if (ref.table === "memoria_ia") {
+    const payload = {
+      chave: ref.id,
+      tipo: inferMemoriaTipo(ref.id),
+      cor: inferMemoriaCor(ref.id),
+      dados: data || {},
+      atualizado_em: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from("memoria_ia")
+      .upsert(payload, { onConflict: "chave" });
+
+    if (error) throw error;
+    return true;
+  }
+
+  if (ref.table === "salas") {
+    const payload = {
+      id: ref.id,
+      ...toDbFields(data)
+    };
+
+    const { error } = await supabase
+      .from("salas")
+      .upsert(payload, { onConflict: "id" });
+
+    if (error) throw error;
+    return true;
+  }
+
+  const payload = { id: ref.id, ...data };
+
+  const { error } = await supabase
+    .from(ref.table)
+    .upsert(payload, { onConflict: "id" });
+
+  if (error) throw error;
+  return true;
+};
+
+window.getDoc = async function (ref) {
+  if (ref.table === "memoria_ia") {
+    const { data, error } = await supabase
+      .from("memoria_ia")
+      .select("*")
+      .eq("chave", ref.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return makeSnap(data ? (data.dados || {}) : null);
+  }
+
+  if (ref.table === "salas") {
+    const { data, error } = await supabase
+      .from("salas")
+      .select("*")
+      .eq("id", ref.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return makeSnap(data ? fromDbFields(data) : null);
+  }
+
+  const { data, error } = await supabase
+    .from(ref.table)
+    .select("*")
+    .eq("id", ref.id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return makeSnap(data);
+};
+
+window.updateDoc = async function (ref, data) {
+  if (ref.table === "memoria_ia") {
+    const snap = await window.getDoc(ref);
+    const atual = snap.exists() ? snap.data() : {};
+    return window.setDoc(ref, { ...atual, ...(data || {}) }, { merge: true });
+  }
+
+  if (ref.table === "salas") {
+    const payload = toDbFields(data);
+    payload.atualizado_em = new Date().toISOString();
+
+    const { error } = await supabase
+      .from("salas")
+      .update(payload)
+      .eq("id", ref.id);
+
+    if (error) throw error;
+    return true;
+  }
+
+  const { error } = await supabase
+    .from(ref.table)
+    .update(data)
+    .eq("id", ref.id);
+
+  if (error) throw error;
+  return true;
+};
+
+window.onSnapshot = function (ref, callback) {
+  window.getDoc(ref).then(callback).catch(console.error);
+
+  const channel = supabase
+    .channel(`${ref.table}:${ref.id}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: ref.table,
+        filter: ref.table === "memoria_ia"
+          ? `chave=eq.${ref.id}`
+          : `id=eq.${ref.id}`
+      },
+      async () => {
+        try {
+          const snap = await window.getDoc(ref);
+          callback(snap);
+        } catch (e) {
+          console.error("Erro no realtime Supabase:", e);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => supabase.removeChannel(channel);
+};
+
+window.collection = function (_db, table) {
+  return { table: normalizeTable(table) };
+};
+
+window.supabaseReady = Promise.resolve(true);
+
+console.log("✅ Supabase adaptador pronto:", {
+  url: SUPABASE_URL,
+  userId: window.userId,
+  db: !!window.db,
+  doc: !!window.doc,
+  getDoc: !!window.getDoc,
+  setDoc: !!window.setDoc,
+  updateDoc: !!window.updateDoc,
+  onSnapshot: !!window.onSnapshot
 });
+
+try {
+  if (typeof forceSyncAIProfiles === "function") {
+    forceSyncAIProfiles();
+  }
+} catch (e) {
+  console.warn("Falha ao sincronizar perfis de IA após Supabase pronto:", e);
+}
 </script>
 
     <!-- ====================================================== -->
@@ -865,6 +1291,130 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       }
       // === fim BigInt-safe helpers ===
 
+      /*************************
+       * Perfil do Jogador (login simples)
+       *************************/
+function atualizarNomeJogadorNaTela(nome) {
+  const el = document.getElementById("player-name");
+  if (el) el.textContent = nome || "Visitante";
+}
+
+function liberarMenuPrincipal() {
+  const login = document.getElementById("loginScreen");
+  const menu = document.getElementById("menuContainer");
+
+  if (login) login.classList.add("hidden");
+  if (menu) menu.classList.remove("hidden");
+}
+
+function mostrarTelaLogin() {
+  const login = document.getElementById("loginScreen");
+  const menu = document.getElementById("menuContainer");
+
+  if (login) login.classList.remove("hidden");
+  if (menu) menu.classList.add("hidden");
+}
+
+async function garantirSessaoSupabase() {
+  const { data: sessionData } = await window.supabase.auth.getSession();
+
+  if (sessionData?.session?.user) {
+    window.userId = sessionData.session.user.id;
+    return sessionData.session.user;
+  }
+
+  const { data, error } = await window.supabase.auth.signInAnonymously();
+  if (error) throw error;
+
+  window.userId = data.user.id;
+  return data.user;
+}
+
+async function ensureAuthReady() {
+  await garantirSessaoSupabase();
+}
+
+async function salvarPerfilJogador(nome) {
+  const user = await garantirSessaoSupabase();
+
+  const { error } = await window.supabase
+    .from("profiles")
+    .upsert({
+      id: user.id,
+      username: nome,
+      rating: 1000,
+      wins: 0,
+      losses: 0,
+      draws: 0
+    }, { onConflict: "id" });
+
+  if (error) throw error;
+
+  return user;
+}
+
+async function entrarComNick(nome, visitante = false) {
+  nome = String(nome || "").trim();
+
+  if (!nome) {
+    nome = visitante
+      ? "Visitante_" + Math.floor(Math.random() * 1000)
+      : "Jogador_" + Math.floor(Math.random() * 1000);
+  }
+
+  localStorage.setItem("player_name", nome);
+  window.playerName = nome;
+
+  try {
+    await salvarPerfilJogador(nome);
+    console.log("✅ Perfil carregado:", nome, window.userId);
+  } catch (e) {
+    console.error("Erro ao salvar perfil:", e);
+  }
+
+  atualizarNomeJogadorNaTela(nome);
+  liberarMenuPrincipal();
+}
+
+async function initPerfilJogador() {
+  const nomeSalvo = localStorage.getItem("player_name");
+
+  if (nomeSalvo) {
+    window.playerName = nomeSalvo;
+
+    try {
+      await salvarPerfilJogador(nomeSalvo);
+    } catch (e) {
+      console.warn("Não consegui sincronizar perfil agora:", e);
+    }
+
+    atualizarNomeJogadorNaTela(nomeSalvo);
+    liberarMenuPrincipal();
+    return;
+  }
+
+  mostrarTelaLogin();
+
+  const input = document.getElementById("loginNickInput");
+  const btnEntrar = document.getElementById("btnLoginNick");
+  const btnVisitante = document.getElementById("btnLoginVisitante");
+
+  if (btnEntrar) {
+    btnEntrar.onclick = () => entrarComNick(input?.value || "", false);
+  }
+
+  if (btnVisitante) {
+    btnVisitante.onclick = () => entrarComNick("", true);
+  }
+
+  if (input) {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") entrarComNick(input.value, false);
+    });
+    setTimeout(() => input.focus(), 100);
+  }
+}
+
       const WHITE = 'white';
       const KING  = '-king';
 
@@ -877,7 +1427,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       let gameHistory = []; // 🧠 Histórico da partida atual
       let isOnline = false; // 🌐 Controla o modo de jogo
       let currentRoom = null; // 🌐 ID da sala online
-      let onlineUnsubscribe = null; // 🌐 Função para parar de ouvir o Firestore
+      let onlineUnsubscribe = null; // 🌐 Função para parar de ouvir o Supabase
       let onlineStarted = false; // 🌐 garante initBoard só 1 vez por sala
       let worker; // Referência ao Web Worker
       let gameEnded = false; // 🔒 Travamento de interação pós-jogo
@@ -990,7 +1540,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       // 💡 IMPLEMENTAÇÃO 7: "Modo Aprendiz" (ajuste contínuo do perfil)
       // 🧠 MODIFICADO: Atualiza o perfil do VENCEDOR e do PERDEDOR
       
-      // 💡 IA Adaptativa — Perfil Dinâmico (persistente em Firestore + cache local)
+      // 💡 IA Adaptativa — Perfil Dinâmico (persistente em Supabase + cache local)
       const AI_DEFAULT_PROFILE = { agg: 0.5, def: 0.5, games: 0, wins: 0 };
 
       // Cache de perfis por chave dinâmica (cor + dificuldade/sufixo)
@@ -1266,7 +1816,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           console.warn("Falha ao ler perfil IA do localStorage:", e);
         }
 
-        // 2. Tenta carregar do Firestore (caso disponível) para esse storageKey
+        // 2. Tenta carregar do Supabase (caso disponível) para esse storageKey
         if (window.db && window.doc && window.getDoc && window.setDoc) {
           try {
             const { db, doc, getDoc, setDoc } = window;
@@ -1285,7 +1835,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
               await setDoc(ref, profile);
             }
           } catch (e) {
-            console.warn("Falha ao ler perfil IA do Firestore:", e);
+            console.warn("Falha ao ler perfil IA do Supabase:", e);
           }
         }
 
@@ -1317,21 +1867,21 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           console.warn("Falha ao salvar perfil IA no localStorage:", e);
         }
 
-        // 7. Persiste no Firestore (merge) se disponível
+        // 7. Persiste no Supabase (merge) se disponível
         if (window.db && window.doc && window.setDoc) {
           try {
             const { db, doc, setDoc } = window;
             const ref = doc(db, "aiProfiles", storageKey);
             await setDoc(ref, profile, { merge: true });
           } catch (e) {
-            console.warn("Falha ao salvar perfil IA no Firestore:", e);
+            console.warn("Falha ao salvar perfil IA no Supabase:", e);
           }
         }
       }
 
 
       // 💡 IMPLEMENTAÇÃO 7: "Modo Aprendiz" (ajuste contínuo do perfil)
-      // 🧠 MODIFICADO: Atualiza o perfil do VENCEDOR e do PERDEDOR, agora usando Firestore
+      // 🧠 MODIFICADO: Atualiza o perfil do VENCEDOR e do PERDEDOR, agora usando Supabase
       async function updateAIProfile(winner) {
         try {
           const winnerColor = (winner === WHITE) ? 'white' : 'red';
@@ -1347,7 +1897,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       }
 
       // 💡 Nova função para passar o perfil completo para o worker
-      // 🧠 MODIFICADO: Pega o perfil da cor específica (lendo cache/localStorage e sincronizando com Firestore em background)
+      // 🧠 MODIFICADO: Pega o perfil da cor específica (lendo cache/localStorage e sincronizando com Supabase em background)
             function getAIProfile(player = RED) { // Padrão é RED para manter compatibilidade
         const color = (player === WHITE) ? 'white' : 'red';
         const storageKey = getAIProfileStorageKey(color);
@@ -1381,7 +1931,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           console.warn('Falha ao ler aiProfile do localStorage:', e);
         }
 
-        // 3. Sincroniza em background com Firestore (não bloqueia a jogada)
+        // 3. Sincroniza em background com Supabase (não bloqueia a jogada)
         if (window.db && window.doc && window.getDoc && window.setDoc) {
           (async () => {
             try {
@@ -1410,7 +1960,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
                 });
               }
             } catch (e) {
-              console.warn("Falha ao sincronizar perfil IA com Firestore:", e);
+              console.warn("Falha ao sincronizar perfil IA com Supabase:", e);
             }
           })();
         }
@@ -1421,9 +1971,9 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       }
 
 
-      // 🔁 Helper para garantir que o aiProfile do localStorage seja espelhado explicitamente no Firestore
+      // 🔁 Helper para garantir que o aiProfile do localStorage seja espelhado explicitamente no Supabase
             // 🔁 Helper para garantir que TODOS os perfis aiProfile_* do localStorage
-      // sejam espelhados explicitamente no Firestore (inclui dificuldades)
+      // sejam espelhados explicitamente no Supabase (inclui dificuldades)
       async function forceSyncAIProfiles() {
         try {
           if (!(window.db && window.doc && window.setDoc)) return;
@@ -1438,9 +1988,9 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
               const profile = JSON.parse(ls);
               const ref = doc(db, "aiProfiles", key);
               await setDoc(ref, profile, { merge: true });
-              console.log("🔥 aiProfile sincronizado com Firestore:", key, profile);
+              console.log("🔥 aiProfile sincronizado com Supabase:", key, profile);
             } catch (e) {
-              console.warn("Falha ao sincronizar aiProfile com Firestore (key):", key, e);
+              console.warn("Falha ao sincronizar aiProfile com Supabase (key):", key, e);
             }
           }
         } catch (e) {
@@ -1473,7 +2023,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       // ======================================================
   
       /**
-       * 🔥 PARTE 2 (ADAPTADA): Salva a inteligência (pesos e memória) no Firestore.
+       * 🔥 PARTE 2 (ADAPTADA): Salva a inteligência (pesos e memória) no Supabase.
        * Puxa os dados do 'cache' local (localStorage) e envia para a nuvem.
        */
       async function salvarInteligenciaIA() {
@@ -1510,15 +2060,15 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
             updatedAt: Date.now()
           });
   
-          console.log("🔥 Inteligência da IA (Pesos e Padrões) salva no Firestore!");
+          console.log("🔥 Inteligência da IA (Pesos e Padrões) salva no Supabase!");
   
         } catch (e) {
-          console.error("Erro ao salvar inteligência da IA no Firestore:", e);
+          console.error("Erro ao salvar inteligência da IA no Supabase:", e);
         }
       }
   
       /**
-       * 🔥 PARTE 3 (ADAPTADA): Carrega a inteligência do Firestore quando o jogo abre.
+       * 🔥 PARTE 3 (ADAPTADA): Carrega a inteligência do Supabase quando o jogo abre.
        * Coloca os dados no 'cache' local (localStorage) e envia para o Worker.
        */
       async function carregarInteligenciaIA() {
@@ -1535,7 +2085,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
   
           if (snap.exists()) {
             const data = snap.data();
-            console.log("🔥 Inteligência da IA encontrada no Firestore. Carregando...");
+            console.log("🔥 Inteligência da IA encontrada no Supabase. Carregando...");
   
             // 1. Carrega os Pesos Neurais (e salva no localStorage)
             if (data.neural_w) {
@@ -1582,14 +2132,14 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
             return true;
   
           } else {
-            console.log("Nenhuma inteligência de IA encontrada no Firestore. Usando dados locais/padrão.");
+            console.log("Nenhuma inteligência de IA encontrada no Supabase. Usando dados locais/padrão.");
             // 🧠 Se não existir, cria o primeiro documento com os dados padrões
-            console.log("🔥 Criando primeiro registro de inteligência no Firestore...");
+            console.log("🔥 Criando primeiro registro de inteligência no Supabase...");
             await salvarInteligenciaIA(); // Salva os valores padrões atuais
             return false;
           }
         } catch (e) {
-          console.error("Erro ao carregar inteligência da IA do Firestore:", e);
+          console.error("Erro ao carregar inteligência da IA do Supabase:", e);
           return false;
         }
       }
@@ -1605,11 +2155,11 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
        * Para garantir que todas as instâncias do jogo compartilhem a mesma
        * inteligência (pesos neurais, heurística de fim de jogo e memória de
        * padrões) e os mesmos perfis de IA (agg/def/games/wins), criamos
-       * assinantes (listeners) do Firestore. Sempre que um documento é
+       * assinantes (listeners) do Supabase. Sempre que um documento é
        * atualizado no servidor, atualizamos o cache local (localStorage e
        * caches em memória) e, quando aplicável, enviamos os dados ao Web
-       * Worker. Estes listeners são registrados após o Firebase estar pronto
-       * (firebaseReady) e podem ser removidos chamando as funções de
+       * Worker. Estes listeners são registrados após o Supabase estar pronto
+       * (supabaseReady) e podem ser removidos chamando as funções de
        * unsubscribe retornadas.
        */
       // Guardam funções de unsubscribe para evitar múltiplos ouvintes duplicados
@@ -1617,7 +2167,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       let iaProfilesUnsubs = [];
 
       /**
-       * Inscreve-se no documento /ia/inteligencia no Firestore.
+       * Inscreve-se no documento /ia/inteligencia no Supabase.
        * Quando os dados remotos mudam, atualiza localmente os pesos neurais,
        * pesos de fim de jogo e memórias de padrões, além de notificar o worker.
        */
@@ -1802,7 +2352,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
         return hash; 
       }
       
-      // 🌐 Helper para serializar/desserializar o tabuleiro para o Firebase
+      // 🌐 Helper para serializar/desserializar o tabuleiro para o Supabase
       function serializeBoard(b) {
         // Converte o array 2D em uma string simples
         return b.map(row => 
@@ -1856,6 +2406,7 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
       }
 
       function initBoard(){
+        rankingJaPontuouNaPartida = false;
         gameEnded = false; lockInteraction(false); clearAllTimeouts();
         // 🧠 Mostra o botão de opções (⋮) com fade (Função de UI)
         showOptionsButton(true);
@@ -1932,9 +2483,9 @@ window.firebaseReady = new Promise(async (resolve, reject) => {
           // 🌐 PASSO 5 (JS): Aplicar orientação (Função de UI)
           ajustarOrientacao(getPlayerColor());
           
-          // 🌐 Envia o tabuleiro inicial para o Firestore
+          // 🌐 Envia o tabuleiro inicial para o Supabase
           if (getPlayerColor() === WHITE) { // Só o dono da sala (Branco) envia o tabuleiro inicial
-            enviarJogadaFirebase(null); // Envia o estado inicial
+            enviarJogadaSupabase(null); // Envia o estado inicial
           }
 
         } else {
@@ -2001,102 +2552,143 @@ function drawBoardFromData(newBoardData) {
 }
 
 
-      // 🌐 Escuta alterações no Firestore para jogadas em tempo real
-      function ouvirSala(codigo) {
-        // Garante que o Firebase esteja carregado
-        if (!window.db || !window.doc || !window.onSnapshot) {
-          console.error("Firebase DB não está inicializado. Aguardando...");
-          setTimeout(() => ouvirSala(codigo), 500); // Tenta novamente
-          return;
+function ouvirSala(codigo) {
+  console.log("[online] ouvirSala:", codigo);
+
+  if (!window.supabase) {
+    console.warn("[online] Supabase ainda não pronto.");
+    setTimeout(() => ouvirSala(codigo), 500);
+    return;
+  }
+
+  const supabase = window.supabase;
+
+  if (onlineUnsubscribe) {
+    try { onlineUnsubscribe(); } catch (_) {}
+    onlineUnsubscribe = null;
+  }
+
+  async function carregarSalaAtual() {
+    const { data, error } = await supabase
+      .from("salas")
+      .select("*")
+      .eq("id", codigo)
+      .maybeSingle();
+
+    if (error) {
+      console.error("[online] erro ao buscar sala:", error);
+      return;
+    }
+
+    processarSalaSupabase(data);
+  }
+
+  function processarSalaSupabase(data) {
+    console.log("[online] sala:", data);
+
+    if (!data) {
+      console.warn("[online] sala ainda sem dados, aguardando...");
+      return;
+    }
+
+    window.currentRoomData = data;
+    currentRoom = codigo;
+
+    if (data.status === "esperando") {
+      setBubblePlaceholder(`Sala ${codigo} criada. Aguardando oponente...`);
+      return;
+    }
+
+    if (data.status === "em_jogo" && !onlineStarted) {
+      onlineStarted = true;
+
+      showOverlay("🛰️<br/>Oponente conectado! Iniciando...", true);
+
+      setTimeout(() => {
+        showOverlay("", false);
+
+        const menu = document.getElementById("menuContainer");
+        if (menu) menu.style.display = "none";
+
+        initBoard();
+      }, 800);
+
+      return;
+    }
+
+    if (data.tabuleiro && data.jogador_da_vez && document.getElementById("board").innerHTML) {
+      const novoTabuleiro = data.tabuleiro;
+      const novoCurrent = data.jogador_da_vez;
+
+      if (serializeBoard(board) !== novoTabuleiro) {
+        board = deserializeBoard(novoTabuleiro);
+        current = novoCurrent;
+
+        if (typeof drawBoardFromData === "function") {
+          drawBoardFromData(board);
+        } else {
+          drawBoard();
         }
-        
-        // 🌐 Para de ouvir a sala anterior, se houver
-        if (onlineUnsubscribe) {
-          onlineUnsubscribe();
-          onlineUnsubscribe = null;
+
+        try { sMove.play().catch(()=>{}); } catch (_) {}
+
+        if (data.ultima_jogada?.type === "capture") {
+          try { sCap.play().catch(()=>{}); } catch (_) {}
+          if (typeof shakeBoard === "function") shakeBoard();
         }
-        
-        const { db, doc, onSnapshot } = window;
-        // 💡 PASSO 1 (CORREÇÃO): Caminho do Firestore simplificado
-        const salaRef = doc(db, "salas", codigo);
-
-        onlineUnsubscribe = onSnapshot(salaRef, (docSnap) => {
-          const data = docSnap.data();
-          if (!data) {
-            console.log("Dados da sala não encontrados ou sala removida.");
-            showOverlayError("A sala foi encerrada ou não existe.");
-            returnToMenu();
-            return;
-          }
-
-          // 🌐 Outro jogador entrou — inicia somente uma vez por sala
-          if (data.Status === "Em jogo" && !onlineStarted) {
-            onlineStarted = true;
-            console.log("Oponente entrou! Iniciando jogo.");
-            showOverlay("🛰️<br/>Oponente conectado! Iniciando...", true);
-            setTimeout(() => {
-                showOverlay("", false);
-                document.getElementById('menuContainer').style.display = 'none';
-                initBoard();
-            }, 2000);
-          }
-
-          // 🌐 Sincroniza o estado do jogo — só após o board estar renderizado
-          if (data.Tabuleiro && data.JogadorDaVez && document.getElementById('board').innerHTML) {
-            const newCurrent = data.JogadorDaVez;
-
-            // Só redesenha se o tabuleiro mudou
-            if (serializeBoard(board) !== data.Tabuleiro) {
-              console.log("Recebendo atualização do tabuleiro...");
-              const newBoard = deserializeBoard(data.Tabuleiro);
-              // 1) Atualiza current ANTES de drawBoardFromData (squareEl usa isOnline+getPlayerColor)
-              current = newCurrent;
-              drawBoardFromData(newBoard);
-              sMove.play().catch(()=>{});
-              if (data.UltimaJogada?.type === 'capture') {
-                sCap.play().catch(()=>{});
-                shakeBoard();
-              }
-            } else {
-              // Tabuleiro igual — só sincroniza current se mudou (ex: reconexão)
-              current = newCurrent;
-            }
-
-            // Recalcula legal com o current já correto
-            computeLegal();
-
-            const myColor = getPlayerColor();
-            if (current === myColor) {
-              setBubblePlaceholder(`Sala: ${currentRoom} | Sua vez!`);
-            } else {
-              setBubblePlaceholder(`Sala: ${currentRoom} | Vez do oponente...`);
-            }
-
-            // 🧭 Reaplica a orientação após qualquer atualização de estado no modo online.
-            // Mesmo quando o tabuleiro não muda (apenas troca de turno), a orientação pode
-            // ficar incorreta se não for reajustada. Usamos a cor do jogador atual para
-            // garantir que a rotação do tabuleiro e contra-rotação das peças permaneçam coerentes.
-            ajustarOrientacao(myColor);
-          }
-
-          if (data.Status === "Encerrado") {
-            console.log("🏁 Sala encerrada!");
-            onGameOver(data.Vencedor);
-            if (onlineUnsubscribe) onlineUnsubscribe();
-          }
-        });
+      } else {
+        current = novoCurrent;
       }
 
-      // 🌐 Envia a jogada para o Firebase
-      async function enviarJogadaFirebase(mv) {
+      computeLegal();
+
+      const myColor = getPlayerColor();
+      setBubblePlaceholder(
+        current === myColor
+          ? `Sala ${currentRoom} | Sua vez!`
+          : `Sala ${currentRoom} | Vez do oponente...`
+      );
+
+      try { ajustarOrientacao(myColor); } catch (_) {}
+    }
+
+    if (data.status === "encerrado") {
+      onGameOver(data.vencedor);
+      if (onlineUnsubscribe) {
+        try { onlineUnsubscribe(); } catch (_) {}
+        onlineUnsubscribe = null;
+      }
+    }
+  }
+
+  carregarSalaAtual();
+
+  const channel = supabase
+    .channel("room:" + codigo)
+    .on("postgres_changes", {
+      event: "*",
+      schema: "public",
+      table: "salas",
+      filter: "id=eq." + codigo
+    }, (payload) => {
+      processarSalaSupabase(payload.new);
+    })
+    .subscribe((status) => {
+      console.log("[online] realtime status:", status);
+    });
+
+  onlineUnsubscribe = () => {
+    supabase.removeChannel(channel);
+  };
+}
+
+      // 🌐 Envia a jogada para o Supabase
+      async function enviarJogadaSupabase(mv) {
         if (!isOnline || !currentRoom) return;
-        if (!window.db || !window.doc || !window.updateDoc) {
-          console.error("Firebase DB não está inicializado.");
+        if (!window.supabase) {
+          console.error("[online] Supabase não está inicializado.");
           return;
         }
-        const { db, doc, updateDoc } = window;
-        // 💡 PASSO 1 (CORREÇÃO): Caminho do Firestore simplificado
-        const salaRef = doc(db, "salas", currentRoom);
 
         // 'current' aqui é o jogador QUE ACABOU de mover, exceto nos casos especiais abaixo.
         // Se mv for nulo (estado inicial) ou se mv.continuation estiver definido (captura múltipla em andamento),
@@ -2107,100 +2699,149 @@ function drawBoardFromData(newBoardData) {
           : ((current === WHITE) ? RED : WHITE);
 
         try {
-          await updateDoc(salaRef, {
-            Tabuleiro: serializeBoard(board),
-            JogadorDaVez: proximoJogador,
-            UltimaJogada: mv ? { from: mv.from, to: mv.to, type: mv.type } : null, // Envia um objeto simples
-            Timestamp: Date.now()
-          });
-          console.log("Jogada enviada. Próximo:", proximoJogador);
+          const { error } = await window.supabase
+            .from("salas")
+            .update({
+              tabuleiro: serializeBoard(board),
+              jogador_da_vez: proximoJogador,
+              ultima_jogada: mv ? { from: mv.from, to: mv.to, type: mv.type } : null,
+              atualizado_em: new Date().toISOString()
+            })
+            .eq("id", currentRoom);
+
+          if (error) throw error;
+          console.log("[online] jogada enviada. Próximo:", proximoJogador);
         } catch (error) {
-          console.error("Erro ao enviar jogada:", error);
+          console.error("[online] erro ao enviar jogada:", error);
         }
       }
       
-      // 🌐 Envia o fim de jogo para o Firebase
-      async function enviarFimDeJogoFirebase(vencedor) {
+      // 🌐 Envia o fim de jogo para o Supabase
+      async function enviarFimDeJogoSupabase(vencedor) {
         if (!isOnline || !currentRoom || getPlayerColor() !== WHITE) return; // Só o dono da sala (Branco) encerra
-        if (!window.db || !window.doc || !window.updateDoc) {
-          console.error("Firebase DB não está inicializado.");
+        if (!window.supabase) {
+          console.error("[online] Supabase não está inicializado.");
           return;
         }
-        const { db, doc, updateDoc } = window;
-        // 💡 PASSO 1 (CORREÇÃO): Caminho do Firestore simplificado
-        const salaRef = doc(db, "salas", currentRoom);
-        
+
         try {
-          await updateDoc(salaRef, {
-            Status: "Encerrado",
-            Vencedor: vencedor
-          });
-          console.log("Fim de jogo enviado. Vencedor:", vencedor);
+          const { error } = await window.supabase
+            .from("salas")
+            .update({
+              status: "encerrado",
+              vencedor: vencedor,
+              atualizado_em: new Date().toISOString()
+            })
+            .eq("id", currentRoom);
+
+          if (error) throw error;
+          console.log("[online] fim de jogo enviado. Vencedor:", vencedor);
         } catch (error) {
-          console.error("Erro ao enviar fim de jogo:", error);
+          console.error("[online] erro ao enviar fim de jogo:", error);
         }
       }
 
       // 🌐 Funções de Sala (chamadas pela UI)
-      async function criarSalaFirebase(codigo, jogador1_uid) {
-          if (!window.db || !window.doc || !window.setDoc) {
-            showOverlayError("Erro de conexão (DB1). O modo online não funcionará.");
-            return;
-          }
-          const { db, doc, setDoc } = window;
-          // 💡 PASSO 1 (CORREÇÃO): Caminho do Firestore simplificado
-          const salaRef = doc(db, "salas", codigo);
+async function criarSalaSupabase(codigo, jogador1_uid) {
+  console.log("[online] criar sala:", codigo);
 
-          try {
-            await setDoc(salaRef, {
-              Jogador1: jogador1_uid, // Salva o UID do Jogador 1
-              Jogador2: "",
-              Tabuleiro: null, // Tabuleiro inicial será enviado no initBoard
-              JogadorDaVez: WHITE, // Branco sempre começa
-              Status: "Esperando",
-              Timestamp: Date.now()
-            });
-          } catch (error) {
-            console.error("Erro ao criar sala:", error);
-            showOverlayError("Erro ao criar sala no servidor.");
-          }
-        }
+  if (!window.supabase) {
+    showOverlayError("Erro de conexão com Supabase.");
+    return false;
+  }
+
+  await ensureAuthReady();
+
+  const uid = jogador1_uid || window.userId;
+
+  try {
+    const { error } = await window.supabase.from("salas").insert({
+      id: codigo,
+      jogador1: uid,
+      jogador2: null,
+      tabuleiro: null,
+      jogador_da_vez: WHITE,
+      status: "esperando",
+      vencedor: null,
+      ultima_jogada: null,
+      criado_em: new Date().toISOString(),
+      atualizado_em: new Date().toISOString()
+    });
+
+    if (error) throw error;
+
+    currentRoom = codigo;
+    isOnline = true;
+    onlineStarted = false;
+
+    console.log("[online] sala criada:", codigo);
+    return true;
+  } catch (error) {
+    console.error("[online] erro criar sala:", error);
+    showOverlayError("Erro ao criar sala no Supabase.");
+    return false;
+  }
+}
         
-      async function entrarSalaFirebase(codigo, jogador2_uid) {
-        if (!window.db || !window.doc || !window.getDoc || !window.updateDoc) {
-          showOverlayError("Erro de conexão (DB2). O modo online não funcionará.");
-          return false;
-        }
-        const { db, doc, getDoc, updateDoc } = window;
-        // 💡 PASSO 1 (CORREÇÃO): Caminho do Firestore simplificado
-        const salaRef = doc(db, "salas", codigo);
-        
-        try {
-          const salaSnap = await getDoc(salaRef);
-        
-          if (!salaSnap.exists()) {
-            showOverlayError("Sala não encontrada!");
-            return false;
-          }
-          
-          const data = salaSnap.data();
-          if (data.Status !== "Esperando") {
-            showOverlayError("Esta sala já está cheia ou encerrada.");
-            return false;
-          }
-        
-          await updateDoc(salaRef, { 
-            Jogador2: jogador2_uid, // Salva o UID do Jogador 2
-            Status: "Em jogo",
-            Timestamp: Date.now()
-          });
-          return true;
-        } catch (error) {
-          console.error("Erro ao entrar na sala:", error);
-          showOverlayError("Erro ao conectar à sala.");
-          return false;
-        }
-      }
+async function entrarSalaSupabase(codigo, jogador2_uid) {
+  console.log("[online] entrar sala:", codigo);
+
+  if (!window.supabase) {
+    showOverlayError("Erro de conexão com Supabase.");
+    return false;
+  }
+
+  await ensureAuthReady();
+
+  const uid = jogador2_uid || window.userId;
+
+  try {
+    const { data, error } = await window.supabase
+      .from("salas")
+      .select("*")
+      .eq("id", codigo)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      showOverlayError("Sala não encontrada!");
+      return false;
+    }
+
+    if (data.jogador1 === uid) {
+      showOverlayError("Você não pode entrar na própria sala.");
+      return false;
+    }
+
+    if (data.status !== "esperando") {
+      showOverlayError("Esta sala já está cheia ou encerrada.");
+      return false;
+    }
+
+    const { error: updError } = await window.supabase
+      .from("salas")
+      .update({
+        jogador2: uid,
+        status: "em_jogo",
+        atualizado_em: new Date().toISOString()
+      })
+      .eq("id", codigo);
+
+    if (updError) throw updError;
+
+    currentRoom = codigo;
+    isOnline = true;
+    onlineStarted = false;
+
+    console.log("[online] entrou na sala:", codigo);
+    return true;
+  } catch (error) {
+    console.error("[online] erro entrar sala:", error);
+    showOverlayError("Erro ao entrar na sala.");
+    return false;
+  }
+}
 
       /* ETAPA 4: onSquareClick (bloqueio de clique humano)
       */
@@ -2355,7 +2996,7 @@ function drawBoardFromData(newBoardData) {
         // NÃO é permitido continuar capturando na mesma jogada.
         if (mv && mv.promoted) {
           if (isOnline) {
-            enviarJogadaFirebase(mv);
+            enviarJogadaSupabase(mv);
           }
           switchPlayer();
           return;
@@ -2394,14 +3035,14 @@ function drawBoardFromData(newBoardData) {
         if (!isMultiCapture) {
           // 🌐 Se for online, envia a jogada final (or única)
           if (isOnline) {
-            enviarJogadaFirebase(mv);
+            enviarJogadaSupabase(mv);
           }
           switchPlayer();
         } else {
           // 🌐 Se for online E for uma captura múltipla, envia o estado *intermediário*
           if (isOnline) {
             // Não troca o jogador, mas atualiza o tabuleiro
-            enviarJogadaFirebase(mv);
+            enviarJogadaSupabase(mv);
           }
         }
       }
@@ -2508,10 +3149,86 @@ function drawBoardFromData(newBoardData) {
       }
 
       // ✅ FUNÇÃO ONGAMEOVER (MODIFICADA PARA CHAMAR ANÁLISE)
+
+let rankingJaPontuouNaPartida = false;
+
+function getPontosRankingPorDificuldade(resultado) {
+  const diff = (localStorage.getItem("difficulty") || document.getElementById("difficulty")?.value || "medium").toLowerCase();
+
+  const tabela = {
+    easy:   { win: 5,  loss: -5,  draw: 2 },
+    medium: { win: 10, loss: -8,  draw: 2 },
+    hard:   { win: 18, loss: -12, draw: 2 },
+    master: { win: 30, loss: -15, draw: 2 }
+  };
+
+  return tabela[diff]?.[resultado] ?? tabela.medium[resultado] ?? 0;
+}
+
+async function registrarResultadoRankingVsIA(winner) {
+  try {
+    if (rankingJaPontuouNaPartida) return;
+    if (isOnline || trainingMode) return;
+    if (!window.supabase || !window.userId) return;
+
+    rankingJaPontuouNaPartida = true;
+
+    let resultado = "draw";
+    if (winner === WHITE) resultado = "win";
+    if (winner === RED) resultado = "loss";
+
+    const pontos = getPontosRankingPorDificuldade(resultado);
+
+    const { data: perfil, error: erroBusca } = await window.supabase
+      .from("profiles")
+      .select("id, username, rating, wins, losses, draws")
+      .eq("id", window.userId)
+      .maybeSingle();
+
+    if (erroBusca) throw erroBusca;
+
+    const ratingAtual = Number(perfil?.rating ?? 1000);
+    const novoRating = Math.max(0, ratingAtual + pontos);
+
+    const wins = Number(perfil?.wins ?? 0) + (resultado === "win" ? 1 : 0);
+    const losses = Number(perfil?.losses ?? 0) + (resultado === "loss" ? 1 : 0);
+    const draws = Number(perfil?.draws ?? 0) + (resultado === "draw" ? 1 : 0);
+
+    const username = perfil?.username || window.playerName || localStorage.getItem("player_name") || "Jogador";
+
+    const { error: erroUpdate } = await window.supabase
+      .from("profiles")
+      .upsert({
+        id: window.userId,
+        username,
+        rating: novoRating,
+        wins,
+        losses,
+        draws
+      }, { onConflict: "id" });
+
+    if (erroUpdate) throw erroUpdate;
+
+    console.log("🏆 Ranking atualizado:", {
+      resultado,
+      pontos,
+      ratingAnterior: ratingAtual,
+      ratingNovo: novoRating,
+      wins,
+      losses,
+      draws
+    });
+
+  } catch (e) {
+    console.error("Erro ao atualizar ranking:", e);
+  }
+}
+
       function onGameOver(winner){
 
 // === EMPATE PROFISSIONAL: Regras avançadas (painel) ===
 if (window.drawReason) {
+        registrarResultadoRankingVsIA(null);
         // Marca fim de jogo
         gameEnded = true;
         lockInteraction(true);
@@ -2554,6 +3271,8 @@ if (window.drawReason) {
 }
 
         gameEnded = true; lockInteraction(true); clearAllTimeouts(); current = null;
+
+        registrarResultadoRankingVsIA(winner);
 
         // 🔁 Modo TREINO (IA vs IA): fluxo focado em estatísticas e looping opcional
         if (trainingMode) {
@@ -2651,7 +3370,7 @@ if (window.drawReason) {
 
         // 🌐 Se for online, envia o resultado (só o host/branco)
         if (isOnline && getPlayerColor() === WHITE) {
-          enviarFimDeJogoFirebase(winner);
+          enviarFimDeJogoSupabase(winner);
         }
         
         // 🌐 Para de ouvir a sala
@@ -2955,6 +3674,68 @@ if (window.drawReason) {
       /* Fim do bloco reintroduzido */
       
       /*************************
+       * Edge Function (IA híbrida cloud + local)
+       *************************/
+      function boardToEdgeString(b) {
+        try {
+          return (b || board).map(row =>
+            row.map(cell => {
+              if (!cell) return '0';
+              if (cell === WHITE) return 'w';
+              if (cell === RED) return 'r';
+              if (cell === WHITE + KING) return 'W';
+              if (cell === RED + KING) return 'R';
+              return '0';
+            }).join('')
+          ).join('|');
+        } catch (e) {
+          console.warn('Falha ao serializar board para Edge:', e);
+          return '';
+        }
+      }
+
+      function getCurrentZobristForEdge() {
+        try {
+          if (typeof hashBoard === 'function') return String(hashBoard(board));
+          if (typeof computeZobristHash === 'function') return String(computeZobristHash(board));
+          if (window.currentZobrist) return String(window.currentZobrist);
+        } catch (e) {
+          console.warn('Falha ao calcular zobrist para Edge:', e);
+        }
+        return null;
+      }
+
+      async function consultarEdgeIA({ boardString, legalMoves, zobrist, difficulty, playerColor }) {
+        try {
+          const res = await fetch("https://ynhlhdluafgmujfkrnlz.supabase.co/functions/v1/ia-think", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InluaGxoZGx1YWZnbXVqZmtybmx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTkwMDQsImV4cCI6MjA5MzIzNTAwNH0.KT3HNLJ4pSZChBNroOrZtJGU55xMKaxAnoI6ZhOKkbM",
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InluaGxoZGx1YWZnbXVqZmtybmx6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2NTkwMDQsImV4cCI6MjA5MzIzNTAwNH0.KT3HNLJ4pSZChBNroOrZtJGU55xMKaxAnoI6ZhOKkbM"
+            },
+            body: JSON.stringify({
+              board: boardString,
+              legal: legalMoves || [],
+              zobrist,
+              difficulty,
+              playerColor
+            })
+          });
+
+          if (!res.ok) {
+            console.warn('Edge IA respondeu erro:', res.status, await res.text());
+            return null;
+          }
+
+          return await res.json();
+        } catch (e) {
+          console.warn('Edge IA indisponível, usando worker local:', e);
+          return null;
+        }
+      }
+
+      /*************************
        * IA via Web Worker
        *************************/
       
@@ -2995,7 +3776,7 @@ if (window.drawReason) {
                 localStorage.setItem('patternMemory_red', JSON.stringify(data.patternMemory_red));
               }
               
-              // 🔥 PARTE 2 (GATILHO): Salva no Firestore CADA VEZ que o worker aprende
+              // 🔥 PARTE 2 (GATILHO): Salva no Supabase CADA VEZ que o worker aprende
               // (Isso cobre o modo IA vs IA e o fim de jogo normal)
               salvarInteligenciaIA();
               
@@ -3044,7 +3825,7 @@ if (window.drawReason) {
         }
       }
 
-      function aiMove(movesToConsider=null){
+      async function aiMove(movesToConsider=null){
         if (gameEnded) return;
         if(isOnline) return; // IA não joga online
         if(!worker) return;
@@ -3084,6 +3865,49 @@ if (window.drawReason) {
         else if (diff === 'hard')   thinkTimeMs = 1600;
         else if (diff === 'master') thinkTimeMs = 3000;
 
+        // ☁️ IA HÍBRIDA: consulta Edge Function antes do worker local
+        if (!trainingMode) {
+          const edge = await consultarEdgeIA({
+            boardString: boardToEdgeString(board),
+            legalMoves: legal,
+            zobrist: getCurrentZobristForEdge(),
+            difficulty: diff,
+            playerColor: RED
+          });
+
+          if (edge?.source === 'opening_book' && edge.move) {
+            const edgeMove = {
+              from: edge.move.from,
+              to: edge.move.to,
+              type: 'move'
+            };
+
+            const matched = (legal || []).find(m =>
+              m?.from?.[0] === edgeMove.from?.[0] &&
+              m?.from?.[1] === edgeMove.from?.[1] &&
+              m?.to?.[0] === edgeMove.to?.[0] &&
+              m?.to?.[1] === edgeMove.to?.[1]
+            );
+
+            if (matched) {
+              console.log('☁️ Edge IA usou abertura:', edge.name || edge);
+              handleAIResult(matched, edge.score ?? 0, edge.depth ?? 0);
+              return;
+            }
+
+            console.warn('Edge IA sugeriu lance fora da lista legal. Usando worker local.', edgeMove);
+          }
+
+          if (edge?.source === 'pattern_memory') {
+            console.log('☁️ Edge IA encontrou memória de padrão:', edge);
+          }
+
+          if (edge?.source === 'compute_local') {
+            console.log('☁️ Edge IA sem abertura/memória. Worker local continua.');
+          }
+        }
+
+        // 🧠 FALLBACK: Se a Edge não retornou jogada, usa o worker local
         // ⭐️ MODIFICADO: Envia também a regra de captura para a IA
         // 🧠 MODIFICADO: Envia AMBOS os perfis + pesos neurais + pesos de fim de jogo
         worker.postMessage({ 
@@ -4891,15 +5715,15 @@ if (window.drawReason) {
       
       // 🎮 LÓGICA DO MENU ATUALIZADA
       document.addEventListener('DOMContentLoaded', async ()=>{
-        // 🔥 PARTE 3 (GATILHO): Carrega a inteligência do Firestore ANTES de iniciar o worker
+        // 🔥 PARTE 3 (GATILHO): Carrega a inteligência do Supabase ANTES de iniciar o worker
         // (await) garante que o worker receba a memória mais recente, se existir
         await carregarInteligenciaIA();
 
         // Após carregar a inteligência local, registra listeners para sincronizar
         // automaticamente as atualizações remotas de IA (pesos/memória) e perfis.
         try {
-          if (typeof firebaseReady !== 'undefined') {
-            firebaseReady.then(() => {
+          if (typeof supabaseReady !== 'undefined') {
+            supabaseReady.then(() => {
               try { subscribeToInteligenciaIA(); } catch(_) {}
               try { subscribeToAIProfiles(); } catch(_) {}
             });
@@ -5171,7 +5995,7 @@ if (window.drawReason) {
                 console.warn("Erro ao limpar localStorage da IA:", e);
               }
 
-              // 2) Opcional: limpa docs de perfil da IA no Firestore (apenas se disponível)
+              // 2) Opcional: limpa docs de perfil da IA no Supabase (apenas se disponível)
               try {
                 if (window.db && window.doc && window.setDoc) {
                   const { db, doc, setDoc } = window;
@@ -5185,7 +6009,7 @@ if (window.drawReason) {
                   }));
                 }
               } catch (e) {
-                console.warn("Erro ao resetar perfis da IA no Firestore:", e);
+                console.warn("Erro ao resetar perfis da IA no Supabase:", e);
               }
 
               // 3) Limpa HUD/contador e painel mini status
@@ -5256,7 +6080,7 @@ if (window.drawReason) {
         
         // Abre o submenu online
         btnOnline.addEventListener('click', () => {
-          // 🌐 Verifica se o Firebase está pronto
+          // 🌐 Verifica se o Supabase está pronto
           if (!window.db) {
             showOverlayError("Conectando ao servidor... Tente novamente em alguns segundos.");
             return;
@@ -5298,18 +6122,24 @@ if (window.drawReason) {
           currentRoom = code;
           roomCodeEl.textContent = code;
 
-          // 💡 Espera o Firebase estar pronto (window.userId é definido no IIFE)
+          // 💡 Espera o Supabase estar pronto (window.userId é definido no IIFE)
           if (!window.userId) {
             showOverlayError("Aguardando conexão... Tente novamente.");
             returnToMenu();
             return;
           }
 
-          await criarSalaFirebase(code, window.userId); // Usa o UID do Firebase (de game-core.js)
-          ouvirSala(currentRoom); // Inicia o listener (de game-core.js)
-          
-          // 🌐 Atualiza UI para esperar oponente
-          setBubblePlaceholder(`Sala: ${currentRoom} | Aguardando oponente...`);
+const criada = await criarSalaSupabase(code, window.userId);
+
+if (!criada) {
+  isOnline = false;
+  currentRoom = null;
+  createRoomScreen.classList.add("hidden");
+  onlineMenuScreen.classList.remove("hidden");
+  return;
+}
+
+ouvirSala(currentRoom);
           
           // if (openSound) openSound.play().catch(()=>{}); // MOVIDO para o topo
         });
@@ -5353,33 +6183,42 @@ if (window.drawReason) {
         btnJoin.addEventListener('click', async () => {
           if (closeSound) closeSound.play().catch(()=>{}); // 🔊 Som de clique (Imediato)
           
-          isOnline = true;
-          onlineStarted = false; // 🌐 reseta a flag de inicialização online
-          // 🧹 garante board “vazio” ao entrar na sala
-          const boardEl = document.getElementById('board');
-          if (boardEl) boardEl.innerHTML = '';
-          setPlayerColor('red'); // visitante = vermelho
-          
           const code = inputRoomCode.value.trim().toUpperCase();
+
           if (!code) {
             showOverlayError("Digite um código válido para entrar!");
             return;
           }
 
-          // 💡 Espera o Firebase estar pronto
+          isOnline = true;
+          onlineStarted = false;
+          currentRoom = code;
+
+          // 🧹 garante board "vazio" ao entrar na sala
+          const boardEl = document.getElementById('board');
+          if (boardEl) boardEl.innerHTML = '';
+          setPlayerColor('red'); // visitante = vermelho
+
+          // 💡 Espera o Supabase estar pronto
           if (!window.userId) {
             showOverlayError("Aguardando conexão... Tente novamente.");
             returnToMenu();
             return;
           }
 
-          const sucesso = await entrarSalaFirebase(code, window.userId); // (de game-core.js)
-          if (!sucesso) return;
-          
-          currentRoom = code;
+          const entrou = await entrarSalaSupabase(code, window.userId);
+
+          if (!entrou) {
+            isOnline = false;
+            currentRoom = null;
+            joinRoomScreen.classList.add("hidden");
+            onlineMenuScreen.classList.remove("hidden");
+            return;
+          }
+
           showOverlay(`🛰️<br/>Entrando na sala ${code}...`, true);
-          
-          ouvirSala(currentRoom); // Inicia o listener (de game-core.js)
+
+          ouvirSala(currentRoom);
           
           // O jogo NÃO inicia aqui. O listener (ouvirSala)
           // vai detectar a mudança de Status: "Em jogo"
@@ -6683,7 +7522,7 @@ if (window.drawReason) {
       };
   </script>
 
-  <!-- 🐞 CORREÇÃO: O script duplicado "IA Learning Firebase Injection FULL" foi comentado -->
+  <!-- 🐞 CORREÇÃO: O script duplicado "IA Learning Supabase Injection FULL" foi comentado -->
   <!-- Esta lógica já está integrada no Bloco 2 (game-core.js) e estava a -->
   <!-- causar o erro de redeclaração do 'AI_DEFAULT_PROFILE'. -->
   <!--
@@ -6715,10 +7554,10 @@ if (window.drawReason) {
   if (window.__workerPatchInstalled) return;
   window.__workerPatchInstalled = true;
 
-  // Book stats cache (from Firebase or IndexedDB/localStorage)
+  // Book stats cache (from Supabase or IndexedDB/localStorage)
   window.BOOK_STATS = JSON.parse(localStorage.getItem('BOOK_STATS')||'{}');
 
-  async function loadBookStatsFirebase(){
+  async function loadBookStatsSupabase(){
     try{
       if (window.db && window.doc && window.getDoc){
         const snap = await window.getDoc(window.doc(window.db, "ia", "bookStats"));
@@ -6831,7 +7670,7 @@ if (window.drawReason) {
   // Try to attach periodically
   setInterval(patch, 300);
   // Load book weights early
-  setTimeout(loadBookStatsFirebase, 800);
+  setTimeout(loadBookStatsSupabase, 800);
 })();
 </script>
 
@@ -6981,7 +7820,7 @@ if (window.drawReason) {
 
 
 <script>
-// ==== Opening Book Manager (Firebase + IDB + procedural fallback) ====
+// ==== Opening Book Manager (Supabase + IDB + procedural fallback) ====
 (function(){
   if (window.__bookManagerInstalled) return; window.__bookManagerInstalled = true;
 
@@ -7030,8 +7869,8 @@ if (window.drawReason) {
     });
   }
 
-  // Merge BOOK_STATS with multiple Firebase docs if exist
-  async function loadBookFirebase(){
+  // Merge BOOK_STATS with multiple Supabase docs if exist
+  async function loadBookSupabase(){
     try{
       if (!(window.db && window.doc && window.getDoc)) return false;
       const targets = [
@@ -7086,7 +7925,7 @@ if (window.drawReason) {
 
   // Exponho API para o engine patch consumir
   window.BookManager = {
-    async init(){ await loadBookFirebase(); },
+    async init(){ await loadBookSupabase(); },
     getStats(){ return window.BOOK_STATS||{}; },
     openingBias
   };
@@ -7098,7 +7937,7 @@ if (window.drawReason) {
 
 
 <script>
-// ==== Endgame Cache Manager (IDB + Firebase opcional) ====
+// ==== Endgame Cache Manager (IDB + Supabase opcional) ====
 (function(){
   if (window.__egManagerInstalled) return; window.__egManagerInstalled = true;
 
@@ -7254,7 +8093,7 @@ if (window.drawReason) {
             await __orig_updateAIProfile(winner);
           }
         } catch(e){ console.warn('Falha leve na IA (ignorado).'); } finally {
-          // Sempre tenta espelhar o perfil no Firestore em background
+          // Sempre tenta espelhar o perfil no Supabase em background
           try {
             if (typeof forceSyncAIProfiles === 'function') {
               forceSyncAIProfiles();
@@ -7639,6 +8478,139 @@ document.addEventListener('DOMContentLoaded', ()=>{
 document.addEventListener("DOMContentLoaded", ()=>{
   const b=document.getElementById("btnMultiplayer");
   if(b){ b.onclick=()=>{ window.location.href="mesa.html"; } }
+
+  const btnRanking = document.getElementById("btnRanking");
+  const btnVoltarRanking = document.getElementById("btnVoltarRanking");
+  const btnAtualizarRanking = document.getElementById("btnAtualizarRanking");
+  const mainMenuScreen = document.getElementById("mainMenuScreen");
+  const rankingScreen = document.getElementById("rankingScreen");
+
+  async function carregarRanking() {
+    const lista = document.getElementById("rankingList");
+    if (!lista) return;
+
+    lista.innerHTML = `<div class="text-center text-slate-400 py-6">Carregando ranking...</div>`;
+
+    try {
+      const { data, error } = await window.supabase
+        .from("profiles")
+        .select("username, rating, wins, losses, draws")
+        .order("rating", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      if (!data?.length) {
+        lista.innerHTML = `<div class="text-center text-slate-400 py-6">Nenhum jogador no ranking ainda.</div>`;
+        return;
+      }
+
+      lista.innerHTML = data.map((p, i) => {
+        const pos = i + 1;
+        const medalha = pos === 1 ? "🥇" : pos === 2 ? "🥈" : pos === 3 ? "🥉" : `#${pos}`;
+
+        return `
+          <div class="flex items-center justify-between gap-3 py-3 border-b border-slate-700/70 last:border-b-0">
+            <div class="flex items-center gap-3 min-w-0">
+              <div class="w-10 text-center text-xl font-bold">${medalha}</div>
+              <div class="min-w-0">
+                <div class="font-bold text-slate-100 truncate">${p.username || "Jogador"}</div>
+                <div class="text-xs text-slate-400">
+                  ${p.wins || 0}V • ${p.losses || 0}D • ${p.draws || 0}E
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div class="text-amber-300 font-black">${p.rating || 1000}</div>
+              <div class="text-[10px] text-slate-500 uppercase">rating</div>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+    } catch (e) {
+      lista.innerHTML = `
+        <div class="text-center text-red-300 py-6">
+          Erro ao carregar ranking.<br>
+          <span class="text-xs text-slate-400">${e.message || e}</span>
+        </div>
+      `;
+    }
+  }
+
+  if (btnRanking) {
+    btnRanking.onclick = () => {
+      mainMenuScreen.classList.add("hidden");
+      rankingScreen.classList.remove("hidden");
+      carregarRanking();
+    };
+  }
+
+  if (btnVoltarRanking) {
+    btnVoltarRanking.onclick = () => {
+      rankingScreen.classList.add("hidden");
+      mainMenuScreen.classList.remove("hidden");
+    };
+  }
+
+  if (btnAtualizarRanking) {
+    btnAtualizarRanking.onclick = carregarRanking;
+  }
+  
+  const btnConfig = document.getElementById("btnConfig");
+  const configModal = document.getElementById("configModal");
+  const btnCloseConfig = document.getElementById("btnCloseConfig");
+  const configContent = document.getElementById("configContent");
+  const btnOpenManualFromConfig = document.getElementById("btnOpenManualFromConfig");
+
+  function montarConfigModal() {
+    if (!configContent) return;
+
+    const difficultyContainer = document.getElementById("difficultyContainer");
+    const ruleContainer = document.getElementById("ruleContainer");
+    const speechModeContainer = document.getElementById("speechModeContainer");
+
+    if (difficultyContainer && !configContent.contains(difficultyContainer)) {
+      difficultyContainer.classList.remove("hidden");
+      configContent.appendChild(difficultyContainer);
+    }
+
+    if (ruleContainer && !configContent.contains(ruleContainer)) {
+      ruleContainer.classList.remove("hidden");
+      configContent.appendChild(ruleContainer);
+    }
+
+    if (speechModeContainer && !configContent.contains(speechModeContainer)) {
+      speechModeContainer.classList.remove("hidden");
+      configContent.appendChild(speechModeContainer);
+    }
+  }
+
+  if (btnConfig && configModal) {
+    btnConfig.onclick = () => {
+      montarConfigModal();
+      configModal.classList.remove("hidden");
+    };
+  }
+
+  if (btnCloseConfig && configModal) {
+    btnCloseConfig.onclick = () => {
+      configModal.classList.add("hidden");
+    };
+  }
+
+  if (btnOpenManualFromConfig) {
+    btnOpenManualFromConfig.onclick = () => {
+      if (configModal) configModal.classList.add("hidden");
+      const manualBtn = document.getElementById("btnManualMenu");
+      if (manualBtn) manualBtn.click();
+    };
+  }
+
+  // 👤 Inicializa perfil do jogador (login simples)
+  if (typeof initPerfilJogador === "function") {
+    initPerfilJogador();
+  }
 });
 </script>
 </body>
