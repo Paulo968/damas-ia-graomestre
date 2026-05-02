@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Damas vs IA // Arquivos do Sistema v3.6 (Fixed)</title>
+    <title>Damas AI // Arquitetura da Inteligência v4.0 — Supabase Edition</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -166,12 +166,12 @@
                     name: 'System Architect', 
                     role: 'Observability', 
                     year: '2025', 
-                    reason: 'A invisibilidade é o maior risco de sistemas distribuídos. Quando você não vê o fluxo de dados, o debug de estados complexos (como Workers e Firebase) torna-se impossível.',
-                    usage: 'Renderiza um grafo SVG reativo. A cada `postMessage` ou evento `onSnapshot`, os nós pulsam, provando que o "sangue" digital está circulando entre os módulos.' 
+                    reason: 'A invisibilidade é o maior risco de sistemas distribuídos. Quando você não vê o fluxo de dados, o debug de estados complexos (como Workers e Supabase) torna-se impossível.',
+                    usage: 'Renderiza um grafo SVG reativo. A cada estado emitido na pipeline, os nós pulsam, provando que o "sangue" digital está circundando entre os módulos, edge e client.' 
                 },
                 langs: ['SVG Vector', 'React State'], 
-                lore: 'O mapa holográfico do cérebro digital. Visualiza as 12 áreas corticais e o fluxo de dados entre o cliente, os workers e a nuvem.', 
-                tech: { render: 'SVG Vector', nodes: '17 Active', update: 'Real-time Listener' }, 
+                lore: 'O mapa holográfico do cérebro digital. Visualiza as áreas corticais e o fluxo de dados entre o cliente, os workers e a nuvem.', 
+                tech: { render: 'SVG Vector', nodes: 'Dynamic', update: 'Real-time Listener' }, 
                 logs: ['> Inicializando nós...', '> Hive Mind: Sincronizado.', '> Telemetria: Link estável.', '> Topologia expandida.']
             },
             {
@@ -215,6 +215,106 @@
                 logs: ['> Horizonte de busca: 18 ply.', '> Zobrist Hash calculado.', '> TT Cache Hit.', '> Alpha-Beta Cutoff.']
             },
             {
+                id: 'edge_intelligence',
+                title: 'EDGE INTELLIGENCE',
+                type: 'CÉREBRO CONSULTIVO',
+                iconName: 'Zap',
+                color: 'cyan',
+                status: 'ONLINE',
+                complexity: 85,
+                creator: {
+                    name: 'Cloud Architect',
+                    role: 'Distributed Computing',
+                    year: '2026',
+                    reason: 'Mover a inteligência para a borda (Edge) reduz latência e centraliza a sabedoria coletiva. O cliente local deve ser apenas o executor quando possível.',
+                    usage: 'A Edge Function `ia-think` recebe o estado do jogo. Consulta o livro de aberturas e a memória (memoria_ia). Se não achar nada, faz fallback para a IA local (Worker).'
+                },
+                langs: ['Edge Functions', 'Deno/TS'],
+                lore: 'A mente na nuvem. Um oráculo global executado na Edge que consolida toda a experiência da IA e responde em milissegundos, antes mesmo do hardware local precisar pensar.',
+                tech: { host: 'Supabase Edge', latency: '< 50ms', fallback: 'Local Worker' },
+                logs: ['> Chamando Edge API...', '> ia-think: Processando.', '> Memória consultada.', '> Resposta recebida da nuvem.']
+            },
+            {
+                id: 'opening_book',
+                title: 'LIVRO DE ABERTURAS',
+                type: 'CACHE DE ESTADO',
+                iconName: 'Hash',
+                color: 'emerald',
+                status: 'ONLINE',
+                complexity: 15,
+                creator: {
+                    name: 'Data Ops',
+                    role: 'Memoization',
+                    year: '2026',
+                    reason: 'Evitar cálculo pesado nos lances iniciais. O Zobrist Hash permite buscar instantaneamente lances consolidados no Supabase, poupando CPU limpa.',
+                    usage: 'Calcula o Zobrist Hash da posição. Busca na tabela `aberturas`. Se houver um lance com score positivo forte, executa imediatamente sem chamar o Minimax.'
+                },
+                langs: ['Zobrist Hashing', 'Supabase SQL'],
+                lore: 'A biblioteca ancestral. Um repositório de aberturas perfeitas que permite à IA jogar os primeiros lances baseada em sabedoria milenar, sem gastar energia.',
+                tech: { hash: 'Zobrist 64-bit', table: 'aberturas', query: 'O(1) Lookup' },
+                logs: ['> Zobrist Hash gerado.', '> Consultando aberturas...', '> Match encontrado: Score +0.5.', '> Lance instantâneo aplicado.']
+            },
+            {
+                id: 'ranking_profiles',
+                title: 'RANKING & PROFILES',
+                type: 'SISTEMA DE ELO',
+                iconName: 'Target',
+                color: 'yellow',
+                status: 'ONLINE',
+                complexity: 30,
+                creator: {
+                    name: 'Social Engineer',
+                    role: 'Gamification',
+                    year: '2026',
+                    reason: 'Sem um senso de progressão contínua o usuário desengaja rápido. Um sistema de Elo e histórico de vitórias cria um meta-jogo muito mais competitivo.',
+                    usage: 'Tabela `profiles` com login/nick. Registra Wins/Losses/Draws e atualiza a Pontuação (vs IA ou PvP) após cada partida usando o algoritmo de Elo.'
+                },
+                langs: ['PostgreSQL', 'Auth Row Level Sec'],
+                lore: 'O salão da fama digital. Cada embate contra a máquina ou outro humano forja o seu nível de poder (Rating) no ecossistema do jogo.',
+                tech: { table: 'profiles', auth: 'Supabase Auth', metric: 'Elo Rating' },
+                logs: ['> Autenticando jogador...', '> Lendo profile data.', '> Partida finalizada.', '> Elo atualizado: +14.']
+            },
+            {
+                id: 'online_realtime',
+                title: 'MULTIPLAYER REALTIME',
+                type: 'WS SYNC',
+                iconName: 'Activity',
+                color: 'red',
+                status: 'ONLINE',
+                complexity: 65,
+                creator: {
+                    name: 'Network Architect',
+                    role: 'Multiplayer',
+                    year: '2026',
+                    reason: 'A verdadeira prova de fogo de um jogo de tabuleiro é o PvP. Redes neurais são legais, mas destruir a estratégia do seu amigo ao vivo é essencial.',
+                    usage: 'Usa a tabela `salas` e o Supabase Realtime (WebSockets) para sincronizar estado de tabuleiro, turno e chat entre dois clientes quase instantaneamente.'
+                },
+                langs: ['WebSockets', 'Supabase Realtime'],
+                lore: 'A arena multiversal. Cria uma ponte de baixa latência conectando diretamente a mente de dois jogadores, sincronizando seus lances na velocidade da luz.',
+                tech: { channel: 'salas_presence', protocol: 'WebSocket', latency: '< 100ms' },
+                logs: ['> Criando sala privada...', '> Aguardando oponente...', '> Realtime channel open.', '> Sincronização de lance: OK.']
+            },
+            {
+                id: 'telemetry',
+                title: 'TELEMETRIA CLOUD',
+                type: 'CÉREBRO DE MÉTRICAS',
+                iconName: 'BarChart',
+                color: 'orange',
+                status: 'ONLINE', 
+                complexity: 60,
+                creator: {
+                    name: 'Data Ops',
+                    role: 'Crowd Learning',
+                    year: '2025',
+                    reason: 'Uma IA isolada sofre de "overfitting" (aprende apenas os vícios locais). A verdadeira robustez nasce da exposição a milhares de humanos imprevisíveis na nuvem.',
+                    usage: 'Agrega estatísticas de performance de todos os clientes via Supabase Edge Functions e Realtime. Permite ajustar a dificuldade globalmente sem atualizar o código do cliente.'
+                },
+                langs: ['Supabase Realtime', 'PostgreSQL'],
+                lore: 'O sistema nervoso periférico. Conecta cada instância de jogo a uma mente coletiva na nuvem, permitindo ajustes de balanceamento baseados em dados reais.',
+                tech: { db: 'Supabase', path: 'telemetria', metrics: 'Depth/Score' },
+                logs: ['> Worker msg recebida.', '> Telemetria formatada.', '> Uploading via Edge...', '> Ack received.']
+            },
+            {
                 id: 'coach',
                 title: 'COACH DE PARTIDA',
                 type: 'ANÁLISE SEMÂNTICA',
@@ -233,26 +333,6 @@
                 lore: 'Um analista digital que observa cada movimento. Detecta oscilações de vantagem e traduz erros táticos em conselhos práticos.',
                 tech: { input: 'GameHistory', metric: 'Advantage Swing', trigger: 'Swing >= 2' },
                 logs: ['> Analisando histórico...', '> Ponto de Virada: Lance 14.', '> Vantagem IA: +2.4.', '> Gerando dica: "Cuidado com trocas."']
-            },
-            {
-                id: 'telemetry',
-                title: 'TELEMETRIA CLOUD',
-                type: 'CÉREBRO DE MÉTRICAS',
-                iconName: 'BarChart',
-                color: 'orange',
-                status: 'ONLINE', 
-                complexity: 60,
-                creator: {
-                    name: 'Data Ops',
-                    role: 'Crowd Learning',
-                    year: '2025',
-                    reason: 'Uma IA isolada sofre de "overfitting" (aprende apenas os vícios locais). A verdadeira robustez nasce da exposição a milhares de humanos imprevisíveis na nuvem.',
-                    usage: 'Agrega estatísticas de performance (nós por segundo, profundidade média) de todos os clientes via Firestore. Permite ajustar a dificuldade globalmente sem atualizar o código.'
-                },
-                langs: ['Firestore NoSQL', 'Async Msg'],
-                lore: 'O sistema nervoso periférico. Conecta cada instância de jogo a uma mente coletiva na nuvem, permitindo ajustes de balanceamento baseados em dados reais.',
-                tech: { db: 'Firestore', path: 'telemetry/{uid}', metrics: 'Depth/Score/Time' },
-                logs: ['> Worker msg recebida.', '> Telemetria formatada.', '> Uploading to Cloud...', '> Ack received.']
             },
             {
                 id: 'depth_adapt',
@@ -347,12 +427,12 @@
                     role: 'Ensemble Learning',
                     year: '2025',
                     reason: 'Para evitar o "Esquecimento Catastrófico". Se a IA treina apenas com um lado, ela esquece como defender o outro. A fusão garante equilíbrio.',
-                    usage: 'Pós-treino, aplica uma média aritmética `(WhiteWeights + RedWeights) / 2` nos vetores neurais. Salva o resultado híbrido no localStorage para a próxima sessão.'
+                    usage: 'Pós-treino, aplica uma média aritmética nos vetores neurais. Salva o resultado no localStorage e persiste na tabela `memoria_ia` no Supabase para uso em nuvem.'
                 },
                 langs: ['Weight Averaging', 'Profile Merge'],
-                lore: 'O processo de assimilação. Funde as experiências das IAs Branca e Vermelha em uma única matriz de pesos otimizada após cada partida de treino.',
-                tech: { method: 'Average Merge', target: 'Red Profile', sync: 'Bi-directional' },
-                logs: ['> Treino finalizado.', '> Lendo pesos W/R.', '> Calculando média...', '> Consciência unificada salva.']
+                lore: 'O processo de assimilação. Funde as experiências das IAs Branca e Vermelha em uma única matriz de pesos e envia o extrato vital para a tabela memoria_ia.',
+                tech: { method: 'Average Merge', target: 'memoria_ia', sync: 'Bi-directional' },
+                logs: ['> Treino finalizado.', '> Lendo pesos W/R.', '> Calculando média...', '> Consciência unificada salva na nuvem.']
             },
             {
                 id: 'debug_profile',
@@ -386,10 +466,10 @@
                     name: 'Sys Admin',
                     role: 'Mínimos Locais',
                     year: '2025',
-                    reason: 'Otimização presa em mínimos locais. Às vezes, a IA aprende um vício errado que funciona contra iniciantes, mas falha contra mestres. A única cura é a morte do modelo.',
-                    usage: 'Limpeza destrutiva de chaves específicas no `localStorage` e reset de documentos no Firestore, forçando a regeneração dos pesos aleatórios iniciais.'
+                    reason: 'Otimização presa em mínimos locais. Às vezes, a IA aprende um vício errado que funciona contra iniciantes, mas falha contra mestres. A cura é a morte do modelo.',
+                    usage: 'Limpeza destrutiva de chaves no `localStorage` e wipe em tabelas específicas no Supabase (memoria_ia) forçando a regeneração de pesos limpos.'
                 },
-                langs: ['Storage Clear', 'Default Payload'],
+                langs: ['Storage Clear', 'Supabase RPC'],
                 lore: 'O protocolo de renascimento. Apaga memórias viciadas e restaura a IA para suas configurações de fábrica, pronta para reaprender do zero.',
                 tech: { action: 'Wipe Storage', scope: 'Local + Cloud', target: 'All Prefixes' },
                 logs: ['> Iniciando purga...', '> Deletando padrões...', '> Restaurando pesos padrão.', '> IA renascida.']
@@ -407,7 +487,7 @@
                     role: 'Persona Crafting',
                     year: '2026',
                     reason: 'Dar identidade e humanizar a IA através de diferentes personas. A mesma IA pode agir de forma descontraída, dramática ou calculista.',
-                    usage: 'O algoritmo consulta o pacote de falas correspondente (SPEECH_PACKS) de acordo com o modo atual. Usa fallback para frases genéricas se o modo específico não tiver a categoria do evento.',
+                    usage: 'O algoritmo consulta o pacote de falas correspondente (SPEECH_PACKS) de acordo com o modo atual. Usa fallback para frases genéricas se o modo específico não tiver a categoria.',
                 },
                 langs: ['Dictionary Maps', 'Persona Mode'],
                 lore: 'A máscara vocal da máquina. Permite que a IA mude completamente sua personalidade tática com base no modo selecionado (Brasil, Anime ou Técnico).',
@@ -467,12 +547,12 @@
                     role: 'State Saving',
                     year: '2026',
                     reason: 'Evitar perda de progresso e manter aprendizado entre sessões.',
-                    usage: 'Funções saveGameState() serializam tabuleiro e vez do jogador. O evento beforeunload dispara salvamento dos pesos da IA e estado antes de sair.',
+                    usage: 'Funções saveGameState() serializam tabuleiro e vez. O evento beforeunload sincroniza o progresso com a tabela `profiles` no Supabase e persiste os pesos da IA.',
                 },
-                langs: ['localStorage', 'Firestore Sync'],
+                langs: ['localStorage', 'Supabase'],
                 lore: 'A memória longa do tabuleiro. Garante que, ao recarregar a página, a partida e a inteligência continuem exatamente de onde pararam.',
-                tech: { storage: 'gameState', event: 'beforeunload', sync: 'Firestore /ia/inteligencia' },
-                logs: ['> Salvando estado do jogo...', '> Estado restaurado.', '> IA weights sync.']
+                tech: { storage: 'gameState', event: 'beforeunload', sync: 'Supabase (profiles)' },
+                logs: ['> Salvando estado do jogo...', '> Estado restaurado.', '> Sync com a base cloud.']
             }
         ];
 
@@ -510,8 +590,6 @@
             };
 
             // TOPOLOGIA DINÂMICA: Organizada em Árvore
-            // Desktop: Grafo largo (espinha dorsal central Y=400)
-            // Mobile: Grafo longo (scroll vertical fluido, 3 colunas baseadas no X)
             const topologyData = {
                 nodes: {
                     // CAMADA 1: Controles e Motores Iniciais
@@ -536,7 +614,13 @@
                     
                     // CAMADA 4: Banco de Dados e Consciência
                     consolidation: { ...getNodeData('consolidation'),    ...getPos(466, 1000, 450, 1150) },
-                    persistence:   { ...getNodeData('state_persistence'),...getPos(733, 1000, 300, 1300) }
+                    persistence:   { ...getNodeData('state_persistence'),...getPos(733, 1000, 300, 1300) },
+                    
+                    // CAMADA 5: Multiplayer & Edge API (Supabase Integration)
+                    edge:          { ...getNodeData('edge_intelligence'),...getPos(150, 1300, 150, 1750) },
+                    book:          { ...getNodeData('opening_book'),     ...getPos(375, 1300, 450, 1750) },
+                    ranking:       { ...getNodeData('ranking_profiles'), ...getPos(600, 1300, 300, 1900) },
+                    online:        { ...getNodeData('online_realtime'),  ...getPos(825, 1300, 450, 2050) }
                 },
                 connections: [
                     // Fluxo Principal (Espinha Dorsal)
@@ -546,11 +630,21 @@
                     { from: 'core', to: 'time', desc: 'Orçamento Tempo' },
                     { from: 'core', to: 'symmetry', desc: 'Filtro Geométrico' },
                     
-                    // Nuvem / Dados
+                    // Edge & Abeturas
+                    { from: 'core', to: 'book', desc: 'Zobrist Lookup' },
+                    { from: 'book', to: 'edge', desc: 'Miss -> Nuvem' },
+                    { from: 'edge', to: 'telemetry', desc: 'Métricas Nuvem' },
+                    
+                    // Nuvem / Dados Gerais
                     { from: 'telemetry', to: 'coach', desc: 'Dados Partida' },
                     { from: 'multicore', to: 'consolidation', desc: 'Merge Pesos' },
                     { from: 'telemetry', to: 'persistence', desc: 'Sync Cloud' },
                     { from: 'consolidation', to: 'persistence', desc: 'Salvar Híbrido' },
+                    
+                    // Social / Realtime
+                    { from: 'persistence', to: 'ranking', desc: 'Update Elo' },
+                    { from: 'online', to: 'ranking', desc: 'PvP Result' },
+                    { from: 'online', to: 'persistence', desc: 'Sync Board' },
                     
                     // Narrativa
                     { from: 'core', to: 'context', desc: 'Estado -> Fala' },
@@ -597,7 +691,7 @@
                         </button>
                         <div className="bg-slate-900/80 backdrop-blur px-4 py-2 rounded-full border border-slate-700 text-blue-400 flex items-center gap-2 shadow-lg">
                             <Icon name="Network" size={18} />
-                            <span className="text-xs font-bold tracking-widest hidden sm:inline">TOPOLOGIA VIVA v3.6</span>
+                            <span className="text-xs font-bold tracking-widest hidden sm:inline">TOPOLOGIA VIVA v4.0</span>
                         </div>
                     </div>
                     
@@ -883,7 +977,7 @@
                                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                                     <div className="text-center md:text-left">
                                         <div className="inline-flex items-center gap-2 px-2 py-1 rounded-full bg-slate-900 border border-slate-800 text-cyan-500 text-[10px] font-mono uppercase tracking-widest mb-1">
-                                            <Icon name="Terminal" size={10} /> v3.6 Guide
+                                            <Icon name="Terminal" size={10} /> v4.0 Guide
                                         </div>
                                         <h1 className="text-2xl sm:text-3xl md:text-5xl font-black text-white tracking-tighter flex items-center justify-center md:justify-start gap-3">
                                             <span className="text-slate-200 tracking-widest">DAMAS</span>
@@ -923,7 +1017,7 @@
                             <span className="hidden md:inline">MEM: 128.4 MB</span>
                             <span className="hidden md:inline">WORKERS: ACTIVE</span>
                         </div>
-                        <div className="flex items-center gap-4"><span className="text-slate-600 hidden sm:inline">SENTINELA OS v3.6</span><span className="animate-pulse text-cyan-500">_</span></div>
+                        <div className="flex items-center gap-4"><span className="text-slate-600 hidden sm:inline">SENTINELA OS v4.0</span><span className="animate-pulse text-cyan-500">_</span></div>
                     </div>
                 </div>
             );
