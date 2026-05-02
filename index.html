@@ -2408,6 +2408,7 @@ async function initPerfilJogador() {
       function initBoard(){
         rankingJaPontuouNaPartida = false;
         iaJaAprendeuNaPartida = false;
+        livroJaAtualizouNaPartida = false;
         gameEnded = false; lockInteraction(false); clearAllTimeouts();
         // 🧠 Mostra o botão de opções (⋮) com fade (Função de UI)
         showOptionsButton(true);
@@ -3153,6 +3154,7 @@ async function entrarSalaSupabase(codigo, jogador2_uid) {
 
 let rankingJaPontuouNaPartida = false;
 let iaJaAprendeuNaPartida = false;
+let livroJaAtualizouNaPartida = false;
 
 function getPontosRankingPorDificuldade(resultado) {
   const diff = (localStorage.getItem("difficulty") || document.getElementById("difficulty")?.value || "medium").toLowerCase();
@@ -3165,6 +3167,102 @@ function getPontosRankingPorDificuldade(resultado) {
   };
 
   return tabela[diff]?.[resultado] ?? tabela.medium[resultado] ?? 0;
+}
+
+async function registrarLivroAberturaAutomatico(winner) {
+  try {
+    if (livroJaAtualizouNaPartida) return;
+    if (isOnline) return;
+    if (!window.supabase) return;
+    if (!Array.isArray(gameHistory) || gameHistory.length < 4) return;
+
+    // Por seguranca: so salva abertura quando a IA vermelha ganhou.
+    // Se ela perdeu, nao vamos ensinar jogada ruim ao livro.
+    if (winner !== RED) return;
+
+    livroJaAtualizouNaPartida = true;
+
+    const dificuldadeAtual = document.getElementById("difficulty")?.value || "medium";
+    const dificuldadeLivro = dificuldadeAtual === "master" ? "master" : "universal";
+
+    const jogadasDeAberturaIA = gameHistory
+      .filter(h =>
+        h &&
+        h.player === RED &&
+        h.hash !== undefined &&
+        h.hash !== null &&
+        h.move &&
+        Array.isArray(h.move.from) &&
+        Array.isArray(h.move.to)
+      )
+      .slice(0, 6);
+
+    if (!jogadasDeAberturaIA.length) return;
+
+    for (const h of jogadasDeAberturaIA) {
+      const chave = String(h.hash).replace(/n$/, "");
+
+      const fromRow = Number(h.move.from[0]);
+      const fromCol = Number(h.move.from[1]);
+      const toRow = Number(h.move.to[0]);
+      const toCol = Number(h.move.to[1]);
+
+      const { data: existente, error: erroBusca } = await window.supabase
+        .from("aberturas")
+        .select("*")
+        .eq("zobrist_hash", chave)
+        .eq("from_row", fromRow)
+        .eq("from_col", fromCol)
+        .eq("to_row", toRow)
+        .eq("to_col", toCol)
+        .eq("dificuldade", dificuldadeLivro)
+        .maybeSingle();
+
+      if (erroBusca) throw erroBusca;
+
+      if (existente) {
+        const novasVitorias = Number(existente.vitorias_vermelho || 0) + 1;
+
+        const { error: erroUpdate } = await window.supabase
+          .from("aberturas")
+          .update({
+            vitorias_vermelho: novasVitorias
+          })
+          .eq("zobrist_hash", chave)
+          .eq("from_row", fromRow)
+          .eq("from_col", fromCol)
+          .eq("to_row", toRow)
+          .eq("to_col", toCol)
+          .eq("dificuldade", dificuldadeLivro);
+
+        if (erroUpdate) throw erroUpdate;
+      } else {
+        const { error: erroInsert } = await window.supabase
+          .from("aberturas")
+          .insert({
+            zobrist_hash: chave,
+            from_row: fromRow,
+            from_col: fromCol,
+            to_row: toRow,
+            to_col: toCol,
+            dificuldade: dificuldadeLivro,
+            nome_abertura: `Auto-${dificuldadeLivro}`,
+            vitorias_vermelho: 1,
+            vitorias_branco: 0
+          });
+
+        if (erroInsert) throw erroInsert;
+      }
+    }
+
+    console.log("Livro de abertura atualizado:", {
+      dificuldade: dificuldadeLivro,
+      jogadas: jogadasDeAberturaIA.length
+    });
+
+  } catch (e) {
+    console.error("Erro ao atualizar livro de abertura:", e);
+  }
 }
 
 async function registrarAprendizadoIAPosPartida(winner) {
@@ -3358,6 +3456,7 @@ if (window.drawReason) {
 
         registrarResultadoRankingVsIA(winner);
         registrarAprendizadoIAPosPartida(winner);
+        registrarLivroAberturaAutomatico(winner);
 
         // 🔁 Modo TREINO (IA vs IA): fluxo focado em estatísticas e looping opcional
         if (trainingMode) {
