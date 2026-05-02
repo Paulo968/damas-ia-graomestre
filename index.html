@@ -3180,6 +3180,12 @@ async function registrarLivroAberturaAutomatico(winner) {
     // Se ela perdeu, nao vamos ensinar jogada ruim ao livro.
     if (winner !== RED) return;
 
+    const totalLancesPartida = Array.isArray(gameHistory) ? gameHistory.length : 999;
+
+    // Vitoria rapida vale mais para o livro.
+    // Se a IA venceu em poucos lances, provavelmente a abertura foi forte.
+    const pesoVitoria = totalLancesPartida <= 24 ? 2 : 1;
+
     livroJaAtualizouNaPartida = true;
 
     const dificuldadeAtual = document.getElementById("difficulty")?.value || "medium";
@@ -3221,7 +3227,7 @@ async function registrarLivroAberturaAutomatico(winner) {
       if (erroBusca) throw erroBusca;
 
       if (existente) {
-        const novasVitorias = Number(existente.vitorias_vermelho || 0) + 1;
+        const novasVitorias = Number(existente.vitorias_vermelho || 0) + pesoVitoria;
 
         const { error: erroUpdate } = await window.supabase
           .from("aberturas")
@@ -3247,7 +3253,7 @@ async function registrarLivroAberturaAutomatico(winner) {
             to_col: toCol,
             dificuldade: dificuldadeLivro,
             nome_abertura: `Auto-${dificuldadeLivro}`,
-            vitorias_vermelho: 1,
+            vitorias_vermelho: pesoVitoria,
             vitorias_branco: 0
           });
 
@@ -3257,7 +3263,9 @@ async function registrarLivroAberturaAutomatico(winner) {
 
     console.log("Livro de abertura atualizado:", {
       dificuldade: dificuldadeLivro,
-      jogadas: jogadasDeAberturaIA.length
+      jogadas: jogadasDeAberturaIA.length,
+      pesoVitoria,
+      totalLancesPartida
     });
 
   } catch (e) {
@@ -8787,6 +8795,34 @@ document.addEventListener("DOMContentLoaded", ()=>{
     btnOpenManualFromConfig.onclick = () => {
       if (configModal) configModal.classList.add("hidden");
       const manualBtn = document.getElementById("btnManualMenu");
+      if (manualBtn) manualBtn.click();
+    };
+  }
+
+  // 👤 Inicializa perfil do jogador (login simples)
+  if (typeof initPerfilJogador === "function") {
+    initPerfilJogador();
+  }
+});
+</script>
+</body>
+  </html>enu");
+      if (manualBtn) manualBtn.click();
+    };
+  }
+
+  // 👤 Inicializa perfil do jogador (login simples)
+  if (typeof initPerfilJogador === "function") {
+    initPerfilJogador();
+  }
+});
+</script>
+</body>
+  </html>  }
+});
+</script>
+</body>
+  </html>enu");
       if (manualBtn) manualBtn.click();
     };
   }
