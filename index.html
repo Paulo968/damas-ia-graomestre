@@ -2407,6 +2407,7 @@ async function initPerfilJogador() {
 
       function initBoard(){
         rankingJaPontuouNaPartida = false;
+        iaJaAprendeuNaPartida = false;
         gameEnded = false; lockInteraction(false); clearAllTimeouts();
         // 🧠 Mostra o botão de opções (⋮) com fade (Função de UI)
         showOptionsButton(true);
@@ -3151,6 +3152,7 @@ async function entrarSalaSupabase(codigo, jogador2_uid) {
       // ✅ FUNÇÃO ONGAMEOVER (MODIFICADA PARA CHAMAR ANÁLISE)
 
 let rankingJaPontuouNaPartida = false;
+let iaJaAprendeuNaPartida = false;
 
 function getPontosRankingPorDificuldade(resultado) {
   const diff = (localStorage.getItem("difficulty") || document.getElementById("difficulty")?.value || "medium").toLowerCase();
@@ -3163,6 +3165,87 @@ function getPontosRankingPorDificuldade(resultado) {
   };
 
   return tabela[diff]?.[resultado] ?? tabela.medium[resultado] ?? 0;
+}
+
+async function registrarAprendizadoIAPosPartida(winner) {
+  try {
+    if (iaJaAprendeuNaPartida) return;
+    if (isOnline) return;
+    if (!window.supabase) return;
+    if (!Array.isArray(gameHistory) || gameHistory.length < 4) return;
+
+    iaJaAprendeuNaPartida = true;
+
+    let resultadoIA = "draw";
+    if (winner === RED) resultadoIA = "win";
+    if (winner === WHITE) resultadoIA = "loss";
+
+    const fator =
+      resultadoIA === "win" ? 0.08 :
+      resultadoIA === "loss" ? -0.08 :
+      0.01;
+
+    const jogadasIA = gameHistory
+      .filter(h => h.player === RED && h.hash !== undefined && h.hash !== null)
+      .slice(-8);
+
+    if (!jogadasIA.length) return;
+
+    for (const h of jogadasIA) {
+      const chave = String(h.hash).replace(/n$/, "");
+
+      const { data: memoriaAtual, error: erroBusca } = await window.supabase
+        .from("memoria_ia")
+        .select("chave, tipo, cor, dados")
+        .eq("chave", chave)
+        .eq("cor", RED)
+        .maybeSingle();
+
+      if (erroBusca) throw erroBusca;
+
+      const dadosAntigos = memoriaAtual?.dados || {};
+      const confidenceAntiga = Number(dadosAntigos.confidence ?? 0.5);
+      const vezesVistoAntigo = Number(dadosAntigos.vezes_visto ?? 0);
+
+      const confidenceNova = Math.max(
+        0.05,
+        Math.min(0.95, confidenceAntiga + fator)
+      );
+
+      const dadosNovos = {
+        ...dadosAntigos,
+        confidence: Number(confidenceNova.toFixed(3)),
+        vezes_visto: vezesVistoAntigo + 1,
+        ultimo_resultado: resultadoIA,
+        ultima_jogada: h.move || null,
+        diff_material: h.diff ?? null,
+        white: h.white ?? null,
+        red: h.red ?? null,
+        atualizado_por: "aprendizado_pos_partida",
+        atualizado_em: new Date().toISOString()
+      };
+
+      const { error: erroUpsert } = await window.supabase
+        .from("memoria_ia")
+        .upsert({
+          chave,
+          tipo: "pattern",
+          cor: RED,
+          dados: dadosNovos,
+          atualizado_em: new Date().toISOString()
+        }, { onConflict: "chave" });
+
+      if (erroUpsert) throw erroUpsert;
+    }
+
+    console.log("🧠 IA aprendeu com a partida:", {
+      resultadoIA,
+      padroes: jogadasIA.length
+    });
+
+  } catch (e) {
+    console.error("Erro no aprendizado pós-partida da IA:", e);
+  }
 }
 
 async function registrarResultadoRankingVsIA(winner) {
@@ -3229,6 +3312,7 @@ async function registrarResultadoRankingVsIA(winner) {
 // === EMPATE PROFISSIONAL: Regras avançadas (painel) ===
 if (window.drawReason) {
         registrarResultadoRankingVsIA(null);
+        registrarAprendizadoIAPosPartida(null);
         // Marca fim de jogo
         gameEnded = true;
         lockInteraction(true);
@@ -3273,6 +3357,7 @@ if (window.drawReason) {
         gameEnded = true; lockInteraction(true); clearAllTimeouts(); current = null;
 
         registrarResultadoRankingVsIA(winner);
+        registrarAprendizadoIAPosPartida(winner);
 
         // 🔁 Modo TREINO (IA vs IA): fluxo focado em estatísticas e looping opcional
         if (trainingMode) {
