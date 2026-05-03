@@ -437,7 +437,7 @@
         ];
 
         // ============================================================
-        // VISUALIZADOR DE MAPA MENTAL VIVO v4.2 - ALCANCE TRANSITIVO
+        // VISUALIZADOR DE MAPA MENTAL VIVO v4.2 - VIZINHANCA DIRETA
         // ============================================================
         const MindMapView = ({ onBack }) => {
             const [activeNodeId, setActiveNodeId] = useState(null);
@@ -513,43 +513,23 @@
                 ]
             };
 
-            // BFS para calcular alcance transitivo (toda a cadeia conectada)
-            const reachableSet = useMemo(() => {
-                if (!activeNodeId) return new Set();
+            // LOGICA DE VIZINHANCA DIRETA (1o grau) - mais suave
+            // Apenas nos com aresta DIRETA (entrando ou saindo) do no clicado
+            const { activeConnections, directNeighborIds } = useMemo(() => {
+                if (!activeNodeId) return { activeConnections: [], directNeighborIds: new Set() };
                 
-                // Constroi lista de adjacencia bidirecional
-                const adj = {};
-                Object.keys(topologyData.nodes).forEach(key => { adj[key] = []; });
-                topologyData.connections.forEach(conn => {
-                    if (adj[conn.from]) adj[conn.from].push(conn.to);
-                    if (adj[conn.to]) adj[conn.to].push(conn.from);
+                const directConns = topologyData.connections.filter(
+                    c => c.from === activeNodeId || c.to === activeNodeId
+                );
+                
+                const neighborIds = new Set();
+                directConns.forEach(c => {
+                    if (c.from === activeNodeId) neighborIds.add(c.to);
+                    if (c.to === activeNodeId) neighborIds.add(c.from);
                 });
                 
-                // BFS a partir do no ativo
-                const visited = new Set();
-                const queue = [activeNodeId];
-                visited.add(activeNodeId);
-                
-                while (queue.length > 0) {
-                    const current = queue.shift();
-                    for (const neighbor of adj[current] || []) {
-                        if (!visited.has(neighbor)) {
-                            visited.add(neighbor);
-                            queue.push(neighbor);
-                        }
-                    }
-                }
-                
-                return visited;
+                return { activeConnections: directConns, directNeighborIds: neighborIds };
             }, [activeNodeId]);
-
-            // Conexoes ativas = todas as arestas entre nos alcancaveis
-            const activeConnections = useMemo(() => {
-                if (!activeNodeId) return [];
-                return topologyData.connections.filter(
-                    c => reachableSet.has(c.from) && reachableSet.has(c.to)
-                );
-            }, [activeNodeId, reachableSet]);
 
             const padding = 80; 
             const nodesArr = Object.values(topologyData.nodes);
@@ -564,6 +544,12 @@
             const handleNodeClick = useCallback((key) => {
                 setActiveNodeId(prev => prev === key ? null : key);
             }, []);
+
+            // Helper: verifica se um no esta ativo (selecionado ou vizinho direto)
+            const isNodeActive = (key) => {
+                if (!activeNodeId) return false;
+                return key === activeNodeId || directNeighborIds.has(key);
+            };
 
             return (
                 <div className="absolute inset-0 z-50 flex flex-col animate-in">
@@ -593,15 +579,20 @@
                                 </defs>
                                 <rect x={minX - padding} y={minY - padding} width={vbWidth} height={vbHeight} fill="url(#grid)" />
 
-                                {/* Conexoes */}
+                                {/* CONEXOES - agora so as diretas ao no clicado brilham */}
                                 {topologyData.connections.map((conn, i) => {
                                     const start = topologyData.nodes[conn.from];
                                     const end = topologyData.nodes[conn.to];
                                     if(!start || !end) return null; 
                                     
-                                    // Agora a conexao acende se AMBOS os nos fazem parte do cluster alcancavel
-                                    const isActive = activeNodeId && reachableSet.has(conn.from) && reachableSet.has(conn.to);
-                                    const isDimmed = activeNodeId && !isActive;
+                                    // Aresta ativa = faz parte das conexoes diretas do no clicado
+                                    const isActive = activeNodeId && (
+                                        (conn.from === activeNodeId && directNeighborIds.has(conn.to)) ||
+                                        (conn.to === activeNodeId && directNeighborIds.has(conn.from))
+                                    );
+                                    
+                                    // Aresta suave = nao tem nada selecionado, ou nao e direta mas existe
+                                    const isRevealed = !activeNodeId; // sem selecao, tudo visivel normalmente
                                     const hexColor = getColor(start.color).hex;
 
                                     const isHorizontal = Math.abs(start.y - end.y) < 50;
@@ -615,75 +606,89 @@
                                     }
 
                                     return (
-                                        <g key={`conn-${i}-${conn.from}-${conn.to}`} className="transition-all duration-500" style={{opacity: isDimmed ? 0.05 : 1}}>
+                                        <g 
+                                            key={`conn-${i}-${conn.from}-${conn.to}`} 
+                                            className="transition-all duration-500"
+                                        >
+                                            {/* Linha base - sempre visivel suavemente */}
                                             <path 
                                                 d={pathD} 
                                                 fill="none" 
                                                 stroke={isActive ? hexColor : '#1e293b'} 
                                                 strokeWidth={isActive ? 3 : 1.5} 
                                                 style={{ 
-                                                    opacity: isActive ? 0.8 : 0.4, 
-                                                    filter: isActive ? `drop-shadow(0 0 6px ${hexColor})` : 'none' 
+                                                    opacity: isActive ? 0.9 : (activeNodeId ? 0.15 : 0.4), 
+                                                    filter: isActive ? `drop-shadow(0 0 8px ${hexColor})` : 'none',
+                                                    transition: 'all 0.4s ease'
                                                 }} 
-                                                className="transition-all duration-500" 
                                             />
+                                            
+                                            {/* Texto descritivo - so aparece na ativa ou sem selecao */}
                                             <text 
                                                 x={(start.x + end.x)/2} 
                                                 y={(start.y + end.y)/2 - 8} 
                                                 fontSize="13" 
                                                 fontWeight="700"
-                                                fill={isActive ? '#fff' : '#64748b'} 
+                                                fill={isActive ? '#fff' : '#475569'} 
                                                 textAnchor="middle"
-                                                className="hidden sm:block transition-colors pointer-events-none"
-                                                style={{ textShadow: isActive ? `0 0 10px ${hexColor}` : '0 2px 4px rgba(0,0,0,0.8)' }}
+                                                className="hidden sm:block pointer-events-none"
+                                                style={{ 
+                                                    opacity: isActive ? 1 : (activeNodeId ? 0.1 : 0.7),
+                                                    textShadow: isActive ? `0 0 10px ${hexColor}` : '0 2px 4px rgba(0,0,0,0.8)',
+                                                    transition: 'all 0.4s ease'
+                                                }}
                                             >
                                                 {conn.desc}
                                             </text>
-                                            <circle 
-                                                r={isActive ? 4.5 : 2.5} 
-                                                fill={isActive ? '#fff' : hexColor} 
-                                                style={{ filter: isActive ? `drop-shadow(0 0 8px ${hexColor})` : 'none' }}
-                                            >
-                                                <animateMotion 
-                                                    dur={`${1.5 + (i % 3) * 0.5}s`} 
-                                                    repeatCount="indefinite" 
-                                                    path={pathD} 
-                                                    calcMode="linear"
-                                                />
-                                            </circle>
+
+                                            {/* Bolinha animada - so na ativa, branca e brilhante */}
+                                            {isActive && (
+                                                <circle r="4" fill="#fff" style={{ filter: `drop-shadow(0 0 10px ${hexColor})` }}>
+                                                    <animateMotion 
+                                                        dur={`${1.5 + (i % 3) * 0.5}s`} 
+                                                        repeatCount="indefinite" 
+                                                        path={pathD} 
+                                                        calcMode="linear"
+                                                    />
+                                                </circle>
+                                            )}
                                         </g>
                                     );
                                 })}
 
-                                {/* Nos */}
+                                {/* NOS - agora so o clicado + vizinhos diretos brilham */}
                                 {Object.entries(topologyData.nodes).map(([key, node]) => {
                                     if(!node) return null;
                                     
-                                    // O no acende se faz parte do cluster alcancavel
-                                    const isActive = activeNodeId && reachableSet.has(key);
+                                    const nodeActive = isNodeActive(key);
                                     const isSelected = activeNodeId === key;
-                                    const isDimmed = activeNodeId && !isActive;
                                     const hexColor = getColor(node.color).hex;
+                                    
+                                    // Sem nada selecionado: tudo normal. Com selecao: ativos=brilho, inativos=suave
+                                    const dimmed = activeNodeId && !nodeActive;
 
                                     return (
                                         <g 
                                             key={`node-${key}`} 
                                             onClick={(e) => { e.stopPropagation(); handleNodeClick(key); }} 
-                                            className="cursor-pointer transition-all duration-300" 
-                                            style={{opacity: isDimmed ? 0.15 : 1}}
+                                            className="cursor-pointer"
+                                            style={{
+                                                opacity: dimmed ? 0.25 : 1,
+                                                transition: 'opacity 0.4s ease'
+                                            }}
                                         >
-                                            {/* Pulso radar */}
+                                            {/* Pulso radar - mais intenso no ativo */}
                                             <circle cx={node.x} cy={node.y} r="50" fill={hexColor} opacity="0">
                                                 <animate 
                                                     attributeName="opacity" 
-                                                    values={isActive ? "0;0.2;0" : "0;0.1;0"} 
+                                                    values={nodeActive ? "0;0.18;0" : "0;0.06;0"} 
                                                     dur="3s" 
                                                     repeatCount="indefinite" 
                                                     begin={`${(node.x % 5) / 5}s`} 
                                                 />
                                                 <animate 
                                                     attributeName="r" 
-                                                    values={isActive ? "38;70;38" : "35;65;35"} 
+                                                    values={nodeActive ? "36;65;36" : "35;55;35"} 
                                                     dur="3s" 
                                                     repeatCount="indefinite" 
                                                     begin={`${(node.y % 5) / 5}s`} 
@@ -694,38 +699,41 @@
                                             <circle 
                                                 cx={node.x} 
                                                 cy={node.y} 
-                                                r={isSelected ? 55 : (isActive ? 48 : 42)} 
+                                                r={isSelected ? 50 : (nodeActive ? 44 : 40)} 
                                                 fill={hexColor} 
-                                                opacity={isActive ? "0.25" : "0.05"} 
-                                                className="transition-all duration-300" 
-                                                style={{ filter: isActive ? `drop-shadow(0 0 24px ${hexColor})` : 'none' }} 
+                                                opacity={nodeActive ? "0.2" : "0.05"} 
+                                                style={{ 
+                                                    filter: nodeActive ? `drop-shadow(0 0 18px ${hexColor})` : 'none',
+                                                    transition: 'all 0.4s ease'
+                                                }} 
                                             />
                                             
                                             {/* Circulo Principal */}
                                             <circle 
                                                 cx={node.x} 
                                                 cy={node.y} 
-                                                r={isSelected ? 44 : (isActive ? 40 : 36)} 
+                                                r={isSelected ? 40 : (nodeActive ? 38 : 34)} 
                                                 fill="#050a10" 
-                                                stroke={isActive ? hexColor : '#334155'} 
-                                                strokeWidth={isSelected ? 5 : (isActive ? 3 : 2)} 
-                                                className="transition-all duration-300" 
+                                                stroke={nodeActive ? hexColor : '#334155'} 
+                                                strokeWidth={isSelected ? 4 : (nodeActive ? 3 : 1.5)} 
                                                 style={{ 
-                                                    filter: isActive ? `drop-shadow(0 0 14px ${hexColor}90)` : 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' 
+                                                    filter: nodeActive ? `drop-shadow(0 0 10px ${hexColor}80)` : 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))',
+                                                    transition: 'all 0.4s ease'
                                                 }} 
                                             />
 
                                             {/* Icone */}
-                                            <foreignObject x={node.x - 16} y={node.y - 16} width="32" height="32">
+                                            <foreignObject x={node.x - 15} y={node.y - 15} width="30" height="30">
                                                 <div className="text-white flex justify-center items-center h-full pointer-events-none">
                                                     <Icon 
                                                         name={node.iconName} 
-                                                        size={isSelected ? 32 : 30} 
+                                                        size={isSelected ? 28 : (nodeActive ? 26 : 24)} 
                                                         style={{
-                                                            color: isActive ? '#fff' : hexColor, 
-                                                            filter: isActive ? `drop-shadow(0 0 8px ${hexColor})` : 'none'
+                                                            color: nodeActive ? '#fff' : hexColor, 
+                                                            filter: nodeActive ? `drop-shadow(0 0 6px ${hexColor})` : 'none',
+                                                            transition: 'all 0.4s ease',
+                                                            opacity: dimmed ? 0.5 : 1
                                                         }} 
-                                                        className="transition-all duration-300" 
                                                     />
                                                 </div>
                                             </foreignObject>
@@ -733,44 +741,36 @@
                                             {/* Label */}
                                             <text 
                                                 x={node.x} 
-                                                y={node.y + 68} 
+                                                y={node.y + 60} 
                                                 textAnchor="middle" 
-                                                fill={isActive ? "#fff" : hexColor} 
-                                                fontSize={isActive ? "15" : "13"} 
+                                                fill={nodeActive ? "#fff" : hexColor} 
+                                                fontSize={nodeActive ? "14" : "12"} 
                                                 fontWeight="800" 
                                                 letterSpacing="1.5" 
                                                 style={{
-                                                    textShadow: isActive ? `0 0 14px ${hexColor}` : `0 3px 6px rgba(0,0,0,0.9)`
-                                                }} 
-                                                className="pointer-events-none transition-all duration-300"
+                                                    textShadow: nodeActive ? `0 0 12px ${hexColor}` : `0 3px 6px rgba(0,0,0,0.9)`,
+                                                    transition: 'all 0.4s ease',
+                                                    opacity: dimmed ? 0.4 : 1
+                                                }}
+                                                className="pointer-events-none"
                                             >
                                                 {node.label}
                                             </text>
                                             
                                             {/* Status Dot */}
-                                            {node.status === 'ONLINE' && (
+                                            {(node.status === 'ONLINE' || node.status === 'AUTO') && (
                                                 <circle 
-                                                    cx={node.x + 28} 
-                                                    cy={node.y - 28} 
-                                                    r={isActive ? 6 : 5} 
-                                                    fill="#22c55e" 
+                                                    cx={node.x + 26} 
+                                                    cy={node.y - 26} 
+                                                    r={nodeActive ? 5 : 4} 
+                                                    fill={node.status === 'ONLINE' ? '#22c55e' : '#06b6d4'} 
                                                     stroke="#050a10" 
                                                     strokeWidth="2" 
                                                     style={{
-                                                        filter: isActive ? 'drop-shadow(0 0 6px #22c55e)' : 'none'
+                                                        filter: nodeActive ? `drop-shadow(0 0 4px ${node.status === 'ONLINE' ? '#22c55e' : '#06b6d4'})` : 'none',
+                                                        transition: 'all 0.4s ease'
                                                     }}
-                                                    className="transition-all"
-                                                />
-                                            )}
-                                            {node.status === 'AUTO' && (
-                                                <circle 
-                                                    cx={node.x + 28} 
-                                                    cy={node.y - 28} 
-                                                    r={isActive ? 6 : 5} 
-                                                    fill="#06b6d4" 
-                                                    stroke="#050a10" 
-                                                    strokeWidth="2" 
-                                                    className="animate-pulse" 
+                                                    className={node.status === 'AUTO' ? 'animate-pulse' : ''}
                                                 />
                                             )}
                                         </g>
@@ -824,19 +824,19 @@
                                     </p>
                                 </div>
 
-                                {/* Stats do cluster */}
+                                {/* Stats da conexao direta */}
                                 <div className="mb-5 bg-slate-900/60 border border-slate-800 rounded-xl p-4">
                                     <div className="flex items-center justify-between mb-3">
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cluster Ativo</span>
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Conexoes Diretas</span>
                                         <span 
                                             className="text-xs font-black px-2 py-1 rounded bg-slate-950 border border-slate-800"
                                             style={{ color: getColor(topologyData.nodes[activeNodeId].color).hex }}
                                         >
-                                            {reachableSet.size} nos conectados
+                                            {directNeighborIds.size} nos
                                         </span>
                                     </div>
                                     <div className="flex flex-wrap gap-2">
-                                        {Array.from(reachableSet).map(nodeKey => (
+                                        {Array.from(directNeighborIds).map(nodeKey => (
                                             <div 
                                                 key={nodeKey}
                                                 className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-950 border border-slate-800"
@@ -859,7 +859,7 @@
                                             className="w-2 h-2 rounded-full animate-pulse"
                                             style={{ backgroundColor: getColor(topologyData.nodes[activeNodeId].color).hex }}
                                         />
-                                        Fluxo de Dados Ativo
+                                        Fluxo de Dados
                                     </div>
                                     {activeConnections.map((conn, idx) => {
                                         const isOutgoing = conn.from === activeNodeId;
@@ -1190,7 +1190,7 @@
                                     )}
                                     <div>
                                         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-cyan-500 text-[10px] font-mono uppercase tracking-widest mb-2">
-                                            <Icon name="Terminal" size={9} /> v4.2 Topo-Cluster
+                                            <Icon name="Terminal" size={9} /> v4.2 Topo-Flow
                                         </div>
                                         <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tighter flex items-center gap-3">
                                             <span className="text-slate-300 tracking-widest">DAMAS</span>
