@@ -198,6 +198,8 @@ async function initPerfilJogador() {
       */
       // 🔁 MODO TREINO IA vs IA
       let trainingMode = false;     // true = IA joga pelos dois lados
+      let isTrainingMode = false;   // alias usado em initBoard
+      let isMultiplayer = false;    // true = modo multiplayer externo
       let trainingSpeed = 400;      // velocidade em ms entre lances da IA
 
 
@@ -1147,6 +1149,9 @@ async function initPerfilJogador() {
       const elOverlay = document.getElementById('overlay');
 
       function initBoard(){
+        // 🐞 Mostra o app-container ao iniciar jogo (estava escondido atrás do login)
+        try { document.getElementById('appContainer').classList.remove('hidden'); } catch(_) {}
+        
         rankingJaPontuouNaPartida = false;
         iaJaAprendeuNaPartida = false;
         livroJaAtualizouNaPartida = false;
@@ -1171,10 +1176,10 @@ async function initPerfilJogador() {
         board = Array(8).fill(null).map(()=>Array(8).fill(null));
         selected=null; 
         
-        // 🌐 Define o jogador inicial
-        // No modo online, BRANCO (dono da sala) começa
-        // No modo IA, BRANCO (humano) começa
-        current = WHITE; 
+        // 🐝 COLMEIA: Baixa pesos da colmeia ao iniciar partida vs IA
+        if (!isMultiplayer && !isTrainingMode) {
+          setTimeout(() => baixarPesosColmeia(), 500);
+        } 
 
         // Determina a cor do jogador para orientar o tabuleiro. Em modo online,
         // utiliza getPlayerColor(); para jogos locais ou treino, assume 'white'.
@@ -1334,6 +1339,12 @@ function ouvirSala(codigo) {
 
   function processarSalaSupabase(data) {
     console.log("[online] sala:", data);
+
+    // 🐞 Guarda: se o usuário já saiu do modo online, ignora atualizações pendentes
+    if (!isOnline || !currentRoom) {
+      console.log("[online] ignorando atualização — modo offline ou sem sala");
+      return;
+    }
 
     if (!data) {
       console.warn("[online] sala ainda sem dados, aguardando...");
@@ -2098,6 +2109,12 @@ async function registrarAprendizadoIAPosPartida(winner) {
       resultadoIA,
       padroes: jogadasIA.length
     });
+    
+    // 🐝 COLMEIA: Envia pesos para a colmeia (só hard/master e só se perdeu)
+    if (!isMultiplayer) {
+      const resultadoFinal = (resultadoIA === 'win') ? 'ia_loss' : ((resultadoIA === 'loss') ? 'player_win' : 'draw');
+      setTimeout(() => enviarPesosColmeia(resultadoFinal, jogadasIA.length || gameHistory?.length || 0), 800);
+    }
 
   } catch (e) {
     console.error("Erro no aprendizado pós-partida da IA:", e);
@@ -3113,5 +3130,137 @@ if (window.drawReason) {
         
         return tips;
       }
-      
-    
+
+// ============================================================
+// 🐝 COLMEIA DE PESOS NEURAIS
+// ============================================================
+
+// Baixa pesos da colmeia ao iniciar o jogo
+async function baixarPesosColmeia() {
+  try {
+    if (!window.supabase) {
+      console.log('[Colmeia] Supabase não disponível ainda');
+      return;
+    }
+
+    const { data, error } = await window.supabase
+      .from('hive_weights')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error) {
+      if (error.code !== 'PGRST116') {
+        console.warn('[Colmeia] Erro ao baixar:', error.message);
+      }
+      return;
+    }
+
+    if (!data) {
+      console.log('[Colmeia] Nenhum peso na colmeia ainda. Seja o primeiro!');
+      return;
+    }
+
+    console.log('[Colmeia] Puxado! ' + data.total_contributors + ' jogadores, ' + data.total_games + ' partidas');
+
+    // Mistura 50% pesos locais + 50% pesos da colmeia
+    if (window.neural_w) {
+      const misturar = function(local, hive) {
+        if (!hive || hive <= 0) return local;
+        return local * 0.5 + hive * 0.5;
+      };
+
+      window.neural_w.material_weight = misturar(window.neural_w.material_weight, data.material_weight);
+      window.neural_w.center_control_weight = misturar(window.neural_w.center_control_weight, data.center_control_weight);
+      window.neural_w.king_value_weight = misturar(window.neural_w.king_value_weight, data.king_value_weight);
+      window.neural_w.mobility_weight = misturar(window.neural_w.mobility_weight, data.mobility_weight);
+      window.neural_w.edge_control_weight = misturar(window.neural_w.edge_control_weight, data.edge_control_weight);
+
+      if (window.neural_w.endgame) {
+        window.neural_w.endgame.endgame_weight = misturar(window.neural_w.endgame.endgame_weight, data.endgame_weight);
+        window.neural_w.endgame.diagonal_control_weight = misturar(window.neural_w.endgame.diagonal_control_weight, data.diagonal_control_weight);
+        window.neural_w.endgame.opposition_weight = misturar(window.neural_w.endgame.opposition_weight, data.opposition_weight);
+        window.neural_w.endgame.king_cornering_weight = misturar(window.neural_w.endgame.king_cornering_weight, data.king_cornering_weight);
+      }
+
+      console.log('[Colmeia] Pesos locais misturados com a colmeia 🐝');
+    }
+  } catch (e) {
+    console.warn('[Colmeia] Erro:', e.message);
+  }
+}
+
+// Envia pesos locais para a colmeia
+async function enviarPesosColmeia(resultado, lances) {
+  try {
+    if (!window.supabase) {
+      console.log('[Colmeia] Supabase não disponível');
+      return;
+    }
+
+    const dif = (currentDifficulty || '').toLowerCase();
+    const validas = ['hard', 'master', 'dificil', 'mestre'];
+    if (!validas.includes(dif)) {
+      console.log('[Colmeia] Dificuldade baixa, não envia:', dif);
+      return;
+    }
+
+    if (resultado !== 'ia_loss' && resultado !== 'player_win') {
+      console.log('[Colmeia] IA não perdeu, nada a aprender');
+      return;
+    }
+
+    const w = window.neural_w;
+    const payload = {
+      material_weight: w && w.material_weight ? w.material_weight : 1.0,
+      center_control_weight: w && w.center_control_weight ? w.center_control_weight : 0.3,
+      king_value_weight: w && w.king_value_weight ? w.king_value_weight : 0.4,
+      mobility_weight: w && w.mobility_weight ? w.mobility_weight : 0.2,
+      edge_control_weight: w && w.edge_control_weight ? w.edge_control_weight : 0.15,
+      endgame_weight: w && w.endgame && w.endgame.endgame_weight ? w.endgame.endgame_weight : 1.0,
+      diagonal_control_weight: w && w.endgame && w.endgame.diagonal_control_weight ? w.endgame.diagonal_control_weight : 0.3,
+      opposition_weight: w && w.endgame && w.endgame.opposition_weight ? w.endgame.opposition_weight : 0.5,
+      king_cornering_weight: w && w.endgame && w.endgame.king_cornering_weight ? w.endgame.king_cornering_weight : 0.4,
+      difficulty: dif,
+      game_result: resultado === 'player_win' ? 'loss' : 'draw',
+      total_moves: lances || 0,
+    };
+
+    const { data, error } = await window.supabase
+      .from('hive_contributors')
+      .insert(payload)
+      .select();
+
+    if (error) {
+      console.warn('[Colmeia] Erro ao enviar:', error.message);
+      return;
+    }
+
+    console.log('[Colmeia] Pesos enviados! 🐝');
+  } catch (e) {
+    console.warn('[Colmeia] Erro:', e.message);
+  }
+}
+
+// Retorna estatísticas da colmeia para o Diagnóstico
+async function statsColmeia() {
+  try {
+    if (!window.supabase) return null;
+    const { data, error } = await window.supabase
+      .from('hive_weights')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+    if (error || !data) return null;
+    return {
+      jogadores: data.total_contributors,
+      partidas: data.total_games,
+      atualizado: data.updated_at,
+      ativa: data.total_contributors > 0,
+    };
+  } catch (e) {
+    return null;
+  }
+}

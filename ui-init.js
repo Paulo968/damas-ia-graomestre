@@ -162,9 +162,38 @@ window.App.carregarRanking = async function() {
       configContent.appendChild(ruleContainer);
     }
 
-    if (speechModeContainer && !configContent.contains(speechModeContainer)) {
-      speechModeContainer.classList.remove("hidden");
-      configContent.appendChild(speechModeContainer);
+    // 🐞 Clona o seletor de fala para o modal (em vez de mover, preserva no menu)
+    if (speechModeContainer) {
+      const existingClone = document.getElementById("speechModeContainer-config-clone");
+      if (!existingClone) {
+        const clone = speechModeContainer.cloneNode(true);
+        clone.id = "speechModeContainer-config-clone";
+        clone.classList.remove("hidden");
+        
+        // Re-ativa os botões do clone
+        const cloneBtns = clone.querySelectorAll('button[data-value]');
+        cloneBtns.forEach(btn => {
+          btn.addEventListener('click', () => {
+            const val = btn.getAttribute('data-value');
+            const originalSelect = document.getElementById('speechMode');
+            if (originalSelect) originalSelect.value = val;
+            
+            // 🐞 CORREÇÃO: só atualiza os botões de fala (não os de dificuldade/regra)
+            const speechBtns = document.querySelectorAll(
+              '#speechModeContainer button[data-value], #speechModeContainer-config-clone button[data-value]'
+            );
+            speechBtns.forEach(b => {
+              if (b.getAttribute('data-value') === val) {
+                b.classList.add('active');
+              } else {
+                b.classList.remove('active');
+              }
+            });
+          });
+        });
+        
+        configContent.appendChild(clone);
+      }
     }
   }
 

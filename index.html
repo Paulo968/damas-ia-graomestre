@@ -466,9 +466,9 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           </div>
         </div>
 
-        <!-- Seletor de Modo de Fala -->
+        <!-- Seletor de Modo de Fala (🐞 agora só aparece no modal de configurações) -->
         <div class="hidden w-full flex flex-col items-center text-center mb-4" id="speechModeContainer">
-          <p class="mb-2 text-slate-400">Modo de Fala:</p>
+          <p class="mb-2 text-slate-400 text-sm">🎙️ Personalidade da IA:</p>
           <!-- Select escondido que armazena o modo -->
           <select id="speechMode" class="hidden bg-slate-800 border border-cyan-400/40 text-white px-4 py-2 rounded-lg w-60">
             <option value="brasil">Brasil</option>
@@ -477,10 +477,11 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           </select>
           <!-- Botões para escolher o modo de fala -->
           <div class="btn-group grid grid-cols-3" data-target-select="speechMode">
-            <button type="button" data-value="brasil">Brasil</button>
-            <button type="button" data-value="anime">Anime</button>
-            <button type="button" data-value="tecnico">Técnico</button>
+            <button type="button" data-value="brasil">🇧🇷 Brasil</button>
+            <button type="button" data-value="anime">🇯🇵 Anime</button>
+            <button type="button" data-value="tecnico">👨‍💻 Técnico</button>
           </div>
+          <p class="mt-1 text-[10px] text-slate-500">A IA muda a forma de falar durante a partida</p>
         </div>
 
         <!-- 
@@ -619,11 +620,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           </button>
         </div>
 
-        <!-- Botão para resetar memória e perfis da IA -->
-        <button id="btnResetIA"
-          class="bg-red-700 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-lg shadow-md border border-red-400/80 w-60 mb-2">
-          🔁 Resetar IA (memória & perfis)
-        </button>
+        <!-- 🐞 Botão de resetar IA REMOVIDO (agora que é colmeia, resetar prejudicaria todos os jogadores) -->
         <button id="openAiDebugScreen" type="button" class="bg-emerald-600 hover:bg-emerald-500 text-white text-lg px-6 py-3 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.5)] mb-4 transition w-60">
           📊 Diagnóstico da IA
         </button>
@@ -708,7 +705,27 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
             </div>
           </div>
 
-
+          <!-- 🐝 SEÇÃO COLMEIA -->
+          <div class="border-t border-amber-700/40 pt-3 mt-3 bg-amber-950/20 rounded-lg p-3">
+            <p class="text-amber-400 text-xs font-bold mb-2 flex items-center gap-1">
+              🐝 COLMEIA DE INTELIGÊNCIA
+            </p>
+            <div class="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <p class="text-slate-500 text-[11px] mb-1">Jogadores na colmeia:</p>
+                <span id="hivePlayers" class="text-sm font-semibold text-amber-300">--</span>
+              </div>
+              <div>
+                <p class="text-slate-500 text-[11px] mb-1">Partidas alimentadas:</p>
+                <span id="hiveGames" class="text-sm font-semibold text-amber-300">--</span>
+              </div>
+            </div>
+            <div class="mt-2 text-[11px] text-slate-400">
+              <span id="hiveStatus">🟡 Verificando colmeia...</span>
+            </div>
+            <p class="mt-2 text-[10px] text-slate-500 italic">
+              ℹ️ Todos os dispositivos compartilham a mesma inteligência. Quanto mais jogadores no Mestre, mais forte a IA fica para todos.
+            </p>
           </div>
 
           <button id="btnAiDebugBack"
@@ -722,6 +739,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
       <!-- Fim da Tela de Treino -->
 
 
+    </div>
     </div>
     <!-- FIM DO CONTAINER DO MENU -->
 
@@ -754,7 +772,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
     <!-- FIM NOVO MENU -->
 
     <!-- 💣 WRAPPER GERAL: grid no desktop, normal no mobile -->
-    <div class="app-container">
+    <div id="appContainer" class="app-container hidden">
 
       <!-- ===== COLUNA ESQUERDA: Perfil / Ranking ===== -->
       <div class="sidebar-left">
@@ -920,7 +938,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
     <!-- ====================================================== -->
     <!-- ========== BLOCO 2: LÓGICA (game-core.js) ============ -->
     <!-- ====================================================== -->
-    <script src="game-core.js"></script>
+    <script src="game-core.js?v=2"></script>
 
     <!-- ====================================================== -->
     <!-- =========== BLOCO 3: INTERFACE (ui.js) =============== -->
@@ -2192,6 +2210,9 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           // 🧠 ADIÇÃO: Garante que a tela de treino seja oculta
           document.getElementById('trainingMenuScreen').classList.add('hidden');
           
+          // 🐞 Limpa qualquer texto de sala online que tenha ficado no bubble
+          try { setBubblePlaceholder('IA está analisando...'); } catch(_) {}
+          
           // 💡 Reset do fundo ao voltar ao menu
           document.body.style.background = '#0f172a';
           
@@ -2212,6 +2233,9 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           
           // Limpa o tabuleiro
           if (elBoard) elBoard.innerHTML = '';
+
+          // 🐞 Esconde o app-container ao voltar ao menu (evita vazar atrás do login)
+          try { document.getElementById('appContainer').classList.add('hidden'); } catch(_) {}
 
           // 🧭 Ao retornar ao menu sempre resetamos a orientação visual para branca.
           // Isso impede que a rotação do jogo online (vermelho) persista ao iniciar uma nova partida local.
@@ -2506,7 +2530,6 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         const btnVoltarTreino = document.getElementById('btnVoltarTreino'); // 🧠 NOVO
         const btnTraining50   = document.getElementById('btnTraining50');  // 🧠 NOVO
         const btnTraining200  = document.getElementById('btnTraining200'); // 🧠 NOVO
-        const btnResetIA      = document.getElementById('btnResetIA');    // 🧠 NOVO
         /* Fim da Modificação */
 
         // ==========================================================
@@ -2606,6 +2629,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
             isOnline = false;
             trainingMode = false;              // garante modo normal
             setPlayerColor('white');           // humano é branco
+            try { setBubblePlaceholder('IA está analisando...'); } catch(_) {} // 🐞 limpa texto de sala
 
             // Continua usando os selects ocultos
             const diff = selectDiff.value;
@@ -2718,61 +2742,15 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         }
 
         // 🧠 Botão de reset da IA (memória + perfis)
+        // 🐞 Botão de resetar IA REMOVIDO (agora que é colmeia, resetar prejudicaria todos os jogadores)
+        // Se precisar resetar no futuro, usar senha de admin ou remover da colmeia individualmente
+        /*
         if (btnResetIA) {
           btnResetIA.addEventListener('click', async () => {
-            try {
-              // Confirmação simples
-              const ok = confirm("Resetar completamente a IA? Isso apaga perfis, padrões e memória local.");
-              if (!ok) return;
-
-              // 1) Limpa perfis de IA do localStorage
-              try {
-                const keysToDelete = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                  const k = localStorage.key(i);
-                  if (!k) continue;
-                  if (k.startsWith('aiProfile_') || k.startsWith('patternMemory_') || k.startsWith('neuralWeights_') || k.startsWith('endgameWeights_')) {
-                    keysToDelete.push(k);
-                  }
-                }
-                keysToDelete.forEach(k => localStorage.removeItem(k));
-              } catch (e) {
-                console.warn("Erro ao limpar localStorage da IA:", e);
-              }
-
-              // 2) Opcional: limpa docs de perfil da IA no Supabase (apenas se disponível)
-              try {
-                if (window.db && window.doc && window.setDoc) {
-                  const { db, doc, setDoc } = window;
-                  // Não temos a lista completa de chaves remotas aqui,
-                  // então sobrescrevemos os principais perfis conhecidos com o default.
-                  const baseProfiles = ['aiProfile_red', 'aiProfile_white', 'aiProfile_red_master', 'aiProfile_red_medium', 'aiProfile_red_hard'];
-                  const payload = { agg: 0.5, def: 0.5, games: 0, wins: 0 };
-                  await Promise.all(baseProfiles.map(id => {
-                    const ref = doc(db, "aiProfiles", id);
-                    return setDoc(ref, payload, { merge: true });
-                  }));
-                }
-              } catch (e) {
-                console.warn("Erro ao resetar perfis da IA no Supabase:", e);
-              }
-
-              // 3) Limpa HUD/contador e painel mini status
-              resetTrainingSessionStats();
-              if (typeof updateTrainingHud === 'function') {
-                updateTrainingHud();
-              }
-              if (typeof updateAiMiniStatus === 'function') {
-                updateAiMiniStatus();
-              }
-
-              alert("IA resetada com sucesso. Ela vai reaprender a partir das próximas partidas.");
-            } catch (err) {
-              console.error("Falha geral ao resetar IA:", err);
-              alert("Ocorreu um erro ao resetar a IA. Veja o console para detalhes.");
-            }
+            // ... código antigo de reset removido ...
           });
         }
+        */
 
 /* MODIFICAÇÃO: Novos Listeners para navegação do menu de treino
         */
@@ -2903,6 +2881,8 @@ ouvirSala(currentRoom);
           onlineMenuScreen.classList.remove('hidden');
           if (onlineUnsubscribe) onlineUnsubscribe(); // 🌐 Para de ouvir a sala
           currentRoom = null;
+          isOnline = false; // 🐞 CORREÇÃO: reseta modo online ao sair
+          try { setBubblePlaceholder('IA está analisando...'); } catch(_) {} // 🐞 limpa texto de sala
           // 🧭 Resetamos a cor e a orientação ao sair da criação de sala
           setPlayerColor('white');
           try {
@@ -2917,6 +2897,8 @@ ouvirSala(currentRoom);
           onlineMenuScreen.classList.remove('hidden');
           // 🧭 Resetamos a cor e a orientação ao sair da entrada de sala
           setPlayerColor('white');
+          isOnline = false; // 🐞 CORREÇÃO: reseta modo online ao sair
+          try { setBubblePlaceholder('IA está analisando...'); } catch(_) {} // 🐞 limpa texto de sala
           try {
             ajustarOrientacao('white');
           } catch (_) { /* ignora se a função ainda não existir */ }
@@ -3816,7 +3798,7 @@ ouvirSala(currentRoom);
       }
 
       // Avaliação da posição atual (vinda da última busca da IA)
-      let scoreStr = '--';
+      let scoreStr = 'Aguardando partida...';
       if (typeof window.lastAIScore === 'number' && isFinite(window.lastAIScore)) {
         scoreStr = window.lastAIScore.toFixed(1);
       }
@@ -3824,23 +3806,38 @@ ouvirSala(currentRoom);
 
       // Pesos neurais / fim de jogo da IA vermelha
       if (Array.isArray(neuralR)) {
-        const arr = neuralR.map(v => (typeof v === 'number' ? Number(v.toFixed(3)) : v));
-        neuralEl.textContent = JSON.stringify(arr, null, 2);
+        const isDefault = neuralR.length === 4 && neuralR.every((v, i) => Math.abs(v - [1.0, 0.4, 0.3, 0.2][i]) < 0.01);
+        if (isDefault) {
+          neuralEl.textContent = 'Pesos padrão (nenhuma partida registrada ainda)';
+        } else {
+          const arr = neuralR.map(v => (typeof v === 'number' ? Number(v.toFixed(3)) : v));
+          neuralEl.textContent = JSON.stringify(arr, null, 2);
+        }
       } else {
-        neuralEl.textContent = '--';
+        neuralEl.textContent = 'Sem dados';
       }
 
       if (Array.isArray(endR)) {
-        const arrE = endR.map(v => (typeof v === 'number' ? Number(v.toFixed(3)) : v));
-        endEl.textContent = JSON.stringify(arrE, null, 2);
+        const isDefaultEnd = endR.length === 3 && endR.every((v, i) => Math.abs(v - [1.0, 0.4, 0.3][i]) < 0.01);
+        if (isDefaultEnd) {
+          endEl.textContent = 'Pesos padrão de fim de jogo';
+        } else {
+          const arrE = endR.map(v => (typeof v === 'number' ? Number(v.toFixed(3)) : v));
+          endEl.textContent = JSON.stringify(arrE, null, 2);
+        }
       } else {
-        endEl.textContent = '--';
+        endEl.textContent = 'Sem dados';
       }
 
       // Contagem de padrões salvos
       const counts = getPatternMemoryCounts();
-      patR.textContent = String(counts.redCount);
-      patT.textContent = String(counts.total);
+      if (counts.total === 0) {
+        patR.textContent = 'Nenhum padrão reconhecido ainda';
+        patT.textContent = 'Jogue partidas para a IA criar memória de padrões';
+      } else {
+        patR.textContent = String(counts.redCount);
+        patT.textContent = String(counts.total);
+      }
 
       // Perfil de comportamento da IA (usa o mesmo mecanismo de perfil + dificuldade)
       if (typeof getAIProfile === 'function') {
@@ -3862,24 +3859,63 @@ ouvirSala(currentRoom);
               const pct = (wins / Math.max(1, games)) * 100;
               winEl.textContent = pct.toFixed(1) + '%';
             } else {
-              winEl.textContent = '--';
+              winEl.textContent = 'Sem dados';
             }
           }
 
           if (aggEl) {
-            aggEl.textContent = (agg != null) ? agg.toFixed(2) : '--';
+            if (games > 0 && agg != null) {
+              aggEl.textContent = agg.toFixed(2);
+            } else {
+              aggEl.textContent = 'Sem dados';
+            }
           }
           if (defEl) {
-            defEl.textContent = (def != null) ? def.toFixed(2) : '--';
+            if (games > 0 && def != null) {
+              defEl.textContent = def.toFixed(2);
+            } else {
+              defEl.textContent = 'Sem dados';
+            }
           }
           if (gamesEl) {
-            const sGames = games === 1 ? 'partida' : 'partidas';
-            const sWins  = wins === 1 ? 'vitória' : 'vitórias';
-            gamesEl.textContent = `${games} ${sGames}, ${wins} ${sWins}`;
+            if (games > 0) {
+              const sGames = games === 1 ? 'partida' : 'partidas';
+              const sWins  = wins === 1 ? 'vitória' : 'vitórias';
+              gamesEl.textContent = `${games} ${sGames}, ${wins} ${sWins}`;
+            } else {
+              gamesEl.textContent = 'Nenhuma partida registrada neste dispositivo';
+            }
           }
         } catch (e) {
           console.warn('Erro ao atualizar perfil da IA no painel:', e);
         }
+      }
+
+      // 🐝 ESTATÍSTICAS DA COLMEIA
+      try {
+        const hivePlayersEl = document.getElementById('hivePlayers');
+        const hiveGamesEl   = document.getElementById('hiveGames');
+        const hiveStatusEl  = document.getElementById('hiveStatus');
+
+        if (hivePlayersEl && hiveGamesEl && hiveStatusEl && typeof statsColmeia === 'function') {
+          statsColmeia().then(stats => {
+            if (stats) {
+              hivePlayersEl.textContent = String(stats.jogadores);
+              hiveGamesEl.textContent = String(stats.partidas);
+              if (stats.ativa) {
+                hiveStatusEl.innerHTML = '🟢 <span class="text-emerald-400">Colmeia ativa</span> — sincronizada com ' + stats.jogadores + ' jogadores';
+              } else {
+                hiveStatusEl.innerHTML = '🟡 <span class="text-amber-400">Colmeia vazia</span> — seja o primeiro a contribuir jogando no Mestre!';
+              }
+            } else {
+              hiveStatusEl.innerHTML = '⚪ <span class="text-slate-400">Colmeia não disponível</span>';
+            }
+          }).catch(() => {
+            hiveStatusEl.innerHTML = '⚪ <span class="text-slate-400">Colmeia não disponível</span>';
+          });
+        }
+      } catch (e) {
+        console.warn('Erro ao atualizar colmeia no painel:', e);
       }
 
     } catch (e) {
@@ -3937,6 +3973,6 @@ ouvirSala(currentRoom);
 
 
 
-<script src="ui-init.js"></script>
+<script src="ui-init.js?v=2"></script>
 </body>
   </html>
