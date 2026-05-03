@@ -68,13 +68,37 @@
             -webkit-backdrop-filter: blur(12px);
         }
 
-        /* Circuit line animation */
+        /* Circuit line animation - fluxo de dados nas linhas */
         @keyframes dash {
             to { stroke-dashoffset: -20; }
         }
         .circuit-line {
             stroke-dasharray: 4 4;
             animation: dash 1s linear infinite;
+        }
+
+        /* Fluxo de dados na linha - efeito correndo */
+        @keyframes flowLine {
+            from { stroke-dashoffset: 200; }
+            to { stroke-dashoffset: 0; }
+        }
+        .flow-line {
+            stroke-dasharray: 8 16;
+            animation: flowLine 2s linear infinite;
+        }
+        .flow-line-fast {
+            stroke-dasharray: 6 12;
+            animation: flowLine 1.2s linear infinite;
+        }
+
+        /* Radar pulse no no - via CSS, nao SVG animate */
+        @keyframes nodeRadar {
+            0% { opacity: 0; r: 36; }
+            50% { opacity: 0.15; }
+            100% { opacity: 0; r: 65; }
+        }
+        .node-radar {
+            animation: nodeRadar 3s ease-out infinite;
         }
     </style>
 <base target="_blank">
@@ -608,22 +632,32 @@
                                     return (
                                         <g 
                                             key={`conn-${i}-${conn.from}-${conn.to}`} 
-                                            className="transition-all duration-500"
                                         >
-                                            {/* Linha base - sempre visivel suavemente */}
+                                            {/* Linha base - fundo escuro, sempre visivel */}
                                             <path 
                                                 d={pathD} 
                                                 fill="none" 
-                                                stroke={isActive ? hexColor : '#1e293b'} 
-                                                strokeWidth={isActive ? 3 : 1.5} 
+                                                stroke="#1e293b" 
+                                                strokeWidth={isActive ? 4 : 2} 
                                                 style={{ 
-                                                    opacity: isActive ? 0.9 : (activeNodeId ? 0.15 : 0.4), 
-                                                    filter: isActive ? `drop-shadow(0 0 8px ${hexColor})` : 'none',
-                                                    transition: 'all 0.4s ease'
+                                                    opacity: isActive ? 0.3 : (activeNodeId ? 0.1 : 0.35)
                                                 }} 
                                             />
                                             
-                                            {/* Texto descritivo - so aparece na ativa ou sem selecao */}
+                                            {/* Linha de fluxo - animada com CSS, correndo sempre */}
+                                            <path 
+                                                d={pathD} 
+                                                fill="none" 
+                                                stroke={hexColor} 
+                                                strokeWidth={isActive ? 2.5 : 1} 
+                                                className={isActive ? 'flow-line-fast' : 'flow-line'}
+                                                style={{ 
+                                                    opacity: isActive ? 0.85 : 0.2,
+                                                    filter: isActive ? `drop-shadow(0 0 6px ${hexColor})` : 'none'
+                                                }} 
+                                            />
+                                            
+                                            {/* Texto descritivo */}
                                             <text 
                                                 x={(start.x + end.x)/2} 
                                                 y={(start.y + end.y)/2 - 8} 
@@ -634,30 +668,11 @@
                                                 className="hidden sm:block pointer-events-none"
                                                 style={{ 
                                                     opacity: isActive ? 1 : (activeNodeId ? 0.1 : 0.7),
-                                                    textShadow: isActive ? `0 0 10px ${hexColor}` : '0 2px 4px rgba(0,0,0,0.8)',
-                                                    transition: 'all 0.4s ease'
+                                                    textShadow: isActive ? `0 0 10px ${hexColor}` : '0 2px 4px rgba(0,0,0,0.8)'
                                                 }}
                                             >
                                                 {conn.desc}
                                             </text>
-
-                                            {/* Bolinha animada - SEMPRE correndo, mais suave quando inativa */}
-                                            <circle 
-                                                r={isActive ? 4 : 2.5} 
-                                                fill={isActive ? '#fff' : hexColor} 
-                                                style={{ 
-                                                    filter: isActive ? `drop-shadow(0 0 10px ${hexColor})` : 'none',
-                                                    opacity: isActive ? 1 : 0.25,
-                                                    transition: 'all 0.4s ease'
-                                                }}
-                                            >
-                                                <animateMotion 
-                                                    dur={`${2 + (i % 4) * 0.4}s`} 
-                                                    repeatCount="indefinite" 
-                                                    path={pathD} 
-                                                    calcMode="linear"
-                                                />
-                                            </circle>
                                         </g>
                                     );
                                 })}
@@ -683,23 +698,17 @@
                                                 transition: 'opacity 0.4s ease'
                                             }}
                                         >
-                                            {/* Pulso radar - mais intenso no ativo */}
-                                            <circle cx={node.x} cy={node.y} r="50" fill={hexColor} opacity="0">
-                                                <animate 
-                                                    attributeName="opacity" 
-                                                    values={nodeActive ? "0;0.18;0" : "0;0.06;0"} 
-                                                    dur="3s" 
-                                                    repeatCount="indefinite" 
-                                                    begin={`${(node.x % 5) / 5}s`} 
-                                                />
-                                                <animate 
-                                                    attributeName="r" 
-                                                    values={nodeActive ? "36;65;36" : "35;55;35"} 
-                                                    dur="3s" 
-                                                    repeatCount="indefinite" 
-                                                    begin={`${(node.y % 5) / 5}s`} 
-                                                />
-                                            </circle>
+                                            {/* Pulso radar - CSS animation, leve e fluido */}
+                                            <circle 
+                                                cx={node.x} 
+                                                cy={node.y} 
+                                                fill={hexColor} 
+                                                className="node-radar"
+                                                style={{ 
+                                                    animationDelay: `${(node.x * 0.13) % 3}s`,
+                                                    opacity: 0
+                                                }}
+                                            />
 
                                             {/* Brilho Fundo */}
                                             <circle 
