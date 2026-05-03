@@ -339,7 +339,7 @@
                 iconName: 'Crosshair', color: 'emerald', status: 'ONLINE', complexity: 20,
                 creator: { name: 'Geometry Engine', role: 'Redundância Matemática', year: '2025',
                     reason: 'Se o tabuleiro é um espelho perfeito, o lance da esquerda é matematicamente idêntico ao da direita. Calcular ambos é desperdício puro.',
-                    usage: 'Verifica isVerticallySymmetric. Se true, descarta todos os lances das colunas 4 a 7. Reduz o Branching Factor pela metade.' },
+                    usage: 'Verifica isVerticallySymmetric. Se true, descarta todos lances das colunas 4 a 7. Reduz o Branching Factor pela metade.' },
                 langs: ['Bitwise Check', 'Tree Pruning'],
                 lore: 'O prisma redutor. Detecta simetria perfeita no eixo vertical e ignora metade do universo de busca, duplicando a eficiência.',
                 tech: { check: 'Vertical Mirror', gain: '50% Speedup', filter: 'Col <= 3' },
@@ -436,7 +436,7 @@
         ];
 
         // ============================================================
-        // 🌳 VISUALIZADOR DE MAPA MENTAL VIVO (TOPOLOGIA ORIGINAL V4.0 TUNADA)
+        // 🌳 VISUALIZADOR DE MAPA MENTAL VIVO (FIT-TO-SCREEN EDITION)
         // ============================================================
         const MindMapView = ({ onBack }) => {
             const [activeNodeId, setActiveNodeId] = useState(null);
@@ -459,7 +459,6 @@
                 return mobileLayout ? { x: mobileX, y: mobileY } : { x: desktopX, y: desktopY };
             };
 
-            // SEU LAYOUT MANUAL (INTOCADO)
             const topologyData = {
                 nodes: {
                     reset:         { ...getNodeData('smart_reset'),      ...getPos(150, 150,  150, 250) },
@@ -513,7 +512,8 @@
                 ]
             };
 
-            const padding = 150; 
+            // Reduzimos o padding matemático pra otimizar o espaço em tela sem scroll
+            const padding = 80; 
             const nodesArr = Object.values(topologyData.nodes);
             const minX = Math.min(...nodesArr.map(n => n.x));
             const maxX = Math.max(...nodesArr.map(n => n.x));
@@ -530,27 +530,22 @@
 
             return (
                 <div className="absolute inset-0 z-50 flex flex-col animate-in">
-                    {/* ENHANCED CONTAINER: X and Y scrolling enabled, no more maxHeight shrinking */}
+                    {/* ENHANCED CONTAINER: Removido overflow-auto e barras de scroll. Fundo tela cheia. */}
                     <div 
                         ref={containerRef} 
-                        className="flex-1 w-full h-full relative overflow-auto custom-scrollbar bg-[#050a10]"
-                        style={{ WebkitOverflowScrolling: 'touch' }}
+                        className="flex-1 w-full h-full relative overflow-hidden bg-[#050a10]"
                         onClick={(e) => {
                             if (e.target === e.currentTarget && activeNodeId) setActiveNodeId(null);
                         }}
                     >
-                         {/* SVG Wrapper with padding so it never hides behind the sticky headers */}
-                         <div className="w-full min-h-full flex flex-col items-center pointer-events-none py-10 md:py-24">
+                         {/* SVG Wrapper limpo para alinhar o conteúdo 100% no meio da tela */}
+                         <div className="w-full h-full flex flex-col items-center justify-center pointer-events-none p-2 md:p-6">
                              <svg 
                                 viewBox={viewBox} 
                                 preserveAspectRatio="xMidYMid meet" 
-                                className="pointer-events-auto block mx-auto drop-shadow-2xl"
+                                className="pointer-events-auto block drop-shadow-2xl w-full h-full"
                                 style={{ 
-                                    // A MÁGICA ACONTECE AQUI: A largura sempre domina a tela ou força scroll (nunca espreme)
-                                    width: mobileLayout ? '250%' : '100%', 
-                                    minWidth: mobileLayout ? '800px' : '1200px', // Trava pro PC nunca ficar 'miúdo'
-                                    maxWidth: '1800px', // Trava suave pra telas ultrawide
-                                    height: 'auto', // Permite que a altura cresça naturalmente acompanhando a proporção
+                                    // Zero limites manuais (width/height), o w-full h-full resolve tudo no limite da view
                                     background: 'radial-gradient(circle at 50% 20%, rgba(15,23,42,0.8) 0%, rgba(5,10,16,1) 80%)',
                                     borderRadius: mobileLayout ? '0px' : '24px',
                                     border: mobileLayout ? 'none' : '1px solid rgba(51, 65, 85, 0.4)'
