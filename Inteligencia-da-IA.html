@@ -464,460 +464,206 @@
         // VISUALIZADOR DE MAPA MENTAL VIVO v4.2 - VIZINHANCA DIRETA
         // ============================================================
         const MindMapView = ({ onBack }) => {
-            const [activeNodeId, setActiveNodeId] = useState(null);
-            const containerRef = useRef(null);
-            const [mobileLayout, setMobileLayout] = useState(false);
+            const [selectedId, setSelectedId] = useState(null);
 
-            useEffect(() => {
-                const handleResize = () => setMobileLayout(window.innerWidth < 768);
-                handleResize();
-                window.addEventListener('resize', handleResize);
-                return () => window.removeEventListener('resize', handleResize);
+            const topologyConnections = useMemo(() => ([
+                { from: 'multicore', to: 'core', label: 'entrega cálculos', desc: 'Divide a análise pesada e entrega os melhores caminhos ao motor.' },
+                { from: 'core', to: 'telemetry', label: 'gera métricas', desc: 'Envia score, profundidade e tempo de decisão.' },
+                { from: 'core', to: 'depth_adapt', label: 'pede profundidade', desc: 'Aumenta visão quando a posição fica perigosa.' },
+                { from: 'core', to: 'time_adapt', label: 'pede tempo', desc: 'Gasta mais tempo em lances difíceis.' },
+                { from: 'core', to: 'symmetry', label: 'filtra espelhos', desc: 'Evita calcular posições repetidas por simetria.' },
+                { from: 'core', to: 'opening_book', label: 'consulta abertura', desc: 'Procura lance pronto antes de calcular.' },
+                { from: 'opening_book', to: 'edge_intelligence', label: 'chama nuvem', desc: 'Se não achar abertura, consulta a Edge.' },
+                { from: 'edge_intelligence', to: 'telemetry', label: 'registra resposta', desc: 'A resposta da nuvem vira dado de melhoria.' },
+                { from: 'telemetry', to: 'coach', label: 'explica erros', desc: 'Transforma dados da partida em dica prática.' },
+                { from: 'multicore', to: 'consolidation', label: 'funde aprendizado', desc: 'Une resultados em memória mais estável.' },
+                { from: 'telemetry', to: 'state_persistence', label: 'salva histórico', desc: 'Guarda dados úteis entre sessões.' },
+                { from: 'consolidation', to: 'state_persistence', label: 'salva memória', desc: 'Persiste a memória consolidada.' },
+                { from: 'state_persistence', to: 'ranking_profiles', label: 'atualiza perfil', desc: 'Usa resultados salvos para ranking e progresso.' },
+                { from: 'online_realtime', to: 'ranking_profiles', label: 'pontua PvP', desc: 'Partidas online alimentam vitórias e derrotas.' },
+                { from: 'online_realtime', to: 'state_persistence', label: 'sincroniza sala', desc: 'Mantém tabuleiro e turno sincronizados.' },
+                { from: 'core', to: 'context_speech', label: 'vira fala', desc: 'Transforma estado do jogo em comentário.' },
+                { from: 'context_speech', to: 'context_enhanced', label: 'refina contexto', desc: 'Detecta sacrifício, promoção e final tenso.' },
+                { from: 'context_speech', to: 'regional_taunts', label: 'aplica tom', desc: 'Adapta a frase ao modo escolhido.' },
+                { from: 'region_selector', to: 'regional_taunts', label: 'define modo', desc: 'Escolhe a personalidade da IA.' },
+                { from: 'status_guide', to: 'core', label: 'mostra estado', desc: 'Traduz status interno em sinal visual.' },
+                { from: 'core', to: 'debug_profile', label: 'debuga', desc: 'Exibe variáveis internas para diagnóstico.' },
+                { from: 'smart_reset', to: 'multicore', label: 'reinicia ciclo', desc: 'Limpa vícios e recomeça o processamento.' }
+            ]), []);
+
+            const topologyGroups = useMemo(() => ([
+                { title: 'Decisão', color: 'cyan', ids: ['core', 'multicore', 'depth_adapt', 'time_adapt', 'symmetry'] },
+                { title: 'Memória', color: 'purple', ids: ['opening_book', 'consolidation', 'state_persistence', 'telemetry', 'smart_reset'] },
+                { title: 'Jogador', color: 'yellow', ids: ['coach', 'context_speech', 'context_enhanced', 'regional_taunts', 'region_selector', 'status_guide'] },
+                { title: 'Online', color: 'blue', ids: ['edge_intelligence', 'ranking_profiles', 'online_realtime', 'debug_profile'] }
+            ]), []);
+
+            const moduleById = useMemo(() => {
+                const map = {};
+                modules.forEach(m => { map[m.id] = m; });
+                return map;
             }, []);
 
-            const getNodeData = (id) => {
-                const mod = modules.find(m => m.id === id);
-                return mod ? { ...mod, label: mod.title.split(' ')[0] } : null;
+            const selectedModule = selectedId ? moduleById[selectedId] : null;
+            const getRelations = useCallback((id) => ({
+                receives: topologyConnections.filter(c => c.to === id),
+                sends: topologyConnections.filter(c => c.from === id)
+            }), [topologyConnections]);
+            const selectedRelations = selectedId ? getRelations(selectedId) : { receives: [], sends: [] };
+
+            const oneLine = (txt) => {
+                if (!txt) return 'Módulo da arquitetura da IA.';
+                const clean = String(txt).replace(/\s+/g, ' ').trim();
+                return clean.length > 95 ? clean.slice(0, 95) + '...' : clean;
             };
 
-            const getPos = (desktopX, desktopY, mobileX, mobileY) => {
-                return mobileLayout ? { x: mobileX, y: mobileY } : { x: desktopX, y: desktopY };
-            };
-
-            const topologyData = {
-                nodes: {
-                    reset:         { ...getNodeData('smart_reset'),      ...getPos(150, 150,  150, 250) },
-                    status:        { ...getNodeData('status_guide'),     ...getPos(375, 150,  150, 400) },
-                    multicore:     { ...getNodeData('multicore'),        ...getPos(600, 150,  300, 100) },
-                    selector:      { ...getNodeData('region_selector'),  ...getPos(825, 150,  450, 250) },
-                    debug:         { ...getNodeData('debug_profile'),    ...getPos(1050, 150, 450, 400) },
-                    
-                    depth:         { ...getNodeData('depth_adapt'),      ...getPos(150, 400,  150, 700) },
-                    symmetry:      { ...getNodeData('symmetry'),         ...getPos(375, 400,  450, 700) },
-                    core:          { ...getNodeData('core'),             ...getPos(600, 400,  300, 550) },
-                    time:          { ...getNodeData('time_adapt'),       ...getPos(825, 400,  150, 850) },
-                    taunts:        { ...getNodeData('regional_taunts'),  ...getPos(1050, 400, 450, 850) },
-                    
-                    telemetry:     { ...getNodeData('telemetry'),        ...getPos(466, 700,  300, 1000) },
-                    context:       { ...getNodeData('context_speech'),   ...getPos(733, 700,  300, 1450) },
-                    coach:         { ...getNodeData('coach'),            ...getPos(200, 700,  150, 1150) },
-                    enhanced:      { ...getNodeData('context_enhanced'), ...getPos(1000, 700, 300, 1600) },
-                    
-                    consolidation: { ...getNodeData('consolidation'),    ...getPos(466, 1000, 450, 1150) },
-                    persistence:   { ...getNodeData('state_persistence'),...getPos(733, 1000, 300, 1300) },
-                    
-                    edge:          { ...getNodeData('edge_intelligence'),...getPos(150, 1300, 150, 1750) },
-                    book:          { ...getNodeData('opening_book'),     ...getPos(375, 1300, 450, 1750) },
-                    ranking:       { ...getNodeData('ranking_profiles'), ...getPos(600, 1300, 300, 1900) },
-                    online:        { ...getNodeData('online_realtime'),  ...getPos(825, 1300, 450, 2050) }
-                },
-                connections: [
-                    { from: 'multicore', to: 'core', desc: 'Distribuicao Chunks' },
-                    { from: 'core', to: 'telemetry', desc: 'Envio Metricas' },
-                    { from: 'core', to: 'depth', desc: 'Ajuste Horizonte' },
-                    { from: 'core', to: 'time', desc: 'Orcamento Tempo' },
-                    { from: 'core', to: 'symmetry', desc: 'Filtro Geometrico' },
-                    { from: 'core', to: 'book', desc: 'Zobrist Lookup' },
-                    { from: 'book', to: 'edge', desc: 'Miss -> Nuvem' },
-                    { from: 'edge', to: 'telemetry', desc: 'Metricas Nuvem' },
-                    { from: 'telemetry', to: 'coach', desc: 'Dados Partida' },
-                    { from: 'multicore', to: 'consolidation', desc: 'Merge Pesos' },
-                    { from: 'telemetry', to: 'persistence', desc: 'Sync Cloud' },
-                    { from: 'consolidation', to: 'persistence', desc: 'Salvar Hibrido' },
-                    { from: 'persistence', to: 'ranking', desc: 'Update Elo' },
-                    { from: 'online', to: 'ranking', desc: 'PvP Result' },
-                    { from: 'online', to: 'persistence', desc: 'Sync Board' },
-                    { from: 'core', to: 'context', desc: 'Estado -> Fala' },
-                    { from: 'context', to: 'enhanced', desc: 'Analise Extra' },
-                    { from: 'context', to: 'taunts', desc: 'Modulador' },
-                    { from: 'selector', to: 'taunts', desc: 'Preferencia' },
-                    { from: 'status', to: 'core', desc: 'Monitor' },
-                    { from: 'core', to: 'debug', desc: 'Variaveis Livres' },
-                    { from: 'reset', to: 'multicore', desc: 'Purga Memoria' }
-                ]
-            };
-
-            // LOGICA DE VIZINHANCA DIRETA (1o grau) - mais suave
-            // Apenas nos com aresta DIRETA (entrando ou saindo) do no clicado
-            const { activeConnections, directNeighborIds } = useMemo(() => {
-                if (!activeNodeId) return { activeConnections: [], directNeighborIds: new Set() };
-                
-                const directConns = topologyData.connections.filter(
-                    c => c.from === activeNodeId || c.to === activeNodeId
+            const ModuleMiniCard = ({ mod }) => {
+                const c = getColor(mod.color);
+                return (
+                    <button
+                        onClick={() => setSelectedId(mod.id)}
+                        className="group rounded-2xl border border-slate-800 bg-slate-950/70 p-3 text-left hover:border-slate-500 active:scale-[0.98] transition-all min-w-0"
+                    >
+                        <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-9 h-9 rounded-xl border flex items-center justify-center shrink-0" style={{ borderColor: c.hex + '55', backgroundColor: c.hex + '12', color: c.hex }}>
+                                <Icon name={mod.iconName} size={18} />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="text-xs font-black text-white truncate">{mod.title}</div>
+                                <div className="text-[9px] font-mono text-slate-500 uppercase truncate">{mod.status}</div>
+                            </div>
+                        </div>
+                    </button>
                 );
-                
-                const neighborIds = new Set();
-                directConns.forEach(c => {
-                    if (c.from === activeNodeId) neighborIds.add(c.to);
-                    if (c.to === activeNodeId) neighborIds.add(c.from);
-                });
-                
-                return { activeConnections: directConns, directNeighborIds: neighborIds };
-            }, [activeNodeId]);
+            };
 
-            const padding = 80; 
-            const nodesArr = Object.values(topologyData.nodes);
-            const minX = Math.min(...nodesArr.map(n => n.x));
-            const maxX = Math.max(...nodesArr.map(n => n.x));
-            const minY = Math.min(...nodesArr.map(n => n.y));
-            const maxY = Math.max(...nodesArr.map(n => n.y));
-            const vbWidth = (maxX - minX) + (padding * 2);
-            const vbHeight = (maxY - minY) + (padding * 2);
-            const viewBox = `${minX - padding} ${minY - padding} ${vbWidth} ${vbHeight}`;
-
-            const handleNodeClick = useCallback((key) => {
-                setActiveNodeId(prev => prev === key ? null : key);
-            }, []);
-
-            // Helper: verifica se um no esta ativo (selecionado ou vizinho direto)
-            const isNodeActive = (key) => {
-                if (!activeNodeId) return false;
-                return key === activeNodeId || directNeighborIds.has(key);
+            const RelationChip = ({ rel, mode }) => {
+                const targetId = mode === 'in' ? rel.from : rel.to;
+                const mod = moduleById[targetId];
+                if (!mod) return null;
+                const c = getColor(mod.color);
+                return (
+                    <button onClick={() => setSelectedId(mod.id)} className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-left hover:border-slate-500 transition-colors min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: c.hex }}></span>
+                            <span className="text-xs font-bold text-slate-200 truncate">{mod.title}</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 truncate mt-0.5">{rel.label}</div>
+                    </button>
+                );
             };
 
             return (
-                <div className="absolute inset-0 z-50 flex flex-col animate-in">
-                    <div 
-                        ref={containerRef} 
-                        className="flex-1 w-full h-full relative overflow-hidden bg-[#050a10]"
-                        onClick={(e) => {
-                            if (e.target === e.currentTarget && activeNodeId) setActiveNodeId(null);
-                        }}
-                    >
-                         <div className="w-full h-full flex flex-col items-center justify-center pointer-events-none p-2 md:p-6">
-                             <svg 
-                                viewBox={viewBox} 
-                                preserveAspectRatio="xMidYMid meet" 
-                                className="pointer-events-auto block drop-shadow-2xl w-full h-full"
-                                style={{ 
-                                    background: 'radial-gradient(circle at 50% 20%, rgba(15,23,42,0.8) 0%, rgba(5,10,16,1) 80%)',
-                                    borderRadius: mobileLayout ? '0px' : '24px',
-                                    border: mobileLayout ? 'none' : '1px solid rgba(51, 65, 85, 0.4)'
-                                }}
-                                onClick={(e) => { if (e.target === e.currentTarget && activeNodeId) setActiveNodeId(null); }}
-                             >
-                                <defs>
-                                    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                                        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="1"/>
-                                    </pattern>
-                                </defs>
-                                <rect x={minX - padding} y={minY - padding} width={vbWidth} height={vbHeight} fill="url(#grid)" />
+                <div className="absolute inset-0 z-50 flex flex-col bg-[#050a10] animate-in overflow-hidden">
+                    <div className="shrink-0 border-b border-slate-800 bg-slate-950/80 backdrop-blur px-4 py-3">
+                        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                                <div className="flex items-center gap-2 text-[10px] font-mono text-cyan-400 uppercase tracking-[0.22em]">
+                                    <Icon name="Network" size={13} /> Topologia
+                                </div>
+                                <h2 className="text-lg sm:text-xl font-black text-white truncate">Mapa simples da IA</h2>
+                            </div>
+                            <button onClick={onBack} className="shrink-0 inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-700 bg-slate-900 text-slate-300 hover:text-white active:scale-95 transition-all">
+                                <Icon name="ChevronLeft" size={15} />
+                                <span className="hidden sm:inline text-xs font-bold uppercase">Voltar</span>
+                            </button>
+                        </div>
+                    </div>
 
-                                {/* CONEXOES - agora so as diretas ao no clicado brilham */}
-                                {topologyData.connections.map((conn, i) => {
-                                    const start = topologyData.nodes[conn.from];
-                                    const end = topologyData.nodes[conn.to];
-                                    if(!start || !end) return null; 
-                                    
-                                    // Aresta ativa = faz parte das conexoes diretas do no clicado
-                                    const isActive = activeNodeId && (
-                                        (conn.from === activeNodeId && directNeighborIds.has(conn.to)) ||
-                                        (conn.to === activeNodeId && directNeighborIds.has(conn.from))
-                                    );
-                                    
-                                    // Aresta suave = nao tem nada selecionado, ou nao e direta mas existe
-                                    const isRevealed = !activeNodeId; // sem selecao, tudo visivel normalmente
-                                    const hexColor = getColor(start.color).hex;
-
-                                    const isHorizontal = Math.abs(start.y - end.y) < 50;
-                                    let pathD;
-                                    if (isHorizontal) {
-                                        const midX = (start.x + end.x) / 2;
-                                        pathD = `M${start.x},${start.y} C${midX},${start.y} ${midX},${end.y} ${end.x},${end.y}`;
-                                    } else {
-                                        const midY = (start.y + end.y) / 2;
-                                        pathD = `M${start.x},${start.y} C${start.x},${midY} ${end.x},${midY} ${end.x},${end.y}`;
-                                    }
-
-                                    return (
-                                        <g 
-                                            key={`conn-${i}-${conn.from}-${conn.to}`} 
-                                        >
-                                            {/* Linha base - fundo escuro, sempre visivel */}
-                                            <path 
-                                                d={pathD} 
-                                                fill="none" 
-                                                stroke="#1e293b" 
-                                                strokeWidth={isActive ? 4 : 2} 
-                                                style={{ 
-                                                    opacity: isActive ? 0.3 : (activeNodeId ? 0.1 : 0.35)
-                                                }} 
-                                            />
-                                            
-                                            {/* Linha de fluxo - animada com CSS, correndo sempre */}
-                                            <path 
-                                                d={pathD} 
-                                                fill="none" 
-                                                stroke={hexColor} 
-                                                strokeWidth={isActive ? 2.5 : 1} 
-                                                className={isActive ? 'flow-line-fast' : 'flow-line'}
-                                                style={{ 
-                                                    opacity: isActive ? 0.85 : 0.2,
-                                                    filter: isActive ? `drop-shadow(0 0 6px ${hexColor})` : 'none'
-                                                }} 
-                                            />
-                                            
-                                            {/* Texto descritivo */}
-                                            <text 
-                                                x={(start.x + end.x)/2} 
-                                                y={(start.y + end.y)/2 - 8} 
-                                                fontSize="13" 
-                                                fontWeight="700"
-                                                fill={isActive ? '#fff' : '#475569'} 
-                                                textAnchor="middle"
-                                                className="hidden sm:block pointer-events-none"
-                                                style={{ 
-                                                    opacity: isActive ? 1 : (activeNodeId ? 0.1 : 0.7),
-                                                    textShadow: isActive ? `0 0 10px ${hexColor}` : '0 2px 4px rgba(0,0,0,0.8)'
-                                                }}
-                                            >
-                                                {conn.desc}
-                                            </text>
-                                        </g>
-                                    );
-                                })}
-
-                                {/* NOS - agora so o clicado + vizinhos diretos brilham */}
-                                {Object.entries(topologyData.nodes).map(([key, node]) => {
-                                    if(!node) return null;
-                                    
-                                    const nodeActive = isNodeActive(key);
-                                    const isSelected = activeNodeId === key;
-                                    const hexColor = getColor(node.color).hex;
-                                    
-                                    // Sem nada selecionado: tudo normal. Com selecao: ativos=brilho, inativos=suave
-                                    const dimmed = activeNodeId && !nodeActive;
-
-                                    return (
-                                        <g 
-                                            key={`node-${key}`} 
-                                            onClick={(e) => { e.stopPropagation(); handleNodeClick(key); }} 
-                                            className="cursor-pointer"
-                                            style={{
-                                                opacity: dimmed ? 0.25 : 1,
-                                                transition: 'opacity 0.4s ease'
-                                            }}
-                                        >
-                                            {/* Pulso radar - CSS animation, leve e fluido */}
-                                            <circle 
-                                                cx={node.x} 
-                                                cy={node.y} 
-                                                fill={hexColor} 
-                                                className="node-radar"
-                                                style={{ 
-                                                    animationDelay: `${(node.x * 0.13) % 3}s`,
-                                                    opacity: 0
-                                                }}
-                                            />
-
-                                            {/* Brilho Fundo */}
-                                            <circle 
-                                                cx={node.x} 
-                                                cy={node.y} 
-                                                r={isSelected ? 50 : (nodeActive ? 44 : 40)} 
-                                                fill={hexColor} 
-                                                opacity={nodeActive ? "0.2" : "0.05"} 
-                                                style={{ 
-                                                    filter: nodeActive ? `drop-shadow(0 0 18px ${hexColor})` : 'none',
-                                                    transition: 'all 0.4s ease'
-                                                }} 
-                                            />
-                                            
-                                            {/* Circulo Principal */}
-                                            <circle 
-                                                cx={node.x} 
-                                                cy={node.y} 
-                                                r={isSelected ? 40 : (nodeActive ? 38 : 34)} 
-                                                fill="#050a10" 
-                                                stroke={nodeActive ? hexColor : '#334155'} 
-                                                strokeWidth={isSelected ? 4 : (nodeActive ? 3 : 1.5)} 
-                                                style={{ 
-                                                    filter: nodeActive ? `drop-shadow(0 0 10px ${hexColor}80)` : 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))',
-                                                    transition: 'all 0.4s ease'
-                                                }} 
-                                            />
-
-                                            {/* Icone */}
-                                            <foreignObject x={node.x - 15} y={node.y - 15} width="30" height="30">
-                                                <div className="text-white flex justify-center items-center h-full pointer-events-none">
-                                                    <Icon 
-                                                        name={node.iconName} 
-                                                        size={isSelected ? 28 : (nodeActive ? 26 : 24)} 
-                                                        style={{
-                                                            color: nodeActive ? '#fff' : hexColor, 
-                                                            filter: nodeActive ? `drop-shadow(0 0 6px ${hexColor})` : 'none',
-                                                            transition: 'all 0.4s ease',
-                                                            opacity: dimmed ? 0.5 : 1
-                                                        }} 
-                                                    />
-                                                </div>
-                                            </foreignObject>
-
-                                            {/* Label */}
-                                            <text 
-                                                x={node.x} 
-                                                y={node.y + 60} 
-                                                textAnchor="middle" 
-                                                fill={nodeActive ? "#fff" : hexColor} 
-                                                fontSize={nodeActive ? "14" : "12"} 
-                                                fontWeight="800" 
-                                                letterSpacing="1.5" 
-                                                style={{
-                                                    textShadow: nodeActive ? `0 0 12px ${hexColor}` : `0 3px 6px rgba(0,0,0,0.9)`,
-                                                    transition: 'all 0.4s ease',
-                                                    opacity: dimmed ? 0.4 : 1
-                                                }}
-                                                className="pointer-events-none"
-                                            >
-                                                {node.label}
-                                            </text>
-                                            
-                                            {/* Status Dot */}
-                                            {(node.status === 'ONLINE' || node.status === 'AUTO') && (
-                                                <circle 
-                                                    cx={node.x + 26} 
-                                                    cy={node.y - 26} 
-                                                    r={nodeActive ? 5 : 4} 
-                                                    fill={node.status === 'ONLINE' ? '#22c55e' : '#06b6d4'} 
-                                                    stroke="#050a10" 
-                                                    strokeWidth="2" 
-                                                    style={{
-                                                        filter: nodeActive ? `drop-shadow(0 0 4px ${node.status === 'ONLINE' ? '#22c55e' : '#06b6d4'})` : 'none',
-                                                        transition: 'all 0.4s ease'
-                                                    }}
-                                                    className={node.status === 'AUTO' ? 'animate-pulse' : ''}
-                                                />
-                                            )}
-                                        </g>
-                                    );
-                                })}
-                             </svg>
-                         </div>
-                         
-                         {/* Painel Lateral */}
-                         {activeNodeId && (
-                             <div className="fixed inset-0 md:absolute md:inset-auto md:right-0 md:top-0 md:bottom-0 w-full md:w-[420px] glass border-l border-slate-800 p-6 overflow-y-auto shadow-2xl animate-[fadeIn_0.3s_ease-out] z-50 custom-scrollbar pt-24">
-                                
-                                <button 
-                                    onClick={(e) => { e.stopPropagation(); setActiveNodeId(null); }} 
-                                    className="md:hidden flex items-center gap-2 text-slate-400 mb-6 bg-slate-800/50 p-3 rounded-lg active:scale-95 transition-transform duration-150 w-full justify-center border border-slate-700"
-                                >
-                                    <Icon name="ChevronLeft" size={16} /> 
-                                    <span className="text-xs font-bold tracking-widest uppercase">Fechar Painel</span>
-                                </button>
-
-                                {/* Header do painel */}
-                                <div className="mb-6 pb-4 border-b border-slate-800">
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <div 
-                                            className="p-2 rounded-lg border" 
-                                            style={{ 
-                                                borderColor: getColor(topologyData.nodes[activeNodeId].color).hex,
-                                                backgroundColor: getColor(topologyData.nodes[activeNodeId].color).hex + '20'
-                                            }}
-                                        >
-                                            <Icon 
-                                                name={topologyData.nodes[activeNodeId].iconName} 
-                                                size={22} 
-                                                style={{ color: getColor(topologyData.nodes[activeNodeId].color).hex }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <h2 
-                                                className="text-2xl font-black text-white tracking-tight" 
-                                                style={{ color: getColor(topologyData.nodes[activeNodeId].color).hex }}
-                                            >
-                                                {topologyData.nodes[activeNodeId].title}
-                                            </h2>
-                                            <p className="text-[10px] text-slate-500 mt-1 font-mono uppercase tracking-wider">
-                                                {topologyData.nodes[activeNodeId].type}
-                                            </p>
-                                        </div>
+                    <div className="flex-1 overflow-y-auto custom-scrollbar px-4 py-4 sm:py-6">
+                        <div className="max-w-6xl mx-auto space-y-4">
+                            <div className="rounded-3xl border border-slate-800 bg-slate-950/50 p-4 sm:p-5">
+                                <div className="flex items-center justify-between gap-3 mb-4">
+                                    <div>
+                                        <h3 className="text-sm sm:text-base font-black text-white">Escolha um módulo</h3>
+                                        <p className="text-xs text-slate-500 break-words">Clique para ver as ligações principais.</p>
                                     </div>
-                                    <p className="text-xs text-slate-400 mt-3 leading-relaxed">
-                                        {topologyData.nodes[activeNodeId].lore}
-                                    </p>
+                                    <div className="hidden sm:flex text-[10px] font-mono text-slate-500 uppercase">{modules.length} módulos</div>
                                 </div>
 
-                                {/* Stats da conexao direta */}
-                                <div className="mb-5 bg-slate-900/60 border border-slate-800 rounded-xl p-4">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Conexoes Diretas</span>
-                                        <span 
-                                            className="text-xs font-black px-2 py-1 rounded bg-slate-950 border border-slate-800"
-                                            style={{ color: getColor(topologyData.nodes[activeNodeId].color).hex }}
-                                        >
-                                            {directNeighborIds.size} nos
-                                        </span>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    {topologyGroups.map(group => {
+                                        const c = getColor(group.color);
+                                        return (
+                                            <section key={group.title} className="rounded-3xl border border-slate-800 bg-[#07111f]/70 p-4">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: c.hex }}></span>
+                                                    <h4 className="text-xs font-black uppercase tracking-widest" style={{ color: c.hex }}>{group.title}</h4>
+                                                </div>
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                    {group.ids.map(id => moduleById[id]).filter(Boolean).map(mod => <ModuleMiniCard key={mod.id} mod={mod} />)}
+                                                </div>
+                                            </section>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {selectedModule && (
+                        <div className="fixed inset-0 z-[80] bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-2 sm:p-5" onClick={() => setSelectedId(null)}>
+                            <div className="w-full sm:max-w-3xl max-h-[92dvh] rounded-3xl border border-slate-700 bg-[#07111f] shadow-2xl overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+                                <div className="shrink-0 border-b border-slate-800 p-3 sm:p-4 flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-11 h-11 rounded-2xl border flex items-center justify-center shrink-0" style={{ borderColor: getColor(selectedModule.color).hex + '66', backgroundColor: getColor(selectedModule.color).hex + '14', color: getColor(selectedModule.color).hex }}>
+                                            <Icon name={selectedModule.iconName} size={22} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h2 className="text-base sm:text-xl font-black text-white truncate">{selectedModule.title}</h2>
+                                            <p className="text-[10px] font-mono text-slate-500 uppercase truncate">{selectedModule.type}</p>
+                                        </div>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
-                                        {Array.from(directNeighborIds).map(nodeKey => (
-                                            <div 
-                                                key={nodeKey}
-                                                className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-950 border border-slate-800"
-                                            >
-                                                <div 
-                                                    className="w-2 h-2 rounded-full"
-                                                    style={{ backgroundColor: getColor(topologyData.nodes[nodeKey].color).hex }}
-                                                />
-                                                <span className="text-[10px] font-mono text-slate-300">
-                                                    {topologyData.nodes[nodeKey].label}
-                                                </span>
+                                    <button onClick={() => setSelectedId(null)} className="shrink-0 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-300 hover:text-white active:scale-95 transition-all">✕</button>
+                                </div>
+
+                                <div className="overflow-y-auto custom-scrollbar p-3 sm:p-5 space-y-3 sm:space-y-4">
+                                    <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
+                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Resumo</div>
+                                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed break-words">{oneLine(selectedModule.lore || selectedModule.creator?.usage)}</p>
+                                    </div>
+
+                                    <div className="rounded-3xl border border-slate-800 bg-slate-950/40 p-3 sm:p-4">
+                                        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">Árvore simples</div>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3 items-stretch">
+                                            <div className="rounded-2xl border border-purple-500/20 bg-purple-500/5 p-3 min-h-[96px]">
+                                                <div className="text-[10px] font-bold text-purple-300 uppercase mb-2">Recebe de</div>
+                                                <div className="space-y-2">
+                                                    {selectedRelations.receives.slice(0, 3).map((rel, i) => <RelationChip key={i} rel={rel} mode="in" />)}
+                                                    {!selectedRelations.receives.length && <p className="text-xs text-slate-500">Inicia o fluxo.</p>}
+                                                    {selectedRelations.receives.length > 3 && <p className="text-[10px] text-slate-500">+{selectedRelations.receives.length - 3} ligação</p>}
+                                                </div>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-slate-700 bg-slate-950 p-4 flex flex-col items-center justify-center text-center min-h-[96px]">
+                                                <div className="text-[10px] text-slate-500 uppercase font-mono mb-1">módulo</div>
+                                                <div className="text-sm font-black text-white truncate max-w-full">{selectedModule.title}</div>
+                                                <div className="text-[10px] text-slate-500 mt-1">{selectedRelations.receives.length} entrada(s) / {selectedRelations.sends.length} saída(s)</div>
+                                            </div>
+
+                                            <div className="rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-3 min-h-[96px]">
+                                                <div className="text-[10px] font-bold text-cyan-300 uppercase mb-2">Envia para</div>
+                                                <div className="space-y-2">
+                                                    {selectedRelations.sends.slice(0, 3).map((rel, i) => <RelationChip key={i} rel={rel} mode="out" />)}
+                                                    {!selectedRelations.sends.length && <p className="text-xs text-slate-500">É ponto final/leitura.</p>}
+                                                    {selectedRelations.sends.length > 3 && <p className="text-[10px] text-slate-500">+{selectedRelations.sends.length - 3} ligação</p>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        {[...selectedRelations.receives.slice(0, 2), ...selectedRelations.sends.slice(0, 2)].map((rel, i) => (
+                                            <div key={i} className="rounded-2xl border border-slate-800 bg-slate-950/60 p-3 min-w-0">
+                                                <div className="text-[10px] font-bold text-slate-500 uppercase mb-1">{rel.from === selectedModule.id ? 'Saída' : 'Entrada'} · {rel.label}</div>
+                                                <p className="text-xs text-slate-400 leading-relaxed break-words">{rel.desc}</p>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
-
-                                <div className="space-y-4">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
-                                        <div 
-                                            className="w-2 h-2 rounded-full animate-pulse"
-                                            style={{ backgroundColor: getColor(topologyData.nodes[activeNodeId].color).hex }}
-                                        />
-                                        Fluxo de Dados
-                                    </div>
-                                    {activeConnections.map((conn, idx) => {
-                                        const isOutgoing = conn.from === activeNodeId;
-                                        const targetNode = topologyData.nodes[isOutgoing ? conn.to : conn.from];
-                                        const tc = getColor(targetNode.color);
-
-                                        return (
-                                            <div 
-                                                key={idx} 
-                                                className="bg-[#050a10] border border-slate-800 rounded-xl p-4 hover:border-slate-600 transition-colors shadow-lg"
-                                            >
-                                                <div className="flex items-center justify-between mb-3">
-                                                    <span 
-                                                        className="text-[10px] font-bold px-2 py-1 rounded border"
-                                                        style={{
-                                                            color: isOutgoing ? '#60a5fa' : '#c084fc',
-                                                            backgroundColor: isOutgoing ? '#60a5fa15' : '#c084fc15',
-                                                            borderColor: isOutgoing ? '#60a5fa30' : '#c084fc30'
-                                                        }}
-                                                    >
-                                                        {isOutgoing ? 'ENVIANDO PARA' : 'RECEBENDO DE'}
-                                                    </span>
-                                                    <Icon name="ArrowRight" size={14} className="text-slate-600" />
-                                                </div>
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <div 
-                                                        className="p-2 rounded-lg bg-slate-900 border border-slate-700"
-                                                        style={{ color: tc.hex }}
-                                                    >
-                                                        <Icon name={targetNode.iconName} size={18} />
-                                                    </div>
-                                                    <span className="font-bold text-sm text-slate-200">{targetNode.title}</span>
-                                                </div>
-                                                <p className="text-xs text-slate-400 leading-relaxed border-t border-slate-900 pt-3 mt-2">
-                                                    "{conn.desc}"
-                                                </p>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                             </div>
-                         )}
-                    </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
