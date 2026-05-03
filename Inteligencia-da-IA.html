@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Damas AI // Arquitetura da Inteligência v4.1</title>
+    <title>Damas AI // Arquitetura da Inteligência v4.2</title>
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com "></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js "></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js "></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js "></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;500;600;700;900&display=swap');
@@ -77,6 +77,7 @@
             animation: dash 1s linear infinite;
         }
     </style>
+<base target="_blank">
 </head>
 <body>
     <div id="root" class="h-[100dvh] w-full flex flex-col overflow-y-auto overflow-x-hidden custom-scrollbar bg-[#050a10]"></div>
@@ -85,7 +86,7 @@
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
         // ============================================================
-        // 🎨 SISTEMA DE CORES CENTRALIZADO (v4.1)
+        // SISTEMA DE CORES CENTRALIZADO (v4.2)
         // ============================================================
         const COLOR_SYSTEM = {
             cyan:    { hex: '#22d3ee', text: 'text-cyan-400',    border: 'border-cyan-500',    glow: 'shadow-cyan-500/20',    bg: 'bg-cyan-500/10',    gradient: 'from-cyan-500' },
@@ -106,7 +107,7 @@
         const getColor = (colorKey) => COLOR_SYSTEM[colorKey] || COLOR_SYSTEM.cyan;
 
         // ============================================================
-        // 🎯 ÍCONES SVG
+        // ICONES SVG
         // ============================================================
         const Icons = {
             Brain: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>,
@@ -123,7 +124,7 @@
             User: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
             Code2: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></svg>,
             History: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>,
-            Cpu: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y2="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>,
+            Cpu: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>,
             Zap: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
             Lightbulb: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-1 1.5-2.4 1.5-3.8 0-3.2-2.8-5.7-6-5.7s-6 2.5-6 5.7c0 1.4.5 2.8 1.5 3.8.8.8 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>,
             Network: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/></svg>,
@@ -141,7 +142,7 @@
         };
 
         // ============================================================
-        // ⌨️ TYPEWRITER LOG
+        // TYPEWRITER LOG
         // ============================================================
         const TypewriterLog = ({ lines }) => {
             const [displayed, setDisplayed] = useState([]);
@@ -199,83 +200,83 @@
         };
 
         // ============================================================
-        // 📊 DADOS DOS MÓDULOS (v4.1)
+        // DADOS DOS MODULOS (v4.2)
         // ============================================================
         const modules = [
             {
-                id: 'status_guide', title: 'GUIA DE STATUS', type: 'PROTOCOLO DE SINALIZAÇÃO',
+                id: 'status_guide', title: 'GUIA DE STATUS', type: 'PROTOCOLO DE SINALIZACAO',
                 iconName: 'AlertCircle', color: 'emerald', status: 'ONLINE', complexity: 5,
                 creator: { name: 'UX Systems', role: 'Interface Design', year: '2025',
-                    reason: 'A incerteza sobre o estado da máquina gera desconfiança. Um sistema visual instantâneo elimina a necessidade de ler logs técnicos.',
-                    usage: 'Define o significado das luzes nos cards: Verde = ONLINE (Operacional); Ciano = AUTO (Dinâmico); Âmbar = SYSTEM / DEV ONLY.' },
+                    reason: 'A incerteza sobre o estado da maquina gera desconfianca. Um sistema visual instantaneo elimina a necessidade de ler logs tecnicos.',
+                    usage: 'Define o significado das luzes nos cards: Verde = ONLINE (Operacional); Ciano = AUTO (Dinamico); Ambar = SYSTEM / DEV ONLY.' },
                 langs: ['Visual Protocol', 'UI Feedback'],
-                lore: 'O código de cores que traduz o pulso da máquina. Uma linguagem universal que informa, num piscar de olhos, se a IA está estável, a pensar ou em manutenção.',
+                lore: 'O codigo de cores que traduz o pulso da maquina. Uma linguagem universal que informa, num piscar de olhos, se a IA esta estavel, a pensar ou em manutencao.',
                 tech: { green: 'ONLINE', cyan: 'AUTO', amber: 'SYSTEM / DEV' },
-                logs: ['> Carregando protocolos visuais...', '> LED Verde: Normalidade confirmada.', '> LED Ciano: Heurística ativa.', '> LED Âmbar: Acesso restrito.']
+                logs: ['> Carregando protocolos visuais...', '> LED Verde: Normalidade confirmada.', '> LED Ciano: Heuristica ativa.', '> LED Ambar: Acesso restrito.']
             },
             {
-                id: 'mindmap', title: 'TOPOLOGIA NEURAL', type: 'VISUALIZAÇÃO DE SISTEMA',
+                id: 'mindmap', title: 'TOPOLOGIA NEURAL', type: 'VISUALIZACAO DE SISTEMA',
                 iconName: 'Network', color: 'blue', status: 'ONLINE', complexity: 10,
                 creator: { name: 'System Architect', role: 'Observability', year: '2025',
-                    reason: 'A invisibilidade é o maior risco de sistemas distribuídos. Quando você não vê o fluxo de dados, o debug de estados complexos torna-se impossível.',
-                    usage: 'Renderiza um grafo SVG reativo. A cada estado emitido na pipeline, os nós pulsam, provando que o sangue digital circula entre os módulos, edge e client.' },
+                    reason: 'A invisibilidade e o maior risco de sistemas distribuidos. Quando voce nao ve o fluxo de dados, o debug de estados complexos torna-se impossivel.',
+                    usage: 'Renderiza um grafo SVG reativo. A cada estado emitido na pipeline, os nos pulsam, provando que o sangue digital circula entre os modulos, edge e client.' },
                 langs: ['SVG Vector', 'React State'],
-                lore: 'O mapa holográfico do cérebro digital. Visualiza as áreas corticais e o fluxo de dados entre o cliente, os workers e a nuvem.',
+                lore: 'O mapa holografico do cerebro digital. Visualiza as areas corticais e o fluxo de dados entre o cliente, os workers e a nuvem.',
                 tech: { render: 'SVG Vector', nodes: 'Dynamic', update: 'Real-time Listener' },
-                logs: ['> Inicializando nós...', '> Hive Mind: Sincronizado.', '> Telemetria: Link estável.', '> Topologia expandida.']
+                logs: ['> Inicializando nos...', '> Hive Mind: Sincronizado.', '> Telemetria: Link estavel.', '> Topologia expandida.']
             },
             {
                 id: 'multicore', title: 'HIVE MIND', type: 'PROCESSAMENTO PARALELO',
                 iconName: 'Cpu', color: 'indigo', status: 'ONLINE', complexity: 95,
                 creator: { name: 'Gene Amdahl', role: 'Lei de Amdahl', year: '1967',
-                    reason: 'A Lei de Moore estagnou para núcleos individuais. A única forma de ganhar performance exponencial hoje é o paralelismo horizontal.',
-                    usage: 'Acessa navigator.hardwareConcurrency para spawnar Workers reais. Usa Root Splitting para dividir os lances iniciais entre os núcleos disponíveis.' },
+                    reason: 'A Lei de Moore estagnou para nucleos individuais. A unica forma de ganhar performance exponencial hoje e o paralelismo horizontal.',
+                    usage: 'Acessa navigator.hardwareConcurrency para spawnar Workers reais. Usa Root Splitting para dividir os lances iniciais entre os nucleos disponiveis.' },
                 langs: ['Worker Pool', 'Root Splitting'],
-                lore: 'A colmeia digital. Fragmenta a realidade do tabuleiro em múltiplos universos paralelos, distribuindo a carga inicial entre os núcleos disponíveis.',
+                lore: 'A colmeia digital. Fragmenta a realidade do tabuleiro em multiplos universos paralelos, distribuindo a carga inicial entre os nucleos disponiveis.',
                 tech: { model: 'Worker Pool', strategy: 'Equal Chunking', max_pool: 'Hardware - 1' },
-                logs: ['> Detectando núcleos: 8.', '> Spawnando workers...', '> Chunk 1 -> Worker 1.', '> Chunk 2 -> Worker 2.', '> Aggregating results...']
+                logs: ['> Detectando nucleos: 8.', '> Spawnando workers...', '> Chunk 1 -> Worker 1.', '> Chunk 2 -> Worker 2.', '> Aggregating results...']
             },
             {
                 id: 'core', title: 'NEXUS CORE', type: 'MOTOR MINIMAX',
                 iconName: 'Brain', color: 'cyan', status: 'ONLINE', complexity: 90,
                 creator: { name: 'Alan Turing', role: 'Game Theory', year: '1950',
-                    reason: 'Redes Neurais podem alucinar. Em jogos de informação perfeita, a busca em árvore oferece a única verdade matemática absoluta.',
-                    usage: 'Implementa Minimax com Poda Alpha-Beta e Iterative Deepening para garantir resposta válida mesmo se o tempo acabar.' },
+                    reason: 'Redes Neurais podem alucinar. Em jogos de informacao perfeita, a busca em arvore oferece a unica verdade matematica absoluta.',
+                    usage: 'Implementa Minimax com Poda Alpha-Beta e Iterative Deepening para garantir resposta valida mesmo se o tempo acabar.' },
                 langs: ['JS Worker', 'Typed Arrays'],
-                lore: 'O maestro da orquestra. Coordena a busca em profundidade, gerencia o tempo e aplica cortes na árvore de decisão.',
+                lore: 'O maestro da orquestra. Coordena a busca em profundidade, gerencia o tempo e aplica cortes na arvore de decisao.',
                 tech: { engine: 'Minimax IDS', pruning: 'Alpha-Beta', tt_size: '150k Entries' },
                 logs: ['> Horizonte de busca: 18 ply.', '> Zobrist Hash calculado.', '> TT Cache Hit.', '> Alpha-Beta Cutoff.']
             },
             {
-                id: 'edge_intelligence', title: 'EDGE INTELLIGENCE', type: 'CÉREBRO CONSULTIVO',
+                id: 'edge_intelligence', title: 'EDGE INTELLIGENCE', type: 'CEREBRO CONSULTIVO',
                 iconName: 'Zap', color: 'cyan', status: 'ONLINE', complexity: 85,
                 creator: { name: 'Cloud Architect', role: 'Distributed Computing', year: '2026',
-                    reason: 'Mover a inteligência para a borda reduz latência e centraliza a sabedoria coletiva. O cliente local deve ser apenas o executor.',
-                    usage: 'A Edge Function ia-think recebe o estado do jogo. Consulta o livro de aberturas e a memória. Se não achar, faz fallback para IA local.' },
+                    reason: 'Mover a inteligencia para a borda reduz latencia e centraliza a sabedoria coletiva. O cliente local deve ser apenas o executor.',
+                    usage: 'A Edge Function ia-think recebe o estado do jogo. Consulta o livro de aberturas e a memoria. Se nao achar, faz fallback para IA local.' },
                 langs: ['Edge Functions', 'Deno/TS'],
-                lore: 'A mente na nuvem. Um oráculo global executado na Edge que consolida toda a experiência da IA e responde em milissegundos.',
+                lore: 'A mente na nuvem. Um oraculo global executado na Edge que consolida toda a experiencia da IA e responde em milissegundos.',
                 tech: { host: 'Supabase Edge', latency: '< 50ms', fallback: 'Local Worker' },
-                logs: ['> Chamando Edge API...', '> ia-think: Processando.', '> Memória consultada.', '> Resposta recebida da nuvem.']
+                logs: ['> Chamando Edge API...', '> ia-think: Processando.', '> Memoria consultada.', '> Resposta recebida da nuvem.']
             },
             {
                 id: 'opening_book', title: 'LIVRO DE ABERTURAS', type: 'CACHE DE ESTADO',
                 iconName: 'Hash', color: 'emerald', status: 'ONLINE', complexity: 15,
                 creator: { name: 'Data Ops', role: 'Memoization', year: '2026',
-                    reason: 'Evitar cálculo pesado nos lances iniciais. O Zobrist Hash permite buscar instantaneamente lances consolidados no Supabase.',
-                    usage: 'Calcula o Zobrist Hash da posição. Busca na tabela aberturas. Se houver lance com score positivo forte, executa imediatamente sem chamar Minimax.' },
+                    reason: 'Evitar calculo pesado nos lances iniciais. O Zobrist Hash permite buscar instantaneamente lances consolidados no Supabase.',
+                    usage: 'Calcula o Zobrist Hash da posicao. Busca na tabela aberturas. Se houver lance com score positivo forte, executa imediatamente sem chamar Minimax.' },
                 langs: ['Zobrist Hashing', 'Supabase SQL'],
-                lore: 'A biblioteca ancestral. Um repositório de aberturas perfeitas que permite à IA jogar os primeiros lances baseada em sabedoria milenar.',
+                lore: 'A biblioteca ancestral. Um repositorio de aberturas perfeitas que permite a IA jogar os primeiros lances baseada em sabedoria milenar.',
                 tech: { hash: 'Zobrist 64-bit', table: 'aberturas', query: 'O(1) Lookup' },
-                logs: ['> Zobrist Hash gerado.', '> Consultando aberturas...', '> Match encontrado: Score +0.5.', '> Lance instantâneo aplicado.']
+                logs: ['> Zobrist Hash gerado.', '> Consultando aberturas...', '> Match encontrado: Score +0.5.', '> Lance instantaneo aplicado.']
             },
             {
                 id: 'ranking_profiles', title: 'RANKING & PROFILES', type: 'SISTEMA DE ELO',
                 iconName: 'Target', color: 'yellow', status: 'ONLINE', complexity: 30,
                 creator: { name: 'Social Engineer', role: 'Gamification', year: '2026',
-                    reason: 'Sem um senso de progressão contínua o usuário desengaja rápido. Um sistema de Elo cria um meta-jogo competitivo.',
-                    usage: 'Tabela profiles com login/nick. Registra Wins/Losses/Draws e atualiza a Pontuação após cada partida usando o algoritmo de Elo.' },
+                    reason: 'Sem um senso de progressao continua o usuario desengaja rapido. Um sistema de Elo cria um meta-jogo competitivo.',
+                    usage: 'Tabela profiles com login/nick. Registra Wins/Losses/Draws e atualiza a Pontuacao apos cada partida usando o algoritmo de Elo.' },
                 langs: ['PostgreSQL', 'Auth Row Level Sec'],
-                lore: 'O salão da fama digital. Cada embate contra a máquina ou outro humano forja o seu nível de poder no ecossistema do jogo.',
+                lore: 'O salao da fama digital. Cada embate contra a maquina ou outro humano forja o seu nivel de poder no ecossistema do jogo.',
                 tech: { table: 'profiles', auth: 'Supabase Auth', metric: 'Elo Rating' },
                 logs: ['> Autenticando jogador...', '> Lendo profile data.', '> Partida finalizada.', '> Elo atualizado: +14.']
             },
@@ -283,160 +284,160 @@
                 id: 'online_realtime', title: 'MULTIPLAYER REALTIME', type: 'WS SYNC',
                 iconName: 'Activity', color: 'red', status: 'ONLINE', complexity: 65,
                 creator: { name: 'Network Architect', role: 'Multiplayer', year: '2026',
-                    reason: 'A verdadeira prova de fogo de um jogo de tabuleiro é o PvP. Redes neurais são legais, mas destruir a estratégia do seu amigo ao vivo é essencial.',
+                    reason: 'A verdadeira prova de fogo de um jogo de tabuleiro e o PvP. Redes neurais sao legais, mas destruir a estrategia do seu amigo ao vivo e essencial.',
                     usage: 'Usa a tabela salas e o Supabase Realtime para sincronizar estado de tabuleiro, turno e chat entre dois clientes quase instantaneamente.' },
                 langs: ['WebSockets', 'Supabase Realtime'],
-                lore: 'A arena multiversal. Cria uma ponte de baixa latência conectando diretamente a mente de dois jogadores, sincronizando seus lances na velocidade da luz.',
+                lore: 'A arena multiversal. Cria uma ponte de baixa latencia conectando diretamente a mente de dois jogadores, sincronizando seus lances na velocidade da luz.',
                 tech: { channel: 'salas_presence', protocol: 'WebSocket', latency: '< 100ms' },
-                logs: ['> Criando sala privada...', '> Aguardando oponente...', '> Realtime channel open.', '> Sincronização de lance: OK.']
+                logs: ['> Criando sala privada...', '> Aguardando oponente...', '> Realtime channel open.', '> Sincronizacao de lance: OK.']
             },
             {
-                id: 'telemetry', title: 'TELEMETRIA CLOUD', type: 'CÉREBRO DE MÉTRICAS',
+                id: 'telemetry', title: 'TELEMETRIA CLOUD', type: 'CEREBRO DE METRICAS',
                 iconName: 'BarChart', color: 'orange', status: 'ONLINE', complexity: 60,
                 creator: { name: 'Data Ops', role: 'Crowd Learning', year: '2025',
-                    reason: 'Uma IA isolada sofre de overfitting. A verdadeira robustez nasce da exposição a milhares de humanos imprevisíveis na nuvem.',
-                    usage: 'Agrega estatísticas de performance de todos os clientes via Supabase Edge Functions e Realtime. Permite ajustar a dificuldade globalmente.' },
+                    reason: 'Uma IA isolada sofre de overfitting. A verdadeira robustez nasce da exposicao a milhares de humanos imprevisiveis na nuvem.',
+                    usage: 'Agrega estatisticas de performance de todos os clientes via Supabase Edge Functions e Realtime. Permite ajustar a dificuldade globalmente.' },
                 langs: ['Supabase Realtime', 'PostgreSQL'],
-                lore: 'O sistema nervoso periférico. Conecta cada instância de jogo a uma mente coletiva na nuvem, permitindo ajustes de balanceamento baseados em dados reais.',
+                lore: 'O sistema nervoso periferico. Conecta cada instancia de jogo a uma mente coletiva na nuvem, permitindo ajustes de balanceamento baseados em dados reais.',
                 tech: { db: 'Supabase', path: 'telemetria', metrics: 'Depth/Score' },
                 logs: ['> Worker msg recebida.', '> Telemetria formatada.', '> Uploading via Edge...', '> Ack received.']
             },
             {
-                id: 'coach', title: 'COACH DE PARTIDA', type: 'ANÁLISE SEMÂNTICA',
+                id: 'coach', title: 'COACH DE PARTIDA', type: 'ANALISE SEMANTICA',
                 iconName: 'Lightbulb', color: 'yellow', status: 'ONLINE', complexity: 35,
-                creator: { name: 'Grandmaster Module', role: 'Pedagogia Cibernética', year: '2025',
-                    reason: 'Dados brutos não geram aprendizado. O cérebro humano precisa de narrativa e contexto para absorver o erro e não repeti-lo.',
-                    usage: 'Analisa o array gameHistory pós-jogo. Detecta grandes oscilações na avaliação e classifica como Erro Crítico, gerando texto explicativo.' },
+                creator: { name: 'Grandmaster Module', role: 'Pedagogia Cibernetica', year: '2025',
+                    reason: 'Dados brutos nao geram aprendizado. O cerebro humano precisa de narrativa e contexto para absorver o erro e nao repeti-lo.',
+                    usage: 'Analisa o array gameHistory pos-jogo. Detecta grandes oscilacoes na avaliacao e classifica como Erro Critico, gerando texto explicativo.' },
                 langs: ['Heuristic Analysis', 'NLP Gen'],
-                lore: 'Um analista digital que observa cada movimento. Detecta oscilações de vantagem e traduz erros táticos em conselhos práticos.',
+                lore: 'Um analista digital que observa cada movimento. Detecta oscilacoes de vantagem e traduz erros taticos em conselhos praticos.',
                 tech: { input: 'GameHistory', metric: 'Advantage Swing', trigger: 'Swing >= 2' },
-                logs: ['> Analisando histórico...', '> Ponto de Virada: Lance 14.', '> Vantagem IA: +2.4.', '> Gerando dica: "Cuidado com trocas."']
+                logs: ['> Analisando historico...', '> Ponto de Virada: Lance 14.', '> Vantagem IA: +2.4.', '> Gerando dica: "Cuidado com trocas."']
             },
             {
-                id: 'depth_adapt', title: 'PROFUNDIDADE ELÁSTICA', type: 'GESTÃO DE HORIZONTE',
+                id: 'depth_adapt', title: 'PROFUNDIDADE ELASTICA', type: 'GESTAO DE HORIZONTE',
                 iconName: 'Zap', color: 'cyan', status: 'AUTO', complexity: 40,
-                creator: { name: 'Heuristic Engine', role: 'Explosão Combinatória', year: '2025',
-                    reason: 'O Horizon Effect. Posições táticas instáveis exigem visão longa; posições mortas são desperdício de CPU.',
-                    usage: 'No worker, detecta turbulência (capturas disponíveis, poucas peças). Se turbulento, injeta +2 ou +4 na profundidade de busca dinamicamente.' },
+                creator: { name: 'Heuristic Engine', role: 'Explosao Combinatoria', year: '2025',
+                    reason: 'O Horizon Effect. Posicoes taticas instaveis exigem visao longa; posicoes mortas sao desperdicio de CPU.',
+                    usage: 'No worker, detecta turbulencia (capturas disponiveis, poucas pecas). Se turbulento, injeta +2 ou +4 na profundidade de busca dinamicamente.' },
                 langs: ['Dynamic Config', 'Monkey Patch'],
-                lore: 'O foco variável da IA. Dilata o horizonte de busca em momentos de caos tático ou finais críticos, economizando energia em posições tranquilas.',
+                lore: 'O foco variavel da IA. Dilata o horizonte de busca em momentos de caos tatico ou finais criticos, economizando energia em posicoes tranquilas.',
                 tech: { triggers: 'Caps>=3 | End<=6', bonus: '+1 / +2 Ply', limit: 'Max 36' },
-                logs: ['> Tabuleiro turbulento.', '> Capturas detectadas.', '> Depth boost: 8 -> 10.', '> Foco máximo.']
+                logs: ['> Tabuleiro turbulento.', '> Capturas detectadas.', '> Depth boost: 8 -> 10.', '> Foco maximo.']
             },
             {
-                id: 'time_adapt', title: 'CRONOS ADAPTATIVO', type: 'GESTÃO TEMPORAL',
+                id: 'time_adapt', title: 'CRONOS ADAPTATIVO', type: 'GESTAO TEMPORAL',
                 iconName: 'History', color: 'blue', status: 'ONLINE', complexity: 30,
                 creator: { name: 'Resource Manager', role: 'Time Management', year: '2025',
-                    reason: 'Em jogos competitivos, o tempo é uma peça. Gastar 2 segundos em um lance óbvio rouba o tempo necessário para calcular um mate complexo no final.',
-                    usage: 'Calcula um orçamento de milissegundos baseado na fase do jogo. Finais complexos recebem até 2000ms; aberturas recebem apenas 300ms.' },
+                    reason: 'Em jogos competitivos, o tempo e uma peca. Gastar 2 segundos em um lance obvio rouba o tempo necessario para calcular um mate complexo no final.',
+                    usage: 'Calcula um orcamento de milissegundos baseado na fase do jogo. Finais complexos recebem ate 2000ms; aberturas recebem apenas 300ms.' },
                 langs: ['Time Allocation', 'Perf.now()'],
-                lore: 'O guardião do relógio. Aloca milissegundos preciosos onde eles fazem a diferença: nos finais complexos e meios-jogos tensos.',
+                lore: 'O guardiao do relogio. Aloca milissegundos preciosos onde eles fazem a diferenca: nos finais complexos e meios-jogos tensos.',
                 tech: { logic: 'Piece Count Inv', tiers: '1400ms/1100ms/800ms', scale: 'Difficulty' },
-                logs: ['> Peças restantes: 7.', '> Fase: Final Crítico.', '> Orçamento tempo: 1400ms.', '> Timer set.']
+                logs: ['> Pecas restantes: 7.', '> Fase: Final Critico.', '> Orcamento tempo: 1400ms.', '> Timer set.']
             },
             {
-                id: 'symmetry', title: 'ESPELHO DE SIMETRIA', type: 'OTIMIZAÇÃO GEOMÉTRICA',
+                id: 'symmetry', title: 'ESPELHO DE SIMETRIA', type: 'OTIMIZACAO GEOMETRICA',
                 iconName: 'Crosshair', color: 'emerald', status: 'ONLINE', complexity: 20,
-                creator: { name: 'Geometry Engine', role: 'Redundância Matemática', year: '2025',
-                    reason: 'Se o tabuleiro é um espelho perfeito, o lance da esquerda é matematicamente idêntico ao da direita. Calcular ambos é desperdício puro.',
+                creator: { name: 'Geometry Engine', role: 'Redundancia Matematica', year: '2025',
+                    reason: 'Se o tabuleiro e um espelho perfeito, o lance da esquerda e matematicamente identico ao da direita. Calcular ambos e desperdicio puro.',
                     usage: 'Verifica isVerticallySymmetric. Se true, descarta todos lances das colunas 4 a 7. Reduz o Branching Factor pela metade.' },
                 langs: ['Bitwise Check', 'Tree Pruning'],
-                lore: 'O prisma redutor. Detecta simetria perfeita no eixo vertical e ignora metade do universo de busca, duplicando a eficiência.',
+                lore: 'O prisma redutor. Detecta simetria perfeita no eixo vertical e ignora metade do universo de busca, duplicando a eficiencia.',
                 tech: { check: 'Vertical Mirror', gain: '50% Speedup', filter: 'Col <= 3' },
                 logs: ['> Checando simetria...', '> Eixo vertical perfeito.', '> Poda ativa: Ignorando colunas 4-7.', '> Speedup: 2x.']
             },
             {
                 id: 'context_speech', title: 'FALA CONTEXTUAL', type: 'FEEDBACK NARRATIVO',
                 iconName: 'MessageSquare', color: 'pink', status: 'ONLINE', complexity: 25,
-                creator: { name: 'UX Narrative', role: 'Antropomorfização', year: '2025',
-                    reason: 'Humanos toleram melhor a derrota quando percebem intenção e personalidade na máquina. O silêncio da IA é interpretado como frieza.',
-                    usage: 'Máquina de estados que monitora eventos do jogo. Consulta SPEECH_PACKS baseado no speechMode e mantém buffer das últimas 3 frases.' },
+                creator: { name: 'UX Narrative', role: 'Antropomorfizacao', year: '2025',
+                    reason: 'Humanos toleram melhor a derrota quando percebem intencao e personalidade na maquina. O silencio da IA e interpretado como frieza.',
+                    usage: 'Maquina de estados que monitora eventos do jogo. Consulta SPEECH_PACKS baseado no speechMode e mantem buffer das ultimas 3 frases.' },
                 langs: ['Context Awareness', 'String Gen'],
-                lore: 'A voz da máquina. Uma camada de tradução que verbaliza as intenções e eventos táticos baseada no estado interno do motor.',
+                lore: 'A voz da maquina. Uma camada de traducao que verbaliza as intencoes e eventos taticos baseada no estado interno do motor.',
                 tech: { triggers: 'Game Events', output: 'SPEECH_PACKS', channel: 'Worker Msg', memory: 'Buffer (3)' },
-                logs: ['> Modo ativo: tecnico.', '> Evento detectado: captura.', '> Anti-repetição: ok.', '> Gerando frase...']
+                logs: ['> Modo ativo: tecnico.', '> Evento detectado: captura.', '> Anti-repeticao: ok.', '> Gerando frase...']
             },
             {
-                id: 'consolidation', title: 'MEMÓRIA UNIFICADA', type: 'FUSÃO DE PESOS',
+                id: 'consolidation', title: 'MEMORIA UNIFICADA', type: 'FUSAO DE PESOS',
                 iconName: 'Layers', color: 'purple', status: 'ONLINE', complexity: 80,
                 creator: { name: 'Deep Learning Ops', role: 'Ensemble Learning', year: '2025',
-                    reason: 'Para evitar o Esquecimento Catastrófico. Se a IA treina apenas com um lado, ela esquece como defender o outro.',
-                    usage: 'Pós-treino, aplica uma média aritmética nos vetores neurais. Salva no localStorage e persiste na tabela memoria_ia no Supabase.' },
+                    reason: 'Para evitar o Esquecimento Catastrofico. Se a IA treina apenas com um lado, ela esquece como defender o outro.',
+                    usage: 'Pos-treino, aplica uma media aritmetica nos vetores neurais. Salva no localStorage e persiste na tabela memoria_ia no Supabase.' },
                 langs: ['Weight Averaging', 'Profile Merge'],
-                lore: 'O processo de assimilação. Funde as experiências das IAs Branca e Vermelha em uma única matriz de pesos e envia o extrato vital para a nuvem.',
+                lore: 'O processo de assimilacao. Funde as experiencias das IAs Branca e Vermelha em uma unica matriz de pesos e envia o extrato vital para a nuvem.',
                 tech: { method: 'Average Merge', target: 'memoria_ia', sync: 'Bi-directional' },
-                logs: ['> Treino finalizado.', '> Lendo pesos W/R.', '> Calculando média...', '> Consciência unificada salva na nuvem.']
+                logs: ['> Treino finalizado.', '> Lendo pesos W/R.', '> Calculando media...', '> Consciencia unificada salva na nuvem.']
             },
             {
                 id: 'debug_profile', title: 'BIOFEEDBACK (DEBUG)', type: 'MONITORAMENTO INTERNO',
                 iconName: 'Activity', color: 'red', status: 'DEV ONLY', complexity: 15,
                 creator: { name: 'Dev Tools', role: 'Problema da Caixa Preta', year: '2025',
-                    reason: 'Sem visibilidade interna, é impossível distinguir Sorte de Competência Algorítmica. Precisamos ver os números mudando.',
-                    usage: 'Loop de polling que lê variáveis globais da IA a cada 2s e atualiza o DOM, funcionando como um monitor cardíaco do aprendizado.' },
+                    reason: 'Sem visibilidade interna, e impossivel distinguir Sorte de Competencia Algoritmica. Precisamos ver os numeros mudando.',
+                    usage: 'Loop de polling que le variaveis globais da IA a cada 2s e atualiza o DOM, funcionando como um monitor cardiaco do aprendizado.' },
                 langs: ['Polling Loop', 'DOM Update'],
-                lore: 'O painel de diagnósticos. Um eletrocardiograma do aprendizado da IA, mostrando a evolução dos pesos e a personalidade tática em tempo real.',
+                lore: 'O painel de diagnosticos. Um eletrocardiograma do aprendizado da IA, mostrando a evolucao dos pesos e a personalidade tatica em tempo real.',
                 tech: { rate: '2000ms', metrics: 'Eval/Weights/Patt', display: 'HUD Overlay' },
                 logs: ['> Polling status...', '> Score: -1.4.', '> Agg: 0.72.', '> Updating Debug DOM.']
             },
             {
                 id: 'smart_reset', title: 'TABULA RASA', type: 'CICLO DE VIDA',
                 iconName: 'RefreshCw', color: 'blue', status: 'SYSTEM', complexity: 10,
-                creator: { name: 'Sys Admin', role: 'Mínimos Locais', year: '2025',
-                    reason: 'Otimização presa em mínimos locais. Às vezes, a IA aprende um vício errado que funciona contra iniciantes, mas falha contra mestres.',
-                    usage: 'Limpeza destrutiva de chaves no localStorage e wipe em tabelas específicas no Supabase, forçando a regeneração de pesos limpos.' },
+                creator: { name: 'Sys Admin', role: 'Minimos Locais', year: '2025',
+                    reason: 'Otimizacao presa em minimos locais. As vezes, a IA aprende um vicio errado que funciona contra iniciantes, mas falha contra mestres.',
+                    usage: 'Limpeza destrutiva de chaves no localStorage e wipe em tabelas especificas no Supabase, forcando a regeneracao de pesos limpos.' },
                 langs: ['Storage Clear', 'Supabase RPC'],
-                lore: 'O protocolo de renascimento. Apaga memórias viciadas e restaura a IA para suas configurações de fábrica, pronta para reaprender do zero.',
+                lore: 'O protocolo de renascimento. Apaga memorias viciadas e restaura a IA para suas configuracoes de fabrica, pronta para reaprender do zero.',
                 tech: { action: 'Wipe Storage', scope: 'Local + Cloud', target: 'All Prefixes' },
-                logs: ['> Iniciando purga...', '> Deletando padrões...', '> Restaurando pesos padrão.', '> IA renascida.']
+                logs: ['> Iniciando purga...', '> Deletando padroes...', '> Restaurando pesos padrao.', '> IA renascida.']
             },
             {
                 id: 'regional_taunts', title: 'MODOS DE FALA', type: 'PERSONALIDADE / TOM DE VOZ',
                 iconName: 'MessageSquare', color: 'rose', status: 'ONLINE', complexity: 15,
                 creator: { name: 'UX Narrative', role: 'Persona Crafting', year: '2026',
-                    reason: 'Dar identidade e humanizar a IA através de diferentes personas. A mesma IA pode agir de forma descontraída, dramática ou calculista.',
-                    usage: 'O algoritmo consulta o pacote de falas correspondente (SPEECH_PACKS) de acordo com o modo atual. Usa fallback para frases genéricas.' },
+                    reason: 'Dar identidade e humanizar a IA atraves de diferentes personas. A mesma IA pode agir de forma descontraida, dramatica ou calculista.',
+                    usage: 'O algoritmo consulta o pacote de falas correspondente (SPEECH_PACKS) de acordo com o modo atual. Usa fallback para frases genericas.' },
                 langs: ['Dictionary Maps', 'Persona Mode'],
-                lore: 'A máscara vocal da máquina. Permite que a IA mude completamente sua personalidade tática com base no modo selecionado.',
+                lore: 'A mascara vocal da maquina. Permite que a IA mude completamente sua personalidade tatica com base no modo selecionado.',
                 tech: { storage: 'localStorage.speechMode', values: 'brasil|anime|tecnico', source: 'SPEECH_PACKS', fallback: 'geral' },
                 logs: ['> Carregando SPEECH_PACKS...', '> Fallback geral configurado.', '> Aplicando persona ativa...']
             },
             {
-                id: 'context_enhanced', title: 'CONTEXTOS AVANÇADOS', type: 'FEEDBACK DINÂMICO',
+                id: 'context_enhanced', title: 'CONTEXTOS AVANCADOS', type: 'FEEDBACK DINAMICO',
                 iconName: 'Lightbulb', color: 'yellow', status: 'ONLINE', complexity: 20,
                 creator: { name: 'UX Narrative', role: 'Contextual Awareness', year: '2026',
-                    reason: 'Humanizar reações ao sacrificar peças ou chegar ao final da partida e surpreender com promoções.',
-                    usage: 'O sayWithContext() escolhe frases de CONTEXT_PHRASES para sacrifice, surprisePromo e lowMaterial. Disparado quando a IA sacrifica uma peça.' },
+                    reason: 'Humanizar reacoes ao sacrificar pecas ou chegar ao final da partida e surpreender com promocoes.',
+                    usage: 'O sayWithContext() escolhe frases de CONTEXT_PHRASES para sacrifice, surprisePromo e lowMaterial. Disparado quando a IA sacrifica uma peca.' },
                 langs: ['Context Mapping', 'JS Helper'],
-                lore: 'O sexto sentido da IA. É capaz de comentar quando entrega uma peça como sacrifício, celebra uma promoção inesperada e reconhece o final tenso.',
+                lore: 'O sexto sentido da IA. E capaz de comentar quando entrega uma peca como sacrificio, celebra uma promocao inesperada e reconhece o final tenso.',
                 tech: { triggers: 'Sacrifice, Promo, Low Material', function: 'sayWithContext()', threshold: 'Pieces <= 8' },
                 logs: ['> Sacrifice detected.', '> Low material: 6 pieces.', '> Surprise promotion.']
             },
             {
-                id: 'region_selector', title: 'SELETOR DE MODO', type: 'PREFERÊNCIA DO USUÁRIO',
+                id: 'region_selector', title: 'SELETOR DE MODO', type: 'PREFERENCIA DO USUARIO',
                 iconName: 'User', color: 'green', status: 'ONLINE', complexity: 5,
-                creator: { name: 'UI/UX Design', role: 'Personalização', year: '2026',
-                    reason: 'Dar controle ao usuário sobre a experiência narrativa do jogo, permitindo escolher a vibe da partida.',
-                    usage: 'Componente de UI no menu principal com opções de modos. Armazena a seleção na chave speechMode do localStorage e aplica imediatamente.' },
+                creator: { name: 'UI/UX Design', role: 'Personalizacao', year: '2026',
+                    reason: 'Dar controle ao usuario sobre a experiencia narrativa do jogo, permitindo escolher a vibe da partida.',
+                    usage: 'Componente de UI no menu principal com opcoes de modos. Armazena a selecao na chave speechMode do localStorage e aplica imediatamente.' },
                 langs: ['React', 'localStorage'],
-                lore: 'O seletor de persona. Um pequeno menu que altera instantaneamente o conjunto de respostas verbais da Inteligência Artificial.',
+                lore: 'O seletor de persona. Um pequeno menu que altera instantaneamente o conjunto de respostas verbais da Inteligencia Artificial.',
                 tech: { options: 'brasil, anime, tecnico', storage: 'localStorage.speechMode', default: 'brasil' },
-                logs: ['> Usuário escolheu modo: anime.', '> Salvando speechMode...', '> Aplicando pack de falas...']
+                logs: ['> Usuario escolheu modo: anime.', '> Salvando speechMode...', '> Aplicando pack de falas...']
             },
             {
-                id: 'state_persistence', title: 'PERSISTÊNCIA DE JOGO', type: 'CONTINUIDADE',
+                id: 'state_persistence', title: 'PERSISTENCIA DE JOGO', type: 'CONTINUIDADE',
                 iconName: 'Database', color: 'teal', status: 'ONLINE', complexity: 25,
                 creator: { name: 'Data Engineer', role: 'State Saving', year: '2026',
-                    reason: 'Evitar perda de progresso e manter aprendizado entre sessões.',
-                    usage: 'Funções saveGameState() serializam tabuleiro e vez. O evento beforeunload sincroniza o progresso com a tabela profiles no Supabase.' },
+                    reason: 'Evitar perda de progresso e manter aprendizado entre sessoes.',
+                    usage: 'Funcoes saveGameState() serializam tabuleiro e vez. O evento beforeunload sincroniza o progresso com a tabela profiles no Supabase.' },
                 langs: ['localStorage', 'Supabase'],
-                lore: 'A memória longa do tabuleiro. Garante que, ao recarregar a página, a partida e a inteligência continuem exatamente de onde pararam.',
+                lore: 'A memoria longa do tabuleiro. Garante que, ao recarregar a pagina, a partida e a inteligencia continuem exatamente de onde pararam.',
                 tech: { storage: 'gameState', event: 'beforeunload', sync: 'Supabase (profiles)' },
                 logs: ['> Salvando estado do jogo...', '> Estado restaurado.', '> Sync com a base cloud.']
             }
         ];
 
         // ============================================================
-        // 🌳 VISUALIZADOR DE MAPA MENTAL VIVO (FIT-TO-SCREEN EDITION)
+        // VISUALIZADOR DE MAPA MENTAL VIVO v4.2 - ALCANCE TRANSITIVO
         // ============================================================
         const MindMapView = ({ onBack }) => {
             const [activeNodeId, setActiveNodeId] = useState(null);
@@ -487,32 +488,69 @@
                     online:        { ...getNodeData('online_realtime'),  ...getPos(825, 1300, 450, 2050) }
                 },
                 connections: [
-                    { from: 'multicore', to: 'core', desc: 'Distribuição Chunks' },
-                    { from: 'core', to: 'telemetry', desc: 'Envio Métricas' },
+                    { from: 'multicore', to: 'core', desc: 'Distribuicao Chunks' },
+                    { from: 'core', to: 'telemetry', desc: 'Envio Metricas' },
                     { from: 'core', to: 'depth', desc: 'Ajuste Horizonte' },
-                    { from: 'core', to: 'time', desc: 'Orçamento Tempo' },
-                    { from: 'core', to: 'symmetry', desc: 'Filtro Geométrico' },
+                    { from: 'core', to: 'time', desc: 'Orcamento Tempo' },
+                    { from: 'core', to: 'symmetry', desc: 'Filtro Geometrico' },
                     { from: 'core', to: 'book', desc: 'Zobrist Lookup' },
                     { from: 'book', to: 'edge', desc: 'Miss -> Nuvem' },
-                    { from: 'edge', to: 'telemetry', desc: 'Métricas Nuvem' },
+                    { from: 'edge', to: 'telemetry', desc: 'Metricas Nuvem' },
                     { from: 'telemetry', to: 'coach', desc: 'Dados Partida' },
                     { from: 'multicore', to: 'consolidation', desc: 'Merge Pesos' },
                     { from: 'telemetry', to: 'persistence', desc: 'Sync Cloud' },
-                    { from: 'consolidation', to: 'persistence', desc: 'Salvar Híbrido' },
+                    { from: 'consolidation', to: 'persistence', desc: 'Salvar Hibrido' },
                     { from: 'persistence', to: 'ranking', desc: 'Update Elo' },
                     { from: 'online', to: 'ranking', desc: 'PvP Result' },
                     { from: 'online', to: 'persistence', desc: 'Sync Board' },
                     { from: 'core', to: 'context', desc: 'Estado -> Fala' },
-                    { from: 'context', to: 'enhanced', desc: 'Análise Extra' },
+                    { from: 'context', to: 'enhanced', desc: 'Analise Extra' },
                     { from: 'context', to: 'taunts', desc: 'Modulador' },
-                    { from: 'selector', to: 'taunts', desc: 'Preferência' },
+                    { from: 'selector', to: 'taunts', desc: 'Preferencia' },
                     { from: 'status', to: 'core', desc: 'Monitor' },
-                    { from: 'core', to: 'debug', desc: 'Variáveis Livres' },
-                    { from: 'reset', to: 'multicore', desc: 'Purga Memória' }
+                    { from: 'core', to: 'debug', desc: 'Variaveis Livres' },
+                    { from: 'reset', to: 'multicore', desc: 'Purga Memoria' }
                 ]
             };
 
-            // Reduzimos o padding matemático pra otimizar o espaço em tela sem scroll
+            // BFS para calcular alcance transitivo (toda a cadeia conectada)
+            const reachableSet = useMemo(() => {
+                if (!activeNodeId) return new Set();
+                
+                // Constroi lista de adjacencia bidirecional
+                const adj = {};
+                Object.keys(topologyData.nodes).forEach(key => { adj[key] = []; });
+                topologyData.connections.forEach(conn => {
+                    if (adj[conn.from]) adj[conn.from].push(conn.to);
+                    if (adj[conn.to]) adj[conn.to].push(conn.from);
+                });
+                
+                // BFS a partir do no ativo
+                const visited = new Set();
+                const queue = [activeNodeId];
+                visited.add(activeNodeId);
+                
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    for (const neighbor of adj[current] || []) {
+                        if (!visited.has(neighbor)) {
+                            visited.add(neighbor);
+                            queue.push(neighbor);
+                        }
+                    }
+                }
+                
+                return visited;
+            }, [activeNodeId]);
+
+            // Conexoes ativas = todas as arestas entre nos alcancaveis
+            const activeConnections = useMemo(() => {
+                if (!activeNodeId) return [];
+                return topologyData.connections.filter(
+                    c => reachableSet.has(c.from) && reachableSet.has(c.to)
+                );
+            }, [activeNodeId, reachableSet]);
+
             const padding = 80; 
             const nodesArr = Object.values(topologyData.nodes);
             const minX = Math.min(...nodesArr.map(n => n.x));
@@ -523,14 +561,12 @@
             const vbHeight = (maxY - minY) + (padding * 2);
             const viewBox = `${minX - padding} ${minY - padding} ${vbWidth} ${vbHeight}`;
 
-            const activeConnections = useMemo(() => {
-                if (!activeNodeId) return [];
-                return topologyData.connections.filter(c => c.from === activeNodeId || c.to === activeNodeId);
-            }, [activeNodeId]);
+            const handleNodeClick = useCallback((key) => {
+                setActiveNodeId(prev => prev === key ? null : key);
+            }, []);
 
             return (
                 <div className="absolute inset-0 z-50 flex flex-col animate-in">
-                    {/* ENHANCED CONTAINER: Removido overflow-auto e barras de scroll. Fundo tela cheia. */}
                     <div 
                         ref={containerRef} 
                         className="flex-1 w-full h-full relative overflow-hidden bg-[#050a10]"
@@ -538,21 +574,18 @@
                             if (e.target === e.currentTarget && activeNodeId) setActiveNodeId(null);
                         }}
                     >
-                         {/* SVG Wrapper limpo para alinhar o conteúdo 100% no meio da tela */}
                          <div className="w-full h-full flex flex-col items-center justify-center pointer-events-none p-2 md:p-6">
                              <svg 
                                 viewBox={viewBox} 
                                 preserveAspectRatio="xMidYMid meet" 
                                 className="pointer-events-auto block drop-shadow-2xl w-full h-full"
                                 style={{ 
-                                    // Zero limites manuais (width/height), o w-full h-full resolve tudo no limite da view
                                     background: 'radial-gradient(circle at 50% 20%, rgba(15,23,42,0.8) 0%, rgba(5,10,16,1) 80%)',
                                     borderRadius: mobileLayout ? '0px' : '24px',
                                     border: mobileLayout ? 'none' : '1px solid rgba(51, 65, 85, 0.4)'
                                 }}
                                 onClick={(e) => { if (e.target === e.currentTarget && activeNodeId) setActiveNodeId(null); }}
                              >
-                                {/* Fundo Grid Cyberpunk */}
                                 <defs>
                                     <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
                                         <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.02)" strokeWidth="1"/>
@@ -560,12 +593,14 @@
                                 </defs>
                                 <rect x={minX - padding} y={minY - padding} width={vbWidth} height={vbHeight} fill="url(#grid)" />
 
-                                {/* Conexões (Efeito Circuito) */}
+                                {/* Conexoes */}
                                 {topologyData.connections.map((conn, i) => {
                                     const start = topologyData.nodes[conn.from];
                                     const end = topologyData.nodes[conn.to];
                                     if(!start || !end) return null; 
-                                    const isActive = activeNodeId && (conn.from === activeNodeId || conn.to === activeNodeId);
+                                    
+                                    // Agora a conexao acende se AMBOS os nos fazem parte do cluster alcancavel
+                                    const isActive = activeNodeId && reachableSet.has(conn.from) && reachableSet.has(conn.to);
                                     const isDimmed = activeNodeId && !isActive;
                                     const hexColor = getColor(start.color).hex;
 
@@ -579,102 +614,288 @@
                                         pathD = `M${start.x},${start.y} C${start.x},${midY} ${end.x},${midY} ${end.x},${end.y}`;
                                     }
 
-                                    return (<g key={`conn-${i}-${conn.from}-${conn.to}`} className="transition-all duration-500" style={{opacity: isDimmed ? 0.05 : 1}}>
-                                        {/* Linha que acende com a cor do módulo! */}
-                                        <path d={pathD} fill="none" stroke={isActive ? hexColor : '#1e293b'} strokeWidth={isActive ? 3 : 1.5} style={{ opacity: isActive ? 0.8 : 0.4, filter: isActive ? `drop-shadow(0 0 6px ${hexColor})` : 'none' }} className="transition-all duration-500" />
-                                        
-                                        {/* Texto Descritivo */}
-                                        <text 
-                                            x={(start.x + end.x)/2} 
-                                            y={(start.y + end.y)/2 - 8} 
-                                            fontSize="13" 
-                                            fontWeight="700"
-                                            fill={isActive ? '#fff' : '#64748b'} 
-                                            textAnchor="middle"
-                                            className="hidden sm:block transition-colors pointer-events-none"
-                                            style={{ textShadow: isActive ? `0 0 10px ${hexColor}` : '0 2px 4px rgba(0,0,0,0.8)' }}
-                                        >
-                                            {conn.desc}
-                                        </text>
-
-                                        {/* Animação do pacote de dados fluindo */}
-                                        <circle r={isActive ? 4.5 : 2.5} fill={isActive ? '#fff' : hexColor} style={{ filter: isActive ? `drop-shadow(0 0 8px ${hexColor})` : 'none' }}>
-                                            <animateMotion 
-                                                dur={`${1.5 + (i % 3) * 0.5}s`} 
-                                                repeatCount="indefinite" 
-                                                path={pathD} 
-                                                calcMode="linear"
+                                    return (
+                                        <g key={`conn-${i}-${conn.from}-${conn.to}`} className="transition-all duration-500" style={{opacity: isDimmed ? 0.05 : 1}}>
+                                            <path 
+                                                d={pathD} 
+                                                fill="none" 
+                                                stroke={isActive ? hexColor : '#1e293b'} 
+                                                strokeWidth={isActive ? 3 : 1.5} 
+                                                style={{ 
+                                                    opacity: isActive ? 0.8 : 0.4, 
+                                                    filter: isActive ? `drop-shadow(0 0 6px ${hexColor})` : 'none' 
+                                                }} 
+                                                className="transition-all duration-500" 
                                             />
-                                        </circle>
-                                    </g>);
+                                            <text 
+                                                x={(start.x + end.x)/2} 
+                                                y={(start.y + end.y)/2 - 8} 
+                                                fontSize="13" 
+                                                fontWeight="700"
+                                                fill={isActive ? '#fff' : '#64748b'} 
+                                                textAnchor="middle"
+                                                className="hidden sm:block transition-colors pointer-events-none"
+                                                style={{ textShadow: isActive ? `0 0 10px ${hexColor}` : '0 2px 4px rgba(0,0,0,0.8)' }}
+                                            >
+                                                {conn.desc}
+                                            </text>
+                                            <circle 
+                                                r={isActive ? 4.5 : 2.5} 
+                                                fill={isActive ? '#fff' : hexColor} 
+                                                style={{ filter: isActive ? `drop-shadow(0 0 8px ${hexColor})` : 'none' }}
+                                            >
+                                                <animateMotion 
+                                                    dur={`${1.5 + (i % 3) * 0.5}s`} 
+                                                    repeatCount="indefinite" 
+                                                    path={pathD} 
+                                                    calcMode="linear"
+                                                />
+                                            </circle>
+                                        </g>
+                                    );
                                 })}
 
-                                {/* Nodes da Árvore */}
+                                {/* Nos */}
                                 {Object.entries(topologyData.nodes).map(([key, node]) => {
                                     if(!node) return null;
-                                    const isActive = activeNodeId === key;
-                                    const isDimmed = activeNodeId && !isActive && !activeConnections.some(c => c.from === key || c.to === key);
+                                    
+                                    // O no acende se faz parte do cluster alcancavel
+                                    const isActive = activeNodeId && reachableSet.has(key);
+                                    const isSelected = activeNodeId === key;
+                                    const isDimmed = activeNodeId && !isActive;
                                     const hexColor = getColor(node.color).hex;
 
                                     return (
-                                        <g key={`node-${key}`} onClick={(e) => { e.stopPropagation(); handleNodeClick(key); }} className="cursor-pointer transition-all duration-300" style={{opacity: isDimmed ? 0.15 : 1}}>
-                                            {/* Pulso estilo radar */}
+                                        <g 
+                                            key={`node-${key}`} 
+                                            onClick={(e) => { e.stopPropagation(); handleNodeClick(key); }} 
+                                            className="cursor-pointer transition-all duration-300" 
+                                            style={{opacity: isDimmed ? 0.15 : 1}}
+                                        >
+                                            {/* Pulso radar */}
                                             <circle cx={node.x} cy={node.y} r="50" fill={hexColor} opacity="0">
-                                                <animate attributeName="opacity" values="0;0.15;0" dur="3s" repeatCount="indefinite" begin={`${(node.x % 5) / 5}s`} />
-                                                <animate attributeName="r" values="35;65;35" dur="3s" repeatCount="indefinite" begin={`${(node.y % 5) / 5}s`} />
+                                                <animate 
+                                                    attributeName="opacity" 
+                                                    values={isActive ? "0;0.2;0" : "0;0.1;0"} 
+                                                    dur="3s" 
+                                                    repeatCount="indefinite" 
+                                                    begin={`${(node.x % 5) / 5}s`} 
+                                                />
+                                                <animate 
+                                                    attributeName="r" 
+                                                    values={isActive ? "38;70;38" : "35;65;35"} 
+                                                    dur="3s" 
+                                                    repeatCount="indefinite" 
+                                                    begin={`${(node.y % 5) / 5}s`} 
+                                                />
                                             </circle>
 
                                             {/* Brilho Fundo */}
-                                            <circle cx={node.x} cy={node.y} r={isActive ? 50 : 42} fill={hexColor} opacity={isActive ? "0.2" : "0.05"} className="transition-all duration-300" style={{ filter: isActive ? `drop-shadow(0 0 20px ${hexColor})` : 'none' }} />
+                                            <circle 
+                                                cx={node.x} 
+                                                cy={node.y} 
+                                                r={isSelected ? 55 : (isActive ? 48 : 42)} 
+                                                fill={hexColor} 
+                                                opacity={isActive ? "0.25" : "0.05"} 
+                                                className="transition-all duration-300" 
+                                                style={{ filter: isActive ? `drop-shadow(0 0 24px ${hexColor})` : 'none' }} 
+                                            />
                                             
-                                            {/* Círculo Principal */}
-                                            <circle cx={node.x} cy={node.y} r={isActive ? 42 : 36} fill="#050a10" stroke={hexColor} strokeWidth={isActive ? 4 : 2} className="transition-all duration-300 hover:stroke-white hover:stroke-[3px]" style={{ filter: isActive ? `drop-shadow(0 0 10px ${hexColor}80)` : 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' }} />
+                                            {/* Circulo Principal */}
+                                            <circle 
+                                                cx={node.x} 
+                                                cy={node.y} 
+                                                r={isSelected ? 44 : (isActive ? 40 : 36)} 
+                                                fill="#050a10" 
+                                                stroke={isActive ? hexColor : '#334155'} 
+                                                strokeWidth={isSelected ? 5 : (isActive ? 3 : 2)} 
+                                                className="transition-all duration-300" 
+                                                style={{ 
+                                                    filter: isActive ? `drop-shadow(0 0 14px ${hexColor}90)` : 'drop-shadow(0 4px 6px rgba(0,0,0,0.5))' 
+                                                }} 
+                                            />
 
-                                            {/* Ícone */}
+                                            {/* Icone */}
                                             <foreignObject x={node.x - 16} y={node.y - 16} width="32" height="32">
                                                 <div className="text-white flex justify-center items-center h-full pointer-events-none">
-                                                    <Icon name={node.iconName} size={30} style={{color: isActive ? '#fff' : hexColor, filter: isActive ? `drop-shadow(0 0 6px ${hexColor})` : 'none'}} className="transition-all duration-300" />
+                                                    <Icon 
+                                                        name={node.iconName} 
+                                                        size={isSelected ? 32 : 30} 
+                                                        style={{
+                                                            color: isActive ? '#fff' : hexColor, 
+                                                            filter: isActive ? `drop-shadow(0 0 8px ${hexColor})` : 'none'
+                                                        }} 
+                                                        className="transition-all duration-300" 
+                                                    />
                                                 </div>
                                             </foreignObject>
 
-                                            {/* Label Text com Shadow mais forte */}
-                                            <text x={node.x} y={node.y + 68} textAnchor="middle" fill={isActive ? "#fff" : hexColor} fontSize={isActive ? "15" : "13"} fontWeight="800" letterSpacing="1.5" style={{textShadow: isActive ? `0 0 12px ${hexColor}` : `0 3px 6px rgba(0,0,0,0.9)`}} className="pointer-events-none transition-all duration-300">{node.label}</text>
+                                            {/* Label */}
+                                            <text 
+                                                x={node.x} 
+                                                y={node.y + 68} 
+                                                textAnchor="middle" 
+                                                fill={isActive ? "#fff" : hexColor} 
+                                                fontSize={isActive ? "15" : "13"} 
+                                                fontWeight="800" 
+                                                letterSpacing="1.5" 
+                                                style={{
+                                                    textShadow: isActive ? `0 0 14px ${hexColor}` : `0 3px 6px rgba(0,0,0,0.9)`
+                                                }} 
+                                                className="pointer-events-none transition-all duration-300"
+                                            >
+                                                {node.label}
+                                            </text>
                                             
-                                            {/* Status Dot Ajustado */}
-                                            {node.status === 'ONLINE' && <circle cx={node.x + 28} cy={node.y - 28} r="5" fill="#22c55e" stroke="#050a10" strokeWidth="2" />}
-                                            {node.status === 'AUTO' && <circle cx={node.x + 28} cy={node.y - 28} r="5" fill="#06b6d4" stroke="#050a10" strokeWidth="2" className="animate-pulse" />}
+                                            {/* Status Dot */}
+                                            {node.status === 'ONLINE' && (
+                                                <circle 
+                                                    cx={node.x + 28} 
+                                                    cy={node.y - 28} 
+                                                    r={isActive ? 6 : 5} 
+                                                    fill="#22c55e" 
+                                                    stroke="#050a10" 
+                                                    strokeWidth="2" 
+                                                    style={{
+                                                        filter: isActive ? 'drop-shadow(0 0 6px #22c55e)' : 'none'
+                                                    }}
+                                                    className="transition-all"
+                                                />
+                                            )}
+                                            {node.status === 'AUTO' && (
+                                                <circle 
+                                                    cx={node.x + 28} 
+                                                    cy={node.y - 28} 
+                                                    r={isActive ? 6 : 5} 
+                                                    fill="#06b6d4" 
+                                                    stroke="#050a10" 
+                                                    strokeWidth="2" 
+                                                    className="animate-pulse" 
+                                                />
+                                            )}
                                         </g>
                                     );
                                 })}
                              </svg>
                          </div>
                          
-                         {/* Painel Lateral Mobile/Desktop */}
+                         {/* Painel Lateral */}
                          {activeNodeId && (
-                             <div className="fixed inset-0 md:absolute md:inset-auto md:right-0 md:top-0 md:bottom-0 w-full md:w-[400px] glass border-l border-slate-800 p-6 overflow-y-auto shadow-2xl animate-[fadeIn_0.3s_ease-out] z-50 custom-scrollbar pt-24">
+                             <div className="fixed inset-0 md:absolute md:inset-auto md:right-0 md:top-0 md:bottom-0 w-full md:w-[420px] glass border-l border-slate-800 p-6 overflow-y-auto shadow-2xl animate-[fadeIn_0.3s_ease-out] z-50 custom-scrollbar pt-24">
                                 
-                                <button onClick={(e) => { e.stopPropagation(); setActiveNodeId(null); }} className="md:hidden flex items-center gap-2 text-slate-400 mb-6 bg-slate-800/50 p-3 rounded-lg active:scale-95 transition-transform duration-150 w-full justify-center border border-slate-700">
+                                <button 
+                                    onClick={(e) => { e.stopPropagation(); setActiveNodeId(null); }} 
+                                    className="md:hidden flex items-center gap-2 text-slate-400 mb-6 bg-slate-800/50 p-3 rounded-lg active:scale-95 transition-transform duration-150 w-full justify-center border border-slate-700"
+                                >
                                     <Icon name="ChevronLeft" size={16} /> 
                                     <span className="text-xs font-bold tracking-widest uppercase">Fechar Painel</span>
                                 </button>
 
+                                {/* Header do painel */}
                                 <div className="mb-6 pb-4 border-b border-slate-800">
-                                    <h3 className="text-sm text-slate-500 font-mono uppercase mb-1">Nó Selecionado</h3>
-                                    <h2 className="text-3xl font-black text-white tracking-tight" style={{color: getColor(topologyData.nodes[activeNodeId].color).hex}}>{topologyData.nodes[activeNodeId].title}</h2>
-                                    <p className="text-xs text-slate-400 mt-2 font-mono">{topologyData.nodes[activeNodeId].creator.role}</p>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <div 
+                                            className="p-2 rounded-lg border" 
+                                            style={{ 
+                                                borderColor: getColor(topologyData.nodes[activeNodeId].color).hex,
+                                                backgroundColor: getColor(topologyData.nodes[activeNodeId].color).hex + '20'
+                                            }}
+                                        >
+                                            <Icon 
+                                                name={topologyData.nodes[activeNodeId].iconName} 
+                                                size={22} 
+                                                style={{ color: getColor(topologyData.nodes[activeNodeId].color).hex }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <h2 
+                                                className="text-2xl font-black text-white tracking-tight" 
+                                                style={{ color: getColor(topologyData.nodes[activeNodeId].color).hex }}
+                                            >
+                                                {topologyData.nodes[activeNodeId].title}
+                                            </h2>
+                                            <p className="text-[10px] text-slate-500 mt-1 font-mono uppercase tracking-wider">
+                                                {topologyData.nodes[activeNodeId].type}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-slate-400 mt-3 leading-relaxed">
+                                        {topologyData.nodes[activeNodeId].lore}
+                                    </p>
                                 </div>
+
+                                {/* Stats do cluster */}
+                                <div className="mb-5 bg-slate-900/60 border border-slate-800 rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Cluster Ativo</span>
+                                        <span 
+                                            className="text-xs font-black px-2 py-1 rounded bg-slate-950 border border-slate-800"
+                                            style={{ color: getColor(topologyData.nodes[activeNodeId].color).hex }}
+                                        >
+                                            {reachableSet.size} nos conectados
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {Array.from(reachableSet).map(nodeKey => (
+                                            <div 
+                                                key={nodeKey}
+                                                className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-950 border border-slate-800"
+                                            >
+                                                <div 
+                                                    className="w-2 h-2 rounded-full"
+                                                    style={{ backgroundColor: getColor(topologyData.nodes[nodeKey].color).hex }}
+                                                />
+                                                <span className="text-[10px] font-mono text-slate-300">
+                                                    {topologyData.nodes[nodeKey].label}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <div className="space-y-4">
-                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider"><div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>Fluxo de Dados Ativo</div>
+                                    <div className="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                        <div 
+                                            className="w-2 h-2 rounded-full animate-pulse"
+                                            style={{ backgroundColor: getColor(topologyData.nodes[activeNodeId].color).hex }}
+                                        />
+                                        Fluxo de Dados Ativo
+                                    </div>
                                     {activeConnections.map((conn, idx) => {
                                         const isOutgoing = conn.from === activeNodeId;
                                         const targetNode = topologyData.nodes[isOutgoing ? conn.to : conn.from];
                                         const tc = getColor(targetNode.color);
 
                                         return (
-                                            <div key={idx} className="bg-[#050a10] border border-slate-800 rounded-xl p-4 hover:border-slate-600 transition-colors shadow-lg">
-                                                <div className="flex items-center justify-between mb-3"><span className={`text-[10px] font-bold px-2 py-1 rounded ${isOutgoing ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'}`}>{isOutgoing ? 'ENVIANDO PARA' : 'RECEBENDO DE'}</span><Icon name="ArrowRight" size={14} className="text-slate-600" /></div>
-                                                <div className="flex items-center gap-3 mb-2"><div className={`p-2 rounded-lg bg-slate-900 border border-slate-700 ${tc.text}`}><Icon name={targetNode.iconName} size={18} /></div><span className="font-bold text-sm text-slate-200">{targetNode.title}</span></div>
-                                                <p className="text-xs text-slate-400 leading-relaxed border-t border-slate-900 pt-3 mt-2">"{conn.desc}"</p>
+                                            <div 
+                                                key={idx} 
+                                                className="bg-[#050a10] border border-slate-800 rounded-xl p-4 hover:border-slate-600 transition-colors shadow-lg"
+                                            >
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span 
+                                                        className="text-[10px] font-bold px-2 py-1 rounded border"
+                                                        style={{
+                                                            color: isOutgoing ? '#60a5fa' : '#c084fc',
+                                                            backgroundColor: isOutgoing ? '#60a5fa15' : '#c084fc15',
+                                                            borderColor: isOutgoing ? '#60a5fa30' : '#c084fc30'
+                                                        }}
+                                                    >
+                                                        {isOutgoing ? 'ENVIANDO PARA' : 'RECEBENDO DE'}
+                                                    </span>
+                                                    <Icon name="ArrowRight" size={14} className="text-slate-600" />
+                                                </div>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div 
+                                                        className="p-2 rounded-lg bg-slate-900 border border-slate-700"
+                                                        style={{ color: tc.hex }}
+                                                    >
+                                                        <Icon name={targetNode.iconName} size={18} />
+                                                    </div>
+                                                    <span className="font-bold text-sm text-slate-200">{targetNode.title}</span>
+                                                </div>
+                                                <p className="text-xs text-slate-400 leading-relaxed border-t border-slate-900 pt-3 mt-2">
+                                                    "{conn.desc}"
+                                                </p>
                                             </div>
                                         );
                                     })}
@@ -687,7 +908,7 @@
         };
 
         // ============================================================
-        // 📋 SUB-COMPONENTES DO DETAIL VIEW (v4.1 UI)
+        // SUB-COMPONENTES DO DETAIL VIEW (v4.2 UI)
         // ============================================================
         const StatusBadge = ({ status }) => {
             const colors = {
@@ -729,7 +950,7 @@
                 <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 relative overflow-hidden">
                     <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl ${c.gradient} to-transparent opacity-15 rounded-bl-full pointer-events-none`}></div>
                     <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-                        <Icon name="User" size={13} /> Gênese Teórica
+                        <Icon name="User" size={13} /> Genese Teorica
                     </h3>
                     <div className="flex items-start gap-3 mb-4">
                         <div className="w-10 h-10 rounded-full bg-slate-950 flex items-center justify-center border border-slate-800 shrink-0">
@@ -751,7 +972,7 @@
                         <div className="bg-slate-950/60 rounded-lg p-3 border border-slate-800/50">
                             <div className="flex items-center gap-2 mb-2">
                                 <Icon name="Target" size={11} className={c.text} />
-                                <span className={`text-[10px] font-bold uppercase ${c.text}`}>Implementação</span>
+                                <span className={`text-[10px] font-bold uppercase ${c.text}`}>Implementacao</span>
                             </div>
                             <p className="text-xs text-slate-300 leading-relaxed">{creator.usage}</p>
                         </div>
@@ -776,7 +997,7 @@
         };
 
         // ============================================================
-        // 📄 DETAIL VIEW (v4.1 Layout)
+        // DETAIL VIEW (v4.2 Layout)
         // ============================================================
         const DetailView = ({ module, onBack }) => {
             if (!module) return null;
@@ -787,9 +1008,7 @@
                 <div className="animate-in flex-1 min-h-0 flex flex-col">
                     <div className="flex-1 min-h-0 pb-32 pr-2 custom-scrollbar overflow-y-auto">
                         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                            {/* Coluna principal */}
                             <div className="lg:col-span-8 space-y-5">
-                                {/* Título + Metadados */}
                                 <div className="flex flex-col sm:flex-row items-start gap-5">
                                     <div className={`p-5 rounded-2xl bg-slate-900 border-2 ${c.border} shadow-lg shrink-0`}>
                                         <Icon name={module.iconName} size={48} className={c.text} />
@@ -814,7 +1033,6 @@
                                     </div>
                                 </div>
 
-                                {/* Lore / Arquivo de Sistema */}
                                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-5 md:p-6 relative overflow-hidden">
                                     <div className={`absolute inset-0 bg-gradient-to-br ${c.gradient} to-transparent opacity-10 pointer-events-none`}></div>
                                     <div className="relative z-10">
@@ -826,8 +1044,8 @@
                                             <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
                                                 {[
                                                     { color: 'green', label: 'VERDE', desc: 'ONLINE / Operacional' },
-                                                    { color: 'cyan', label: 'CIANO', desc: 'AUTO / Dinâmico' },
-                                                    { color: 'amber', label: 'ÂMBAR', desc: 'SYSTEM / DEV ONLY' }
+                                                    { color: 'cyan', label: 'CIANO', desc: 'AUTO / Dinamico' },
+                                                    { color: 'amber', label: 'AMBAR', desc: 'SYSTEM / DEV ONLY' }
                                                 ].map(s => (
                                                     <div key={s.color} className={`bg-slate-950/50 p-3 rounded border border-${s.color}-900/30 flex items-center gap-3`}>
                                                         <div className={`w-3 h-3 bg-${s.color}-500 rounded-full shadow-[0_0_8px] shadow-${s.color}-500/50 animate-pulse`}></div>
@@ -843,7 +1061,6 @@
                                 </div>
                             </div>
 
-                            {/* Sidebar */}
                             <div className="lg:col-span-4 space-y-4">
                                 <ComplexityBar value={module.complexity} colorKey={module.color} />
                                 <CreatorCard creator={module.creator} colorKey={module.color} />
@@ -856,7 +1073,7 @@
         };
 
         // ============================================================
-        // 🏠 MAIN GRID (v4.1 Hover Effects)
+        // MAIN GRID (v4.2 Hover Effects)
         // ============================================================
         const MainGrid = ({ onSelect }) => (
             <div className="flex-1 min-h-0 pb-28 pr-2 custom-scrollbar overflow-y-auto">
@@ -886,13 +1103,12 @@
         );
 
         // ============================================================
-        // 🎯 APP PRINCIPAL (com hash-based routing v4.1)
+        // APP PRINCIPAL (com hash-based routing v4.2)
         // ============================================================
         function AISystemLore() {
             const [activeModule, setActiveModule] = useState(null);
-            const [view, setView] = useState('grid'); // 'grid' | 'detail' | 'mindmap'
+            const [view, setView] = useState('grid');
 
-            // 🗝️ HASH ROUTING: lê e escreve a URL hash
             useEffect(() => {
                 window.scrollTo(0, 0);
                 const rootEl = document.getElementById('root');
@@ -960,7 +1176,6 @@
             return (
                 <div className="flex-1 flex flex-col text-slate-200 font-sans selection:bg-cyan-500/30 bg-[#050a10]">
                     <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 relative z-10 flex flex-col pb-20">
-                        {/* Header persistente em todas as views */}
                         <header className={`shrink-0 mb-5 border-b border-slate-800/50 pb-4 animate-in ${view === 'mindmap' ? 'relative z-[100]' : ''}`}>
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                                 <div className="flex items-center gap-3">
@@ -975,7 +1190,7 @@
                                     )}
                                     <div>
                                         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-cyan-500 text-[10px] font-mono uppercase tracking-widest mb-2">
-                                            <Icon name="Terminal" size={9} /> v4.1 Guide
+                                            <Icon name="Terminal" size={9} /> v4.2 Topo-Cluster
                                         </div>
                                         <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tighter flex items-center gap-3">
                                             <span className="text-slate-300 tracking-widest">DAMAS</span>
@@ -999,7 +1214,6 @@
                             </div>
                         </header>
 
-                        {/* View Router */}
                         <div className="flex-1 relative min-h-0 flex flex-col">
                             {view === 'mindmap' ? (
                                 <MindMapView onBack={backFromMindMap} />
@@ -1011,7 +1225,6 @@
                         </div>
                     </div>
 
-                    {/* Footer Bar */}
                     <div className="fixed bottom-0 left-0 w-full bg-[#020617]/90 backdrop-blur border-t border-slate-800/60 px-4 sm:px-6 py-2 z-50 flex justify-between items-center text-[10px] font-mono text-slate-500 uppercase tracking-wider select-none">
                         <div className="flex items-center gap-2 sm:gap-4">
                             <span className="flex items-center gap-2">
@@ -1022,7 +1235,7 @@
                             <span className="hidden md:inline text-slate-600">WORKERS: ACTIVE</span>
                         </div>
                         <div className="flex items-center gap-3">
-                            <span className="text-slate-600 hidden sm:inline">SENTINELA OS v4.1</span>
+                            <span className="text-slate-600 hidden sm:inline">SENTINELA OS v4.2</span>
                             <span className="text-cyan-500 animate-pulse">_</span>
                         </div>
                     </div>
@@ -1030,9 +1243,6 @@
             );
         }
 
-        // ============================================================
-        // 🚀 MONTAGEM
-        // ============================================================
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<AISystemLore />);
     </script>
