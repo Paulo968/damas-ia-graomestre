@@ -641,17 +641,23 @@
                                                 {conn.desc}
                                             </text>
 
-                                            {/* Bolinha animada - so na ativa, branca e brilhante */}
-                                            {isActive && (
-                                                <circle r="4" fill="#fff" style={{ filter: `drop-shadow(0 0 10px ${hexColor})` }}>
-                                                    <animateMotion 
-                                                        dur={`${1.5 + (i % 3) * 0.5}s`} 
-                                                        repeatCount="indefinite" 
-                                                        path={pathD} 
-                                                        calcMode="linear"
-                                                    />
-                                                </circle>
-                                            )}
+                                            {/* Bolinha animada - SEMPRE correndo, mais suave quando inativa */}
+                                            <circle 
+                                                r={isActive ? 4 : 2.5} 
+                                                fill={isActive ? '#fff' : hexColor} 
+                                                style={{ 
+                                                    filter: isActive ? `drop-shadow(0 0 10px ${hexColor})` : 'none',
+                                                    opacity: isActive ? 1 : 0.25,
+                                                    transition: 'all 0.4s ease'
+                                                }}
+                                            >
+                                                <animateMotion 
+                                                    dur={`${2 + (i % 4) * 0.4}s`} 
+                                                    repeatCount="indefinite" 
+                                                    path={pathD} 
+                                                    calcMode="linear"
+                                                />
+                                            </circle>
                                         </g>
                                     );
                                 })}
