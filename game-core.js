@@ -2286,6 +2286,11 @@ if (window.drawReason) {
         registrarAprendizadoIAPosPartida(winner);
         registrarLivroAberturaAutomatico(winner);
 
+        // 🐝 ALIMENTAR COLMEIA: só professores (hard/master) ensinam
+        const dificuldadeAtual = (currentDifficulty || 'medium').toLowerCase();
+        const resultadoFinal = (winner === RED) ? 'ia_win' : (winner === WHITE ? 'player_win' : 'draw');
+        alimentarColmeia(gameHistory, resultadoFinal, dificuldadeAtual);
+
         // 🔁 Modo TREINO (IA vs IA): fluxo focado em estatísticas e looping opcional
         if (trainingMode) {
           // Esconde opções e menu flutuante
@@ -3351,7 +3356,124 @@ async function baixarPesosColmeia() {
   }
 }
 
-// Envia pesos locais para a colmeia
+// Alimenta a colmeia com jogadas/pesos da partida
+async function alimentarColmeia(moves, resultado, dificuldade) {
+  try {
+    if (dificuldade !== "hard" && dificuldade !== "master") return;
+    if (!window.supabase) return;
+
+    // Pega o jogador autenticado
+    const { data: { user } } = await window.supabase.auth.getUser();
+    const playerId = user?.id || null;
+
+    if (!playerId) {
+      console.warn("🐝 Colmeia: sem player_id, não alimenta.");
+      return;
+    }
+
+    // Pesos REAIS da IA vermelha (o que ela aprendeu nesta partida)
+    const neural = getNeuralWeights(RED);
+    const endgame = getEndgameWeights(RED);
+
+    const payload = {
+      player_id: playerId,
+      material_weight: neural?.[0] ?? 1.0,
+      center_control_weight: neural?.[2] ?? 0.3,
+      king_value_weight: neural?.[1] ?? 0.4,
+      mobility_weight: neural?.[3] ?? 0.2,
+      edge_control_weight: 0.15,
+      endgame_weight: endgame?.[0] ?? 1.0,
+      diagonal_control_weight: endgame?.[0] ?? 0.3,
+      opposition_weight: endgame?.[1] ?? 0.5,
+      king_cornering_weight: endgame?.[2] ?? 0.4,
+      difficulty: dificuldade,
+      game_result: resultado,
+      total_moves: Array.isArray(moves) ? moves.length : 0,
+    };
+
+    const { error } = await window.supabase
+      .from("hive_contributors")
+      .insert(payload);
+
+    if (error) {
+      console.warn("🐝 Erro colmeia:", error.message);
+    } else {
+      console.log("🐝 Colmeia alimentada:", payload.total_moves, "jogadas");
+      // 🔄 Recalcula pesos globais após nova contribuição
+      await recalcularHiveWeights();
+    }
+
+  } catch (e) {
+    console.warn("🐝 Erro alimentar colmeia:", e);
+  }
+}
+
+// Recalcula média global da colmeia e atualiza hive_weights
+async function recalcularHiveWeights() {
+  try {
+    if (!window.supabase) return;
+
+    // 1. Busca todos os contribuidores
+    const { data: contributors, error: errContrib } = await window.supabase
+      .from("hive_contributors")
+      .select("*");
+
+    if (errContrib) {
+      console.warn("🐝 Erro ao buscar contribuidores:", errContrib.message);
+      return;
+    }
+
+    if (!Array.isArray(contributors) || contributors.length === 0) {
+      console.log("🐝 Colmeia vazia, nada a recalcular.");
+      return;
+    }
+
+    // 2. Calcula médias
+    const n = contributors.length;
+    const avg = (key) => {
+      const sum = contributors.reduce((acc, c) => acc + (Number(c[key]) || 0), 0);
+      return Number((sum / n).toFixed(4));
+    };
+
+    const totalContributors = new Set(contributors.map(c => c.player_id).filter(Boolean)).size;
+    const totalGames = contributors.reduce((acc, c) => acc + (Number(c.total_moves) || 0), 0);
+
+    const payload = {
+      material_weight: avg("material_weight"),
+      center_control_weight: avg("center_control_weight"),
+      king_value_weight: avg("king_value_weight"),
+      mobility_weight: avg("mobility_weight"),
+      edge_control_weight: avg("edge_control_weight"),
+      endgame_weight: avg("endgame_weight"),
+      diagonal_control_weight: avg("diagonal_control_weight"),
+      opposition_weight: avg("opposition_weight"),
+      king_cornering_weight: avg("king_cornering_weight"),
+      total_contributors: totalContributors,
+      total_games: totalGames,
+      updated_at: new Date().toISOString()
+    };
+
+    // 3. Upsert em hive_weights (id fixo = 1, uma só linha global)
+    const { error: errUpsert } = await window.supabase
+      .from("hive_weights")
+      .upsert({ id: 1, ...payload }, { onConflict: "id" });
+
+    if (errUpsert) {
+      console.warn("🐝 Erro ao atualizar hive_weights:", errUpsert.message);
+    } else {
+      console.log("🐝 hive_weights recalculado:", {
+        contribuidores: totalContributors,
+        jogos: totalGames,
+        pesos: payload
+      });
+    }
+
+  } catch (e) {
+    console.warn("🐝 Erro recalcularHiveWeights:", e);
+  }
+}
+
+// Envia pesos locais para a colmeia (LEGADO — mantido para compatibilidade)
 async function enviarPesosColmeia(resultado, lances) {
   try {
     if (!window.supabase) {
@@ -3371,17 +3493,25 @@ async function enviarPesosColmeia(resultado, lances) {
       return;
     }
 
-    const w = window.neural_w;
+    // Pesos REAIS da IA vermelha
+    const neural = getNeuralWeights(RED);
+    const endgame = getEndgameWeights(RED);
+
+    // Pega o jogador autenticado
+    const { data: { user } } = await window.supabase.auth.getUser();
+    const playerId = user?.id || null;
+
     const payload = {
-      material_weight: w && w.material_weight ? w.material_weight : 1.0,
-      center_control_weight: w && w.center_control_weight ? w.center_control_weight : 0.3,
-      king_value_weight: w && w.king_value_weight ? w.king_value_weight : 0.4,
-      mobility_weight: w && w.mobility_weight ? w.mobility_weight : 0.2,
-      edge_control_weight: w && w.edge_control_weight ? w.edge_control_weight : 0.15,
-      endgame_weight: w && w.endgame && w.endgame.endgame_weight ? w.endgame.endgame_weight : 1.0,
-      diagonal_control_weight: w && w.endgame && w.endgame.diagonal_control_weight ? w.endgame.diagonal_control_weight : 0.3,
-      opposition_weight: w && w.endgame && w.endgame.opposition_weight ? w.endgame.opposition_weight : 0.5,
-      king_cornering_weight: w && w.endgame && w.endgame.king_cornering_weight ? w.endgame.king_cornering_weight : 0.4,
+      player_id: playerId,
+      material_weight: neural?.[0] ?? 1.0,
+      center_control_weight: neural?.[2] ?? 0.3,
+      king_value_weight: neural?.[1] ?? 0.4,
+      mobility_weight: neural?.[3] ?? 0.2,
+      edge_control_weight: 0.15,
+      endgame_weight: endgame?.[0] ?? 1.0,
+      diagonal_control_weight: endgame?.[0] ?? 0.3,
+      opposition_weight: endgame?.[1] ?? 0.5,
+      king_cornering_weight: endgame?.[2] ?? 0.4,
       difficulty: dif,
       game_result: resultado === 'player_win' ? 'loss' : 'draw',
       total_moves: lances || 0,
@@ -3398,6 +3528,7 @@ async function enviarPesosColmeia(resultado, lances) {
     }
 
     console.log('[Colmeia] Pesos enviados! 🐝');
+    await recalcularHiveWeights();
   } catch (e) {
     console.warn('[Colmeia] Erro:', e.message);
   }
