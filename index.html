@@ -5,7 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="manifest" href="manifest.json" />
-    <meta name="theme-color" content="#ef4444" />
+    <meta name="theme-color" content="#000000" />
     <title>Damas vs IA — Grão-Mestre (IDS) - Modularizado</title>
     <script src="https://cdn.tailwindcss.com"></script>
       <style>
@@ -16,9 +16,8 @@
         padding: 0;
         width: 100%;
         height: 100%;
-        overflow: hidden; /* 🚫 impede rolagem */
-        background: #0f172a;
-        /* 💡 Transição de fundo adicionada para suavizar a mudança de dificuldade */
+        overflow: hidden;
+        background: #000000 !important;
         transition: background 0.5s ease;
       }
       /* 1️⃣ ADAPTAÇÃO DO TABULEIRO (LÓGICA DO USUÁRIO)
@@ -206,7 +205,7 @@
         /* Este é o container pai, não precisa de flex */
         position: fixed;
         inset: 0;
-        background: #0f172a;
+        background: #000000;
         color: #e2e8f0;
         z-index: 50;
       }
@@ -268,7 +267,7 @@
           background:
             radial-gradient(circle at top left, rgba(168,85,247,0.18), transparent 35%),
             radial-gradient(circle at bottom right, rgba(6,182,212,0.14), transparent 35%),
-            #020617;
+            #000000;
         }
 
         .app-container {
@@ -2170,7 +2169,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
             setPlayerColor('white');
           }
           currentRoom = null;
-          document.body.style.background = '#0f172a';
+          document.body.style.background = '#000000';
           
           // 🧠 LÓGICA CORRIGIDA:
           if (wasTraining) {
@@ -2220,7 +2219,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           try { setBubblePlaceholder('IA está analisando...'); } catch(_) {}
           
           // 💡 Reset do fundo ao voltar ao menu
-          document.body.style.background = '#0f172a';
+          document.body.style.background = '#000000';
           
           // 🌐 Para de ouvir a sala e reseta estado
           if (onlineUnsubscribe) {
@@ -2289,7 +2288,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         }
 
         // Fundo padrão do menu
-        document.body.style.background = '#0f172a';
+        document.body.style.background = '#000000';
 
         // Garante que não há mais ouvintes online ativos
         if (onlineUnsubscribe) {
@@ -2646,8 +2645,8 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           
             // Perfis visuais por nível
             if(diff === 'easy') document.body.style.background = '#1e293b';
-            else if(diff === 'master') document.body.style.background = 'radial-gradient(circle at center, #0f172a, #020617)';
-            else document.body.style.background = '#0f172a';
+            else if(diff === 'master') document.body.style.background = 'radial-gradient(circle at center, #000000, #000000)';
+            else document.body.style.background = '#000000';
           
             const intro = document.createElement('div');
             intro.className = "fixed inset-0 flex flex-col items-center justify-center bg-slate-900 text-cyan-300 text-xl font-semibold z-50 transition-opacity duration-700";
@@ -2704,8 +2703,8 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
 
             // Mesmo efeito visual do modo normal
             if(diff === 'easy') document.body.style.background = '#1e293b';
-            else if(diff === 'master') document.body.style.background = 'radial-gradient(circle at center, #0f172a, #020617)';
-            else document.body.style.background = '#0f172a';
+            else if(diff === 'master') document.body.style.background = 'radial-gradient(circle at center, #000000, #000000)';
+            else document.body.style.background = '#000000';
           
             const intro = document.createElement('div');
             intro.className = "fixed inset-0 flex flex-col items-center justify-center bg-slate-900 text-cyan-300 text-xl font-semibold z-50 transition-opacity duration-700";
