@@ -80,7 +80,10 @@ async function salvarPerfilJogador(nome) {
       wins: 0,
       losses: 0,
       draws: 0
-    }, { onConflict: "id" });
+    }, { 
+      onConflict: "id",
+      ignoreDuplicates: false 
+    });
 
   if (error) throw error;
 
@@ -92,8 +95,8 @@ async function entrarComNick(nome, visitante = false) {
 
   if (!nome) {
     nome = visitante
-      ? "Visitante_" + Math.floor(Math.random() * 1000)
-      : "Jogador_" + Math.floor(Math.random() * 1000);
+      ? "Visitante_" + crypto.randomUUID().slice(0, 8)
+      : "Jogador_" + crypto.randomUUID().slice(0, 8);
   }
 
   localStorage.setItem("player_name", nome);
@@ -763,6 +766,8 @@ async function initPerfilJogador() {
        * Puxa os dados do 'cache' local (localStorage) e envia para a nuvem.
        */
       async function salvarInteligenciaIA() {
+        await ensureAuthReady();
+
         // Garante que o DB esteja pronto (vem do firebase.js)
         if (!window.db || !window.setDoc || !window.doc) {
           console.warn("DB não pronto, salvamento da IA abortado.");
@@ -2824,6 +2829,10 @@ if (window.drawReason) {
       }
 
       // 🧠 INSTINTO POR MEMÓRIA — consulta rápida antes de Edge/Worker
+      function computeHash(b) {
+        return b.flat().map(p => p || "0").join("");
+      }
+
       function movimentosIguais(a, b) {
         if (!a || !b || !Array.isArray(a.from) || !Array.isArray(a.to) || !Array.isArray(b.from) || !Array.isArray(b.to)) {
           return false;
@@ -2846,7 +2855,7 @@ if (window.drawReason) {
           if (!window.supabase) return null;
           if (!Array.isArray(legal) || !legal.length) return null;
 
-          const hashAtual = String(getZobristHash(board)).replace(/n$/, "");
+          const hashAtual = String(computeHash(board)).replace(/n$/, "");
 
           const { data, error } = await window.supabase
             .from("memoria_ia")
