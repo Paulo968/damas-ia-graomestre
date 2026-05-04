@@ -2852,6 +2852,8 @@ if (window.drawReason) {
 
       async function consultarInstintoMemoriaIA() {
         try {
+          if (trainingMode || isTrainingMode) return null;
+
           if (!window.supabase) return null;
           if (!Array.isArray(legal) || !legal.length) return null;
 
