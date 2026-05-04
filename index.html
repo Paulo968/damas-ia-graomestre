@@ -4,8 +4,9 @@
     <!-- 1️⃣ meta charset CORRIGIDO -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="manifest" href="manifest.json" />
+    <link rel="manifest" href="/manifest.json?v=2" />
     <meta name="theme-color" content="#000000" />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
     <title>Damas vs IA — Grão-Mestre (IDS) - Modularizado</title>
     <script src="https://cdn.tailwindcss.com"></script>
       <style>
@@ -4013,7 +4014,7 @@ ouvirSala(currentRoom);
 
   // 🔥 REGISTRO PWA — Service Worker
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js")
+    navigator.serviceWorker.register("/service-worker.js?v=2")
       .then(() => console.log("🔥 PWA ativo"))
       .catch(err => console.log("Erro SW:", err));
   }
