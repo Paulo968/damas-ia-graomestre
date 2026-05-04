@@ -176,7 +176,16 @@ window.App.carregarRanking = async function() {
           btn.addEventListener('click', () => {
             const val = btn.getAttribute('data-value');
             const originalSelect = document.getElementById('speechMode');
-            if (originalSelect) originalSelect.value = val;
+            if (originalSelect) {
+              originalSelect.value = val;
+              localStorage.setItem('speechMode', val);
+              originalSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            const cloneSelect = clone.querySelector('select');
+            if (cloneSelect) cloneSelect.value = val;
+
+            console.log("🎙️ Modo de fala alterado:", val);
             
             // 🐞 CORREÇÃO: só atualiza os botões de fala (não os de dificuldade/regra)
             const speechBtns = document.querySelectorAll(

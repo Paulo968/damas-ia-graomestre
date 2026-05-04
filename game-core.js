@@ -1917,6 +1917,26 @@ let rankingJaPontuouNaPartida = false;
 let iaJaAprendeuNaPartida = false;
 let livroJaAtualizouNaPartida = false;
 
+function getDificuldadeAtualIA() {
+  return (
+    localStorage.getItem("difficulty") ||
+    document.getElementById("difficulty")?.value ||
+    "medium"
+  ).toLowerCase();
+}
+
+function podeTreinarIA() {
+  if (isOnline || isMultiplayer) return false;
+
+  // IA vs IA sempre é treino nobre
+  if (trainingMode || isTrainingMode) return true;
+
+  const diff = getDificuldadeAtualIA();
+
+  // Só hard/master ensinam a inteligência global
+  return diff === "hard" || diff === "master";
+}
+
 function getPontosRankingPorDificuldade(resultado) {
   const diff = (localStorage.getItem("difficulty") || document.getElementById("difficulty")?.value || "medium").toLowerCase();
 
@@ -1933,7 +1953,15 @@ function getPontosRankingPorDificuldade(resultado) {
 async function registrarLivroAberturaAutomatico(winner) {
   try {
     if (livroJaAtualizouNaPartida) return;
-    if (isOnline) return;
+    if (!podeTreinarIA()) {
+      console.log("📚 Livro não atualizou: modo atual só usa conhecimento.", {
+        dificuldade: getDificuldadeAtualIA(),
+        trainingMode,
+        isOnline,
+        isMultiplayer
+      });
+      return;
+    }
     if (!window.supabase) return;
     if (!Array.isArray(gameHistory) || gameHistory.length < 4) return;
 
@@ -2037,7 +2065,15 @@ async function registrarLivroAberturaAutomatico(winner) {
 async function registrarAprendizadoIAPosPartida(winner) {
   try {
     if (iaJaAprendeuNaPartida) return;
-    if (isOnline) return;
+    if (!podeTreinarIA()) {
+      console.log("🧠 IA não treinou: dificuldade atual apenas consome sabedoria.", {
+        dificuldade: getDificuldadeAtualIA(),
+        trainingMode,
+        isOnline,
+        isMultiplayer
+      });
+      return;
+    }
     if (!window.supabase) return;
     if (!Array.isArray(gameHistory) || gameHistory.length < 4) return;
 
@@ -2110,10 +2146,19 @@ async function registrarAprendizadoIAPosPartida(winner) {
       padroes: jogadasIA.length
     });
     
-    // 🐝 COLMEIA: Envia pesos para a colmeia (só hard/master e só se perdeu)
-    if (!isMultiplayer) {
-      const resultadoFinal = (resultadoIA === 'win') ? 'ia_loss' : ((resultadoIA === 'loss') ? 'player_win' : 'draw');
-      setTimeout(() => enviarPesosColmeia(resultadoFinal, jogadasIA.length || gameHistory?.length || 0), 800);
+    // 🐝 COLMEIA: só professores alimentam o cérebro coletivo
+    if (podeTreinarIA()) {
+      const resultadoFinal =
+        resultadoIA === "win"  ? "ia_win" :
+        resultadoIA === "loss" ? "player_win" :
+        "draw";
+
+      setTimeout(() => {
+        enviarPesosColmeia(
+          resultadoFinal,
+          jogadasIA.length || gameHistory?.length || 0
+        );
+      }, 800);
     }
 
   } catch (e) {
@@ -2775,6 +2820,81 @@ if (window.drawReason) {
         }
       }
 
+      // 🧠 INSTINTO POR MEMÓRIA — consulta rápida antes de Edge/Worker
+      function movimentosIguais(a, b) {
+        if (!a || !b || !Array.isArray(a.from) || !Array.isArray(a.to) || !Array.isArray(b.from) || !Array.isArray(b.to)) {
+          return false;
+        }
+        return (
+          a.from[0] === b.from[0] &&
+          a.from[1] === b.from[1] &&
+          a.to[0] === b.to[0] &&
+          a.to[1] === b.to[1]
+        );
+      }
+
+      function encontrarLegalPorMemoria(memMove) {
+        if (!memMove || !Array.isArray(legal)) return null;
+        return legal.find(m => movimentosIguais(m, memMove)) || null;
+      }
+
+      async function consultarInstintoMemoriaIA() {
+        try {
+          if (!window.supabase) return null;
+          if (!Array.isArray(legal) || !legal.length) return null;
+
+          const hashAtual = String(getZobristHash(board)).replace(/n$/, "");
+
+          const { data, error } = await window.supabase
+            .from("memoria_ia")
+            .select("chave, cor, dados")
+            .eq("chave", hashAtual)
+            .eq("cor", RED)
+            .maybeSingle();
+
+          if (error) {
+            console.warn("🧠 Instinto IA: erro ao consultar memória:", error.message);
+            return null;
+          }
+
+          if (!data?.dados) return null;
+
+          const confidence = Number(data.dados.confidence ?? 0);
+          const vezesVisto = Number(data.dados.vezes_visto ?? 0);
+          const ultimoResultado = data.dados.ultimo_resultado || null;
+          const memMove = data.dados.ultima_jogada || null;
+
+          // Só usa memória confiável. Sem chute.
+          if (confidence < 0.72) return null;
+          if (vezesVisto < 3) return null;
+          if (ultimoResultado === "loss") return null;
+
+          const jogadaLegal = encontrarLegalPorMemoria(memMove);
+
+          if (!jogadaLegal) {
+            console.log("🧠 Instinto IA ignorado: jogada lembrada não é legal agora.", {
+              confidence,
+              vezesVisto,
+              memMove
+            });
+            return null;
+          }
+
+          console.log("🧠 Instinto IA ativado:", {
+            confidence,
+            vezesVisto,
+            ultimoResultado,
+            jogada: jogadaLegal
+          });
+
+          return jogadaLegal;
+
+        } catch (e) {
+          console.warn("🧠 Instinto IA falhou sem travar jogo:", e);
+          return null;
+        }
+      }
+
       async function aiMove(movesToConsider=null){
         if (gameEnded) return;
         if(isOnline) return; // IA não joga online
@@ -2814,6 +2934,16 @@ if (window.drawReason) {
         else if (diff === 'medium') thinkTimeMs = 800;
         else if (diff === 'hard')   thinkTimeMs = 1600;
         else if (diff === 'master') thinkTimeMs = 3000;
+
+        // 🧠 INSTINTO: memória confiável da posição atual
+        const jogadaInstinto = await consultarInstintoMemoriaIA();
+
+        if (jogadaInstinto) {
+          setTimeout(() => {
+            applyMove(jogadaInstinto);
+          }, 250);
+          return;
+        }
 
         // ☁️ IA HÍBRIDA: consulta Edge Function antes do worker local
         if (!trainingMode) {
@@ -3139,55 +3269,71 @@ if (window.drawReason) {
 async function baixarPesosColmeia() {
   try {
     if (!window.supabase) {
-      console.log('[Colmeia] Supabase não disponível ainda');
+      console.log("[Colmeia] Supabase não disponível ainda");
       return;
     }
 
     const { data, error } = await window.supabase
-      .from('hive_weights')
-      .select('*')
-      .order('updated_at', { ascending: false })
+      .from("hive_weights")
+      .select("*")
+      .order("updated_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      if (error.code !== 'PGRST116') {
-        console.warn('[Colmeia] Erro ao baixar:', error.message);
-      }
+      console.warn("[Colmeia] Erro ao baixar:", error.message);
       return;
     }
 
     if (!data) {
-      console.log('[Colmeia] Nenhum peso na colmeia ainda. Seja o primeiro!');
+      console.log("[Colmeia] Nenhum peso global ainda.");
       return;
     }
 
-    console.log('[Colmeia] Puxado! ' + data.total_contributors + ' jogadores, ' + data.total_games + ' partidas');
+    console.log("[Colmeia] Pesos globais recebidos:", data);
 
-    // Mistura 50% pesos locais + 50% pesos da colmeia
-    if (window.neural_w) {
-      const misturar = function(local, hive) {
-        if (!hive || hive <= 0) return local;
-        return local * 0.5 + hive * 0.5;
-      };
+    const misturar = (local, hive, pesoHive = 0.3) => {
+      const l = Number(local);
+      const h = Number(hive);
+      if (!Number.isFinite(h) || h <= 0) return l;
+      if (!Number.isFinite(l)) return h;
+      return Number((l * (1 - pesoHive) + h * pesoHive).toFixed(4));
+    };
 
-      window.neural_w.material_weight = misturar(window.neural_w.material_weight, data.material_weight);
-      window.neural_w.center_control_weight = misturar(window.neural_w.center_control_weight, data.center_control_weight);
-      window.neural_w.king_value_weight = misturar(window.neural_w.king_value_weight, data.king_value_weight);
-      window.neural_w.mobility_weight = misturar(window.neural_w.mobility_weight, data.mobility_weight);
-      window.neural_w.edge_control_weight = misturar(window.neural_w.edge_control_weight, data.edge_control_weight);
+    // Pesos reais usados pela IA vermelha
+    const neuralRed = getNeuralWeights(RED).slice();
+    const endgameRed = getEndgameWeights(RED).slice();
 
-      if (window.neural_w.endgame) {
-        window.neural_w.endgame.endgame_weight = misturar(window.neural_w.endgame.endgame_weight, data.endgame_weight);
-        window.neural_w.endgame.diagonal_control_weight = misturar(window.neural_w.endgame.diagonal_control_weight, data.diagonal_control_weight);
-        window.neural_w.endgame.opposition_weight = misturar(window.neural_w.endgame.opposition_weight, data.opposition_weight);
-        window.neural_w.endgame.king_cornering_weight = misturar(window.neural_w.endgame.king_cornering_weight, data.king_cornering_weight);
-      }
+    // neural: [material, reis, centro, mobilidade]
+    neuralRed[0] = misturar(neuralRed[0], data.material_weight, 0.3);
+    neuralRed[1] = misturar(neuralRed[1], data.king_value_weight, 0.3);
+    neuralRed[2] = misturar(neuralRed[2], data.center_control_weight, 0.3);
+    neuralRed[3] = misturar(neuralRed[3], data.mobility_weight, 0.3);
 
-      console.log('[Colmeia] Pesos locais misturados com a colmeia 🐝');
-    }
+    // endgame: [diagonal, oposição, canto]
+    endgameRed[0] = misturar(endgameRed[0], data.diagonal_control_weight, 0.3);
+    endgameRed[1] = misturar(endgameRed[1], data.opposition_weight, 0.3);
+    endgameRed[2] = misturar(endgameRed[2], data.king_cornering_weight, 0.3);
+
+    // Salva e atualiza cache real
+    saveNeuralWeights("red", neuralRed);
+    saveEndgameWeights("red", endgameRed);
+
+    if (!getNeuralWeights.cache) getNeuralWeights.cache = {};
+    if (!getEndgameWeights.cache) getEndgameWeights.cache = {};
+
+    getNeuralWeights.cache.red = neuralRed;
+    getEndgameWeights.cache.red = endgameRed;
+
+    console.log("🐝 Colmeia aplicada na IA vermelha:", {
+      neuralRed,
+      endgameRed,
+      total_contributors: data.total_contributors,
+      total_games: data.total_games
+    });
+
   } catch (e) {
-    console.warn('[Colmeia] Erro:', e.message);
+    console.error("[Colmeia] Falha ao aplicar pesos:", e);
   }
 }
 

@@ -4,6 +4,8 @@
     <!-- 1️⃣ meta charset CORRIGIDO -->
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#ef4444" />
     <title>Damas vs IA — Grão-Mestre (IDS) - Modularizado</title>
     <script src="https://cdn.tailwindcss.com"></script>
       <style>
@@ -665,11 +667,11 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
 
           <div class="grid grid-cols-2 gap-3 mb-4">
             <div>
-              <p class="text-slate-400 text-xs mb-1">Padrões salvos (Pattern Memory vermelha):</p>
+              <p class="text-slate-400 text-xs mb-1">Padrões reais no Supabase (IA vermelha):</p>
               <span id="aiPatternCountRed" class="text-base font-semibold text-emerald-300">--</span>
             </div>
             <div>
-              <p class="text-slate-400 text-xs mb-1">Padrões totais (unificados):</p>
+              <p class="text-slate-400 text-xs mb-1">Padrões totais no Supabase:</p>
               <span id="aiPatternCountTotal" class="text-base font-semibold text-emerald-300">--</span>
             </div>
           </div>
@@ -706,25 +708,29 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           </div>
 
           <!-- 🐝 SEÇÃO COLMEIA -->
-          <div class="border-t border-amber-700/40 pt-3 mt-3 bg-amber-950/20 rounded-lg p-3">
-            <p class="text-amber-400 text-xs font-bold mb-2 flex items-center gap-1">
-              🐝 COLMEIA DE INTELIGÊNCIA
-            </p>
-            <div class="grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <p class="text-slate-500 text-[11px] mb-1">Jogadores na colmeia:</p>
-                <span id="hivePlayers" class="text-sm font-semibold text-amber-300">--</span>
+          <div class="border-t border-slate-700/60 pt-3 mt-3">
+            <h3 class="text-sm font-semibold text-emerald-300 mb-2">🐝 COLMEIA DE INTELIGÊNCIA</h3>
+
+            <div class="grid grid-cols-2 gap-3 text-xs mb-3">
+              <div class="bg-slate-800/70 rounded-lg p-3 border border-emerald-500/20">
+                <p class="text-slate-400 text-[11px] mb-1">Jogadores na colmeia:</p>
+                <span id="hivePlayersCount" class="text-lg font-bold text-emerald-300">--</span>
               </div>
-              <div>
-                <p class="text-slate-500 text-[11px] mb-1">Partidas alimentadas:</p>
-                <span id="hiveGames" class="text-sm font-semibold text-amber-300">--</span>
+
+              <div class="bg-slate-800/70 rounded-lg p-3 border border-emerald-500/20">
+                <p class="text-slate-400 text-[11px] mb-1">Partidas alimentadas:</p>
+                <span id="hiveGamesCount" class="text-lg font-bold text-emerald-300">--</span>
               </div>
             </div>
-            <div class="mt-2 text-[11px] text-slate-400">
-              <span id="hiveStatus">🟡 Verificando colmeia...</span>
+
+            <div class="bg-slate-950/60 rounded-lg p-3 border border-emerald-500/20">
+              <p id="hiveStatus" class="text-xs text-slate-300 leading-relaxed">
+                Carregando diagnóstico universal da IA...
+              </p>
             </div>
-            <p class="mt-2 text-[10px] text-slate-500 italic">
-              ℹ️ Todos os dispositivos compartilham a mesma inteligência. Quanto mais jogadores no Mestre, mais forte a IA fica para todos.
+
+            <p class="mt-2 text-[11px] text-slate-500 leading-relaxed">
+              ℹ️ Easy/Médio usam a sabedoria global. Hard/Master e Treino alimentam a inteligência universal.
             </p>
           </div>
 
@@ -938,7 +944,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
     <!-- ====================================================== -->
     <!-- ========== BLOCO 2: LÓGICA (game-core.js) ============ -->
     <!-- ====================================================== -->
-    <script src="game-core.js?v=2"></script>
+    <script src="game-core.js?v=5"></script>
 
     <!-- ====================================================== -->
     <!-- =========== BLOCO 3: INTERFACE (ui.js) =============== -->
@@ -3769,157 +3775,196 @@ ouvirSala(currentRoom);
     }
   }
 
-  window.updateAiDebugPanel = function updateAiDebugPanel(){
-    const evalEl   = document.getElementById('aiEvalValue');
-    const neuralEl = document.getElementById('aiNeuralWeights');
-    const endEl    = document.getElementById('aiEndgameWeights');
-    const patR     = document.getElementById('aiPatternCountRed');
-    const patT     = document.getElementById('aiPatternCountTotal');
-
-    // Novos elementos do painel de status
-    const diffEl   = document.getElementById('aiProfileDifficulty');
-    const aggEl    = document.getElementById('aiProfileAgg');
-    const defEl    = document.getElementById('aiProfileDef');
-    const gamesEl  = document.getElementById('aiProfileGames');
-    const winEl    = document.getElementById('aiProfileWinrate');
-
-    if (!evalEl || !neuralEl || !endEl || !patR || !patT) return;
-
+  window.updateAiDebugPanel = async function() {
     try {
-      let neuralW = null, neuralR = null, endW = null, endR = null;
+      const setText = (id, value) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value;
+      };
 
-      if (typeof getNeuralWeights === 'function') {
-        try { neuralW = getNeuralWeights(WHITE); } catch(_){}
-        try { neuralR = getNeuralWeights(RED); } catch(_){}
-      }
-      if (typeof getEndgameWeights === 'function') {
-        try { endW = getEndgameWeights(WHITE); } catch(_){}
-        try { endR = getEndgameWeights(RED); } catch(_){}
-      }
+      const formatArray = (arr) => {
+        if (!Array.isArray(arr)) return "--";
+        return JSON.stringify(arr.map(v => {
+          const n = Number(v);
+          return Number.isFinite(n) ? Number(n.toFixed(3)) : v;
+        }), null, 2);
+      };
 
-      // Avaliação da posição atual (vinda da última busca da IA)
-      let scoreStr = 'Aguardando partida...';
-      if (typeof window.lastAIScore === 'number' && isFinite(window.lastAIScore)) {
-        scoreStr = window.lastAIScore.toFixed(1);
-      }
-      evalEl.textContent = scoreStr;
+      const getNivelIA = (totalGlobal) => {
+        const n = Number(totalGlobal || 0);
+        if (n >= 5000) return "Mestre Universal";
+        if (n >= 1000) return "Avançada";
+        if (n >= 100) return "Intermediária";
+        if (n >= 20) return "Em evolução";
+        return "Inicial";
+      };
 
-      // Pesos neurais / fim de jogo da IA vermelha
-      if (Array.isArray(neuralR)) {
-        const isDefault = neuralR.length === 4 && neuralR.every((v, i) => Math.abs(v - [1.0, 0.4, 0.3, 0.2][i]) < 0.01);
-        if (isDefault) {
-          neuralEl.textContent = 'Pesos padrão (nenhuma partida registrada ainda)';
-        } else {
-          const arr = neuralR.map(v => (typeof v === 'number' ? Number(v.toFixed(3)) : v));
-          neuralEl.textContent = JSON.stringify(arr, null, 2);
-        }
-      } else {
-        neuralEl.textContent = 'Sem dados';
-      }
-
-      if (Array.isArray(endR)) {
-        const isDefaultEnd = endR.length === 3 && endR.every((v, i) => Math.abs(v - [1.0, 0.4, 0.3][i]) < 0.01);
-        if (isDefaultEnd) {
-          endEl.textContent = 'Pesos padrão de fim de jogo';
-        } else {
-          const arrE = endR.map(v => (typeof v === 'number' ? Number(v.toFixed(3)) : v));
-          endEl.textContent = JSON.stringify(arrE, null, 2);
-        }
-      } else {
-        endEl.textContent = 'Sem dados';
-      }
-
-      // Contagem de padrões salvos
-      const counts = getPatternMemoryCounts();
-      if (counts.total === 0) {
-        patR.textContent = 'Nenhum padrão reconhecido ainda';
-        patT.textContent = 'Jogue partidas para a IA criar memória de padrões';
-      } else {
-        patR.textContent = String(counts.redCount);
-        patT.textContent = String(counts.total);
-      }
-
-      // Perfil de comportamento da IA (usa o mesmo mecanismo de perfil + dificuldade)
-      if (typeof getAIProfile === 'function') {
-        try {
-          const profile = getAIProfile(RED); // painel é da IA vermelha
-          const games = (typeof profile.games === 'number') ? profile.games : 0;
-          const wins  = (typeof profile.wins  === 'number') ? profile.wins  : 0;
-          const agg   = (typeof profile.agg   === 'number') ? profile.agg   : null;
-          const def   = (typeof profile.def   === 'number') ? profile.def   : null;
-
-          const suffix = (typeof getAIProfileSuffix === 'function') ? getAIProfileSuffix() : null;
-
-          if (diffEl) {
-            diffEl.textContent = suffix ? suffix : '--';
-          }
-
-          if (winEl) {
-            if (games > 0) {
-              const pct = (wins / Math.max(1, games)) * 100;
-              winEl.textContent = pct.toFixed(1) + '%';
-            } else {
-              winEl.textContent = 'Sem dados';
-            }
-          }
-
-          if (aggEl) {
-            if (games > 0 && agg != null) {
-              aggEl.textContent = agg.toFixed(2);
-            } else {
-              aggEl.textContent = 'Sem dados';
-            }
-          }
-          if (defEl) {
-            if (games > 0 && def != null) {
-              defEl.textContent = def.toFixed(2);
-            } else {
-              defEl.textContent = 'Sem dados';
-            }
-          }
-          if (gamesEl) {
-            if (games > 0) {
-              const sGames = games === 1 ? 'partida' : 'partidas';
-              const sWins  = wins === 1 ? 'vitória' : 'vitórias';
-              gamesEl.textContent = `${games} ${sGames}, ${wins} ${sWins}`;
-            } else {
-              gamesEl.textContent = 'Nenhuma partida registrada neste dispositivo';
-            }
-          }
-        } catch (e) {
-          console.warn('Erro ao atualizar perfil da IA no painel:', e);
-        }
-      }
-
-      // 🐝 ESTATÍSTICAS DA COLMEIA
+      // =========================
+      // 1) Avaliação atual local
+      // =========================
       try {
-        const hivePlayersEl = document.getElementById('hivePlayers');
-        const hiveGamesEl   = document.getElementById('hiveGames');
-        const hiveStatusEl  = document.getElementById('hiveStatus');
-
-        if (hivePlayersEl && hiveGamesEl && hiveStatusEl && typeof statsColmeia === 'function') {
-          statsColmeia().then(stats => {
-            if (stats) {
-              hivePlayersEl.textContent = String(stats.jogadores);
-              hiveGamesEl.textContent = String(stats.partidas);
-              if (stats.ativa) {
-                hiveStatusEl.innerHTML = '🟢 <span class="text-emerald-400">Colmeia ativa</span> — sincronizada com ' + stats.jogadores + ' jogadores';
-              } else {
-                hiveStatusEl.innerHTML = '🟡 <span class="text-amber-400">Colmeia vazia</span> — seja o primeiro a contribuir jogando no Mestre!';
-              }
-            } else {
-              hiveStatusEl.innerHTML = '⚪ <span class="text-slate-400">Colmeia não disponível</span>';
-            }
-          }).catch(() => {
-            hiveStatusEl.innerHTML = '⚪ <span class="text-slate-400">Colmeia não disponível</span>';
-          });
+        if (typeof evaluate === "function" && Array.isArray(board)) {
+          const val = evaluate(board);
+          const txt = Number.isFinite(val) ? val.toFixed(2) : "Aguardando partida...";
+          setText("aiEvalValue", txt);
+        } else {
+          setText("aiEvalValue", "Aguardando partida...");
         }
-      } catch (e) {
-        console.warn('Erro ao atualizar colmeia no painel:', e);
+      } catch (_) {
+        setText("aiEvalValue", "Aguardando partida...");
       }
+
+      // =========================
+      // 2) Pesos reais aplicados na IA vermelha
+      // =========================
+      try {
+        const neural = (typeof getNeuralWeights === "function")
+          ? getNeuralWeights(RED)
+          : null;
+
+        const endgame = (typeof getEndgameWeights === "function")
+          ? getEndgameWeights(RED)
+          : null;
+
+        setText("aiNeuralWeights", formatArray(neural));
+        setText("aiEndgameWeights", formatArray(endgame));
+      } catch (e) {
+        console.warn("Erro ao atualizar pesos no diagnóstico:", e);
+      }
+
+      // =========================
+      // 3) Perfil atual da IA vermelha
+      // =========================
+      try {
+        const suffix = (typeof getAIProfileSuffix === "function")
+          ? getAIProfileSuffix()
+          : (localStorage.getItem("difficulty") || "medium");
+
+        const profileKey = (typeof getAIProfileStorageKey === "function")
+          ? getAIProfileStorageKey(RED)
+          : `aiProfile_red_${suffix}`;
+
+        let perfil = null;
+
+        if (typeof aiProfileCache !== "undefined" && aiProfileCache[profileKey]) {
+          perfil = aiProfileCache[profileKey];
+        } else {
+          const raw = localStorage.getItem(profileKey);
+          if (raw) {
+            try { perfil = JSON.parse(raw); } catch (_) {}
+          }
+        }
+
+        const agg = Number(perfil?.agg ?? 0.5);
+        const def = Number(perfil?.def ?? 0.5);
+        const games = Number(perfil?.games ?? 0);
+        const wins = Number(perfil?.wins ?? 0);
+
+        setText("aiProfileDifficulty", suffix || "--");
+        setText("aiProfileAgg", Number.isFinite(agg) ? agg.toFixed(2) : "--");
+        setText("aiProfileDef", Number.isFinite(def) ? def.toFixed(2) : "--");
+
+        if (games < 20) {
+          setText("aiProfileWinrate", "Dados insuficientes");
+        } else {
+          setText("aiProfileWinrate", ((wins / Math.max(1, games)) * 100).toFixed(1) + "%");
+        }
+
+        const sGames = games === 1 ? "partida" : "partidas";
+        const sWins = wins === 1 ? "vitória" : "vitórias";
+        setText("aiProfileGames", `${games} ${sGames}, ${wins} ${sWins}`);
+      } catch (e) {
+        console.warn("Erro ao atualizar perfil da IA no diagnóstico:", e);
+      }
+
+      // =========================
+      // 4) Dados reais globais do Supabase
+      // =========================
+      if (!window.supabase) {
+        setText("aiPatternCountRed", "Banco offline");
+        setText("aiPatternCountTotal", "Banco offline");
+        setText("hivePlayersCount", "--");
+        setText("hiveGamesCount", "--");
+        setText("hiveStatus", "🔴 Colmeia indisponível — Supabase não carregado.");
+        return;
+      }
+
+      const [
+        memoriaRedResp,
+        memoriaTotalResp,
+        hiveMovesResp,
+        hiveWeightsResp
+      ] = await Promise.all([
+        window.supabase
+          .from("memoria_ia")
+          .select("*", { count: "exact", head: true })
+          .eq("cor", "red"),
+
+        window.supabase
+          .from("memoria_ia")
+          .select("*", { count: "exact", head: true }),
+
+        window.supabase
+          .from("hive_contributors")
+          .select("*", { count: "exact", head: true }),
+
+        window.supabase
+          .from("hive_weights")
+          .select("total_games,total_contributors,average_difficulty,updated_at")
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      ]);
+
+      if (memoriaRedResp.error) throw memoriaRedResp.error;
+      if (memoriaTotalResp.error) throw memoriaTotalResp.error;
+      if (hiveMovesResp.error) throw hiveMovesResp.error;
+      if (hiveWeightsResp.error) throw hiveWeightsResp.error;
+
+      const redPatterns = memoriaRedResp.count ?? 0;
+      const totalPatterns = memoriaTotalResp.count ?? 0;
+      const hiveMoves = hiveMovesResp.count ?? 0;
+
+      const hive = hiveWeightsResp.data || {};
+      const hiveGames = Number(hive.total_games ?? 0);
+      const hivePlayers = Number(hive.total_contributors ?? 0);
+      const totalGlobal = totalPatterns + hiveMoves + hiveGames;
+      const nivelIA = getNivelIA(totalGlobal);
+
+      // Mantém os mesmos lugares do painel
+      setText("aiPatternCountRed", redPatterns);
+      setText("aiPatternCountTotal", totalPatterns);
+
+      // Se esses IDs existirem no teu HTML, preenche.
+      // Se não existirem, não quebra.
+      setText("hivePlayersCount", hivePlayers);
+      setText("hiveGamesCount", hiveGames);
+
+      const statusTexto =
+        hiveGames > 0 || hiveMoves > 0
+          ? `🟢 Colmeia ativa — ${hivePlayers || 1} jogador(es), ${hiveGames} partida(s), ${hiveMoves} jogada(s) coletivas. Nível: ${nivelIA}.`
+          : `🟡 Colmeia inicial ativa — base global carregada, aguardando partidas Hard/Master. Nível: ${nivelIA}.`;
+
+      setText("hiveStatus", statusTexto);
+
+      // Log limpo pra conferência
+      console.log("📊 Diagnóstico IA Universal:", {
+        redPatterns,
+        totalPatterns,
+        hiveMoves,
+        hiveGames,
+        hivePlayers,
+        nivelIA,
+        updated_at: hive.updated_at || null
+      });
 
     } catch (e) {
-      console.warn('Erro ao atualizar painel de IA:', e);
+      console.warn("Erro ao atualizar diagnóstico universal da IA:", e);
+
+      const el = document.getElementById("hiveStatus");
+      if (el) {
+        el.textContent = "⚠️ Diagnóstico parcialmente indisponível. Verifique permissões/RLS no Supabase.";
+      }
     }
   };
 
@@ -3966,6 +4011,14 @@ ouvirSala(currentRoom);
       });
     }
   });
+
+  // 🔥 REGISTRO PWA — Service Worker
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js")
+      .then(() => console.log("🔥 PWA ativo"))
+      .catch(err => console.log("Erro SW:", err));
+  }
+
 })();
 </script>
 
@@ -3973,6 +4026,6 @@ ouvirSala(currentRoom);
 
 
 
-<script src="ui-init.js?v=2"></script>
+<script src="ui-init.js?v=3"></script>
 </body>
   </html>
