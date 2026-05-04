@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Damas AI // Arquitetura da Inteligência v4.2</title>
+    <title>Damas AI // Arquitetura da Inteligência v5.0</title>
+    <meta name="description" content="Documentação visual da IA evolutiva distribuída: Supabase, Edge, Colmeia, Instinto e PWA." />
 
     <script src="https://cdn.tailwindcss.com "></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js "></script>
@@ -110,7 +111,7 @@
         const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
         // ============================================================
-        // SISTEMA DE CORES CENTRALIZADO (v4.2)
+        // SISTEMA DE CORES CENTRALIZADO (v5.0)
         // ============================================================
         const COLOR_SYSTEM = {
             cyan:    { hex: '#22d3ee', text: 'text-cyan-400',    border: 'border-cyan-500',    glow: 'shadow-cyan-500/20',    bg: 'bg-cyan-500/10',    gradient: 'from-cyan-500' },
@@ -224,7 +225,7 @@
         };
 
         // ============================================================
-        // DADOS DOS MODULOS (v4.2)
+        // DADOS DOS MODULOS (v5.0)
         // ============================================================
         const modules = [
             {
@@ -316,7 +317,62 @@
                 logs: ['> Criando sala privada...', '> Aguardando oponente...', '> Realtime channel open.', '> Sincronizacao de lance: OK.']
             },
             {
-                id: 'telemetry', title: 'TELEMETRIA CLOUD', type: 'CEREBRO DE METRICAS',
+                id: 'teacher_rule', title: 'REGRA DOS PROFESSORES', type: 'GOVERNANCA DE APRENDIZADO',
+                iconName: 'Target', color: 'yellow', status: 'ONLINE', complexity: 45,
+                creator: { name: 'Quality Gate', role: 'Controle de Dados', year: '2026',
+                    reason: 'Uma IA que aprende com qualquer partida aprende lixo. A qualidade da inteligência depende de filtrar quem pode ensinar.',
+                    usage: 'A função podeTreinarIA() bloqueia aprendizado em Easy/Medium e libera treino apenas em Hard, Master e IA vs IA. Todos os modos consomem a sabedoria, mas só os professores alimentam o cérebro global.' },
+                langs: ['Supabase Policy', 'Training Gate'],
+                lore: 'A hierarquia pedagógica da máquina. Hard e Master são os professores; Easy e Medium são alunos que recebem o conhecimento sem contaminar a memória coletiva.',
+                tech: { gate: 'podeTreinarIA()', teachers: 'Hard/Master + Treino', students: 'Easy/Medium' },
+                logs: ['> Dificuldade detectada: master.', '> Permissão de treino: true.', '> Aprendizado autorizado.', '> Memória global protegida.']
+            },
+            {
+                id: 'hive_collective', title: 'COLMEIA UNIVERSAL', type: 'INTELIGENCIA COLETIVA',
+                iconName: 'Network', color: 'emerald', status: 'ONLINE', complexity: 88,
+                creator: { name: 'Hive Learning', role: 'Distributed Intelligence', year: '2026',
+                    reason: 'Uma IA isolada evolui devagar. Uma IA compartilhada absorve padrões de múltiplas partidas e distribui sabedoria para todos os dispositivos.',
+                    usage: 'Hard/Master e Treino enviam contribuições para hive_contributors. Pesos consolidados em hive_weights são baixados no início da partida e misturados aos pesos reais da IA vermelha.' },
+                langs: ['hive_contributors', 'hive_weights', 'Supabase SQL'],
+                lore: 'O cérebro coletivo. Cada partida relevante adiciona experiência à colmeia e fortalece a IA para todos os jogadores conectados ao mesmo ecossistema.',
+                tech: { source: 'hive_contributors', weights: 'hive_weights', mix: '70% local / 30% global' },
+                logs: ['> Pesos globais recebidos.', '> Misturando com IA local.', '> Colmeia aplicada na IA vermelha.', '> Sabedoria universal sincronizada.']
+            },
+            {
+                id: 'memory_instinct', title: 'INSTINTO POR CONFIANCA', type: 'MEMORIA DE ALTA PRECISAO',
+                iconName: 'Eye', color: 'purple', status: 'ONLINE', complexity: 72,
+                creator: { name: 'Pattern Confidence', role: 'Heuristica de Memória', year: '2026',
+                    reason: 'Nem toda memória deve ser obedecida. A IA só pode agir por instinto quando o padrão foi visto várias vezes, tem confiança alta e não veio de derrota.',
+                    usage: 'Antes do Edge e do Worker, a IA consulta memoria_ia pelo Zobrist Hash. Se confidence >= 0.72, vezes_visto >= 3 e a jogada ainda é legal, aplica o lance imediatamente.' },
+                langs: ['Zobrist Hash', 'confidence', 'memoria_ia'],
+                lore: 'O reflexo tático da máquina. Em posições conhecidas e confiáveis, a IA não recalcula: ela lembra, valida e executa como um jogador experiente.',
+                tech: { threshold: 'confidence >= 0.72', min_seen: '3', fallback: 'Edge -> Worker' },
+                logs: ['> Hash atual calculado.', '> Consultando memoria_ia...', '> Padrão confiável encontrado.', '> Instinto IA ativado.']
+            },
+            {
+                id: 'universal_diagnostics', title: 'DIAGNOSTICO UNIVERSAL', type: 'OBSERVABILIDADE DA IA',
+                iconName: 'BarChart', color: 'cyan', status: 'ONLINE', complexity: 38,
+                creator: { name: 'Observability Layer', role: 'Real Data Panel', year: '2026',
+                    reason: 'Painel bonito com dado falso é ilusão. O diagnóstico precisa refletir a inteligência real que vive no Supabase e é compartilhada entre dispositivos.',
+                    usage: 'O painel lê contagens reais de memoria_ia, hive_contributors e hive_weights. Winrate só é exibido quando há amostra mínima; caso contrário mostra Dados insuficientes.' },
+                langs: ['Supabase Count', 'Real-time Debug', 'RLS-safe'],
+                lore: 'O eletrocardiograma honesto da IA. Mostra padrões reais, estado da colmeia, pesos aplicados e maturidade global sem misturar cache local com verdade universal.',
+                tech: { patterns: 'memoria_ia', hive: 'hive_weights', quality: 'amostra mínima' },
+                logs: ['> Lendo padrões reais.', '> Contando colmeia.', '> Winrate validado.', '> Diagnóstico universal carregado.']
+            },
+            {
+                id: 'pwa_identity', title: 'PWA & IDENTIDADE', type: 'EMPACOTAMENTO DE PRODUTO',
+                iconName: 'Layers', color: 'red', status: 'ONLINE', complexity: 18,
+                creator: { name: 'Product Layer', role: 'App Experience', year: '2026',
+                    reason: 'Um sistema forte precisa parecer produto. Ícone, splash, cache e instalação criam a sensação de app real, não apenas página aberta no navegador.',
+                    usage: 'manifest.json define nome, ícones 192/512, theme_color e background_color. O service worker faz cache básico e permite instalação como PWA.' },
+                langs: ['manifest.json', 'Service Worker', 'Icons 192/512'],
+                lore: 'A pele final da máquina. O jogo ganha ícone, splash screen, instalação no celular e presença visual própria.',
+                tech: { display: 'standalone', icons: '192/512', theme: '#000000' },
+                logs: ['> Manifest carregado.', '> Service worker registrado.', '> Ícones detectados.', '> App pronto para instalação.']
+            },
+            {
+                id: 'telemetry', title: 'TELEMETRIA CLOUD', type: 'METRICAS DA INTELIGENCIA',
                 iconName: 'BarChart', color: 'orange', status: 'ONLINE', complexity: 60,
                 creator: { name: 'Data Ops', role: 'Crowd Learning', year: '2025',
                     reason: 'Uma IA isolada sofre de overfitting. A verdadeira robustez nasce da exposicao a milhares de humanos imprevisiveis na nuvem.',
@@ -461,7 +517,7 @@
         ];
 
         // ============================================================
-        // VISUALIZADOR DE MAPA MENTAL VIVO v4.2 - VIZINHANCA DIRETA
+        // VISUALIZADOR DE MAPA MENTAL VIVO v5.0 - VIZINHANCA DIRETA
         // ============================================================
         const MindMapView = ({ onBack }) => {
             const [selectedId, setSelectedId] = useState(null);
@@ -488,14 +544,22 @@
                 { from: 'region_selector', to: 'regional_taunts', label: 'define modo', desc: 'Escolhe a personalidade da IA.' },
                 { from: 'status_guide', to: 'core', label: 'mostra estado', desc: 'Traduz status interno em sinal visual.' },
                 { from: 'core', to: 'debug_profile', label: 'debuga', desc: 'Exibe variáveis internas para diagnóstico.' },
-                { from: 'smart_reset', to: 'multicore', label: 'reinicia ciclo', desc: 'Limpa vícios e recomeça o processamento.' }
+                { from: 'smart_reset', to: 'multicore', label: 'reinicia ciclo', desc: 'Limpa vícios e recomeça o processamento.' },
+                { from: 'teacher_rule', to: 'consolidation', label: 'autoriza treino', desc: 'Libera aprendizado apenas em Hard, Master e Treino.' },
+                { from: 'teacher_rule', to: 'hive_collective', label: 'filtra colmeia', desc: 'Impede Easy/Medium de contaminarem o cérebro coletivo.' },
+                { from: 'hive_collective', to: 'core', label: 'injeta pesos', desc: 'Aplica sabedoria global nos pesos reais usados pelo Worker.' },
+                { from: 'consolidation', to: 'memory_instinct', label: 'gera confiança', desc: 'Transforma experiência em padrões com confidence e vezes_visto.' },
+                { from: 'memory_instinct', to: 'core', label: 'decide rápido', desc: 'Executa padrões confiáveis antes de chamar cálculo pesado.' },
+                { from: 'universal_diagnostics', to: 'hive_collective', label: 'observa colmeia', desc: 'Mostra dados reais da inteligência universal.' },
+                { from: 'universal_diagnostics', to: 'consolidation', label: 'observa memória', desc: 'Conta padrões reais do Supabase.' },
+                { from: 'pwa_identity', to: 'status_guide', label: 'empacota produto', desc: 'Transforma o sistema em app instalável com identidade visual.' }
             ]), []);
 
             const topologyGroups = useMemo(() => ([
-                { title: 'Decisão', color: 'cyan', ids: ['core', 'multicore', 'depth_adapt', 'time_adapt', 'symmetry'] },
-                { title: 'Memória', color: 'purple', ids: ['opening_book', 'consolidation', 'state_persistence', 'telemetry', 'smart_reset'] },
-                { title: 'Jogador', color: 'yellow', ids: ['coach', 'context_speech', 'context_enhanced', 'regional_taunts', 'region_selector', 'status_guide'] },
-                { title: 'Online', color: 'blue', ids: ['edge_intelligence', 'ranking_profiles', 'online_realtime', 'debug_profile'] }
+                { title: 'Decisão', color: 'cyan', ids: ['core', 'multicore', 'memory_instinct', 'depth_adapt', 'time_adapt', 'symmetry'] },
+                { title: 'Memória', color: 'purple', ids: ['opening_book', 'consolidation', 'teacher_rule', 'hive_collective', 'state_persistence', 'telemetry', 'smart_reset'] },
+                { title: 'Jogador', color: 'yellow', ids: ['coach', 'context_speech', 'context_enhanced', 'regional_taunts', 'region_selector', 'status_guide', 'pwa_identity'] },
+                { title: 'Online', color: 'blue', ids: ['edge_intelligence', 'ranking_profiles', 'online_realtime', 'universal_diagnostics', 'debug_profile'] }
             ]), []);
 
             const moduleById = useMemo(() => {
@@ -669,7 +733,7 @@
         };
 
         // ============================================================
-        // SUB-COMPONENTES DO DETAIL VIEW (v4.2 UI)
+        // SUB-COMPONENTES DO DETAIL VIEW (v5.0 UI)
         // ============================================================
         const StatusBadge = ({ status }) => {
             const colors = {
@@ -758,7 +822,7 @@
         };
 
         // ============================================================
-        // DETAIL VIEW (v4.2 Layout)
+        // DETAIL VIEW (v5.0 Layout)
         // ============================================================
         const DetailView = ({ module, onBack }) => {
             if (!module) return null;
@@ -834,7 +898,7 @@
         };
 
         // ============================================================
-        // MAIN GRID (v4.2 Hover Effects)
+        // MAIN GRID (v5.0 Hover Effects)
         // ============================================================
         const MainGrid = ({ onSelect }) => (
             <div className="flex-1 min-h-0 pb-28 pr-2 custom-scrollbar overflow-y-auto">
@@ -864,7 +928,7 @@
         );
 
         // ============================================================
-        // APP PRINCIPAL (com hash-based routing v4.2)
+        // APP PRINCIPAL (com hash-based routing v5.0)
         // ============================================================
         function AISystemLore() {
             const [activeModule, setActiveModule] = useState(null);
@@ -951,7 +1015,7 @@
                                     )}
                                     <div>
                                         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-cyan-500 text-[10px] font-mono uppercase tracking-widest mb-2">
-                                            <Icon name="Terminal" size={9} /> v4.2 Topo-Flow
+                                            <Icon name="Terminal" size={9} /> v5.0 Topo-Flow
                                         </div>
                                         <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tighter flex items-center gap-3">
                                             <span className="text-slate-300 tracking-widest">DAMAS</span>
@@ -996,7 +1060,7 @@
                             <span className="hidden md:inline text-slate-600">WORKERS: ACTIVE</span>
                         </div>
                         <div className="flex items-center gap-3">
-                            <span className="text-slate-600 hidden sm:inline">SENTINELA OS v4.2</span>
+                            <span className="text-slate-600 hidden sm:inline">SENTINELA OS v5.0 · SUPABASE/EDGE/HIVE</span>
                             <span className="text-cyan-500 animate-pulse">_</span>
                         </div>
                     </div>
