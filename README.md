@@ -1,159 +1,140 @@
-🧠 Damas Grão-Mestre: IA Estratégica com Aprendizado na Nuvem
+🧠 Damas Grão-Mestre: IA Evolutiva Distribuída
 
-Este projeto vai além de um simples jogo de damas. É um sistema de inteligência artificial com um "cérebro" centralizado na nuvem (Firebase) que aprende coletivamente com cada partida jogada.
+Um jogo de damas com inteligência artificial que aprende, evolui e compartilha conhecimento globalmente.
 
-A IA é capaz de refletir, criar cercos, armadilhas, estratégias de jogo em dupla e evoluir constantemente através de um modo de treino dedicado (IA vs IA).
+🚀 Acesse o projeto
+
+👉 https://damas-ia-graomestre.vercel.app/
+
+🧠 Visão Geral
+
+Este projeto vai além de um jogo tradicional.
+
+A IA foi projetada como um sistema híbrido que combina:
+
+🧠 Cálculo tático (minimax em Web Worker)
+☁️ Inteligência global (Supabase)
+🐝 Aprendizado coletivo (colmeia)
+🧬 Memória de padrões (Zobrist hashing)
+⚡ Sistema de instinto baseado em confiança
+
+Cada partida contribui para um cérebro global compartilhado, tornando a IA progressivamente mais forte para todos os jogadores.
 
 🎮 Modos de Jogo
+♟️ IA vs Jogador
+Jogue contra a IA evolutiva
+🤖 IA vs IA (Treino)
+A IA joga contra si mesma para acelerar o aprendizado
+🌐 Modo Online
+Jogue com outros jogadores em tempo real
+🧠 Arquitetura da Inteligência
 
-♟️ Modo IA vs Jogador
+A IA toma decisões seguindo esta ordem:
 
-🤖 Modo IA vs IA (Treino)
+1. 🧠 Instinto (memória confiável)
+2. ☁️ Edge (consulta inteligente)
+3. ⚙️ Worker (minimax local)
 
-🌐 Modo Online (Firebase)
+Isso garante:
 
-Jogue contra o cérebro central da IA.
+Alta velocidade
+Uso de conhecimento acumulado
+Fallback seguro
+🐝 Colmeia de Inteligência
 
-Observe a IA jogar contra si mesma para treinar e evoluir o cérebro na nuvem.
+O sistema utiliza um modelo de aprendizado coletivo:
 
-Jogue com um amigo em tempo real.
+Apenas modos Hard/Master alimentam a inteligência
+Jogadas são registradas em hive_contributors
+Pesos globais são consolidados em hive_weights
+Todos os jogadores recebem a IA atualizada
 
-Jogue agora: https://damas-ia-graomestre.vercel.app/
+👉 A IA evolui continuamente sem necessidade de reprogramação
 
-(Recomendo adicionar um GIF de 10 segundos do gameplay aqui)
+🧠 Sistema de Instinto
 
+A IA utiliza padrões aprendidos para decisões rápidas:
+
+Só usa padrões com alta confiança
+Evita padrões que levaram a derrota
+Prioriza jogadas já validadas
+
+Resultado:
+
+⚡ Mais rápida
+🎯 Mais consistente
+🧠 Menos aleatória
+📊 Diagnóstico da IA
+
+O sistema possui um painel interno com dados em tempo real:
+
+Pesos neurais atuais
+Padrões aprendidos (Supabase)
+Estado da colmeia
+Perfil por dificuldade
+Nível global da IA
 🛠️ Stack de Tecnologia
-
-Categoria
-
-Tecnologia
-
-Função
-
 Front-End
-
 JavaScript (ES6+)
-
-Motor principal do jogo, lógica e manipulação do DOM.
-
-
-
 HTML5 / CSS3
-
-Estrutura e layout da interface.
-
-
-
 TailwindCSS
-
-Framework de estilização para uma UI moderna e responsiva.
-
 Back-End
-
-Firebase Firestore
-
-"Cérebro" da IA: armazena pesos neurais, perfis e memória de padrões.
-
-
-
-Firebase Auth
-
-Autenticação anônima de usuários para o modo online.
-
+Supabase (banco global da IA)
+Supabase Auth (autenticação)
 IA & Performance
+Web Workers (minimax em thread separada)
+Edge Functions (consulta inteligente)
+Zobrist Hashing (memória de padrões)
+🧬 Como a IA Aprende
+🔁 Aprendizado Real
 
-Web Workers
+Após cada partida (Hard/Master):
 
-Executa o algoritmo Minimax da IA em uma thread paralela, sem travar a interface.
+Atualiza memoria_ia
+Registra jogadas na colmeia
+Ajusta comportamento da IA
+⚡ Treinamento Acelerado
 
-⚙️ Arquitetura da Inteligência
+Modo IA vs IA:
 
-A IA evoluiu de um protótipo offline (index1.html) para um sistema de ML distribuído (index.html). A arquitetura de aprendizado possui várias camadas:
+Executa partidas automaticamente
+Alimenta a IA em alta velocidade
+Gera padrões reais rapidamente
+📱 PWA (Aplicativo)
 
-Cérebro Centralizado (Firestore):
-Diferente de um aprendizado em localStorage (preso ao navegador), o cérebro da IA (perfis, pesos neurais, memória) vive no Firestore. Cada vez que um jogo termina, o cérebro central é atualizado, e cada novo jogador baixa a versão mais "inteligente" da IA.
+O jogo pode ser instalado como app:
 
-Perfis Duplos (Brancas vs. Vermelhas):
-A IA aprende de forma independente a jogar de Brancas (aiProfile_w) e Vermelhas (aiProfile_r), ajustando seus parâmetros de agressividade e defesa com base em vitórias e derrotas para cada lado.
+Ícone personalizado
+Execução em tela cheia
+Cache local
+Funciona parcialmente offline
+🚀 Como rodar o projeto
+git clone https://github.com/Paulo968/damas-ia-graomestre.git
+Rodar localmente:
+python -m http.server 8000
 
-Heurística Neural (Pesos Ajustáveis):
-A IA usa um vetor de 4 características (material, reis, centro, mobilidade) e ajusta os "pesos" desses vetores (neuralWeights) após cada partida, aprendendo o valor real de cada estratégia.
+Acesse:
 
-Memória de Padrões (Hashing):
-O tabuleiro é "hasheado" (transformado em uma string única) a cada movimento. A IA armazena posições que levaram a vitórias ou derrotas e usa essa memória (patternBias) para evitar repetir erros táticos.
+http://localhost:8000
+💣 Diferencial do Projeto
 
-Heurística Tática Avançada:
-A IA não avalia só o básico. A heurística (evalBoard) foi treinada para identificar e valorizar:
+Este projeto não é apenas um jogo.
 
-Cercos e Armadilhas: Posições onde peças inimigas estão sendo "prensadas" ou têm pouca mobilidade.
+É um sistema de IA que:
 
-Sinergia de Dupla: Peças que se protegem mutuamente (jogo em dupla) recebem um bônus de avaliação.
+Aprende com jogadores reais
+Compartilha conhecimento globalmente
+Evolui continuamente
+Combina cálculo + memória + aprendizado coletivo
 
-Estratégia de Fase: A IA entende que no meio-jogo deve "Dominar" (manter peças), mas em um final claro (ex: 4x2), ela entra em "Modo Finalizador" e foca em simplificar trocas para garantir a vitória.
-
-🔁 Como Funciona o Aprendizado Evolutivo
-
-O "cérebro" da IA evolui ativamente de duas maneiras:
-
-Aprendizado Coletivo (Jogos Normais):
-
-Um jogador (Humano vs IA) termina uma partida.
-
-O jogo chama updateAIProfile(winner) e adjustNeuralWeights(winner).
-
-O jogo envia os movimentos para o Worker (action: 'memorize').
-
-A função salvarInteliglenciaIA() é chamada, atualizando o cérebro central no Firestore com essa nova "lição".
-
-Aprendizado Acelerado (Modo Treino 🤖 IA vs IA):
-
-Este modo executa o "Aprendizado Coletivo" (acima) de forma automática e em alta velocidade.
-
-A IA Branca joga contra a IA Vermelha, ambas usando o mesmo cérebro central.
-
-No final da partida, o cérebro no Firestore é atualizado com a lição aprendida.
-
-Isso permite que a IA jogue milhares de partidas contra si mesma, refinando seus pesos neurais e memória de padrões de forma muito mais rápida.
-
-🚀 Como Rodar o Projeto
-
-Clone o repositório:
-
-git clone [https://github.com/Paulo968/damas-ia-graomestre.git](https://github.com/Paulo968/damas-ia-graomestre.git)
-
-
-Abra o arquivo:
-
-Para o jogo offline simples (protótipo), abra index1.html.
-
-Para o sistema completo (sem o modo online e aprendizado), basta abrir index.html no navegador.
-
-(Opcional) Para Evolução da IA e Modo Online:
-
-Você precisará criar seu próprio projeto no Firebase.
-
-Copie suas chaves de configuração do Firebase para o Bloco 1 (firebase.js) no index.html.
-
-Configure as regras de segurança do seu Firestore (recomenda-se allow read, write: if request.auth != null; para usuários autenticados).
+👉 Um exemplo prático de IA evolutiva distribuída aplicada a jogos
 
 👑 Autor
 
 Paulo Zaqueu
 
-
-
-
-
-Desenvolvedor independente apaixonado por IA e jogos estratégicos.
-
-📧 paulozaqueu3@gmail.com
-
-
-
-
-
-🔗 GitHub: https://github.com/Paulo968
-
+GitHub: https://github.com/Paulo968
+Email: paulozaqueu3@gmail.com
 🧬 Licença
 
-Este projeto está sob a licença MIT. Sinta-se à vontade para utilizar, estudar, modificar e evoluir o código, mantendo os devidos créditos.
+MIT License
