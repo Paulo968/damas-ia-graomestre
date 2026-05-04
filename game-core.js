@@ -1091,6 +1091,9 @@ async function initPerfilJogador() {
         return hash; 
       }
       
+      // 🧠 Alias global para a função de hash (usado pela memória instintiva)
+      window.getZobristHash = getBoardHash;
+      
       // 🌐 Helper para serializar/desserializar o tabuleiro para o Supabase
       function serializeBoard(b) {
         // Converte o array 2D em uma string simples
