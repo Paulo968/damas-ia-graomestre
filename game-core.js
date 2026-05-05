@@ -3544,7 +3544,7 @@ async function recalcularHiveWeights() {
     // 3. Upsert em hive_weights (id fixo = 1, uma só linha global)
     const { error: errUpsert } = await window.supabase
       .from("hive_weights")
-      .upsert({ id: 1, ...payload }, { onConflict: "id" });
+      .upsert({ id: "00000000-0000-0000-0000-000000000001", ...payload }, { onConflict: "id" });
 
     if (errUpsert) {
       console.warn("🐝 Erro ao atualizar hive_weights:", errUpsert.message);
