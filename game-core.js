@@ -1759,10 +1759,58 @@ async function entrarSalaSupabase(codigo, jogador2_uid) {
           } catch (_) {}
         }
         clearSelect(); // Helper de UI
+
+        // 🔒 Verifica se o jogo acabou após a jogada
+        if (verificarFimDeJogoForcado()) return;
       }
 
+      function contarPecas(player) {
+        let total = 0;
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const p = board[r][c];
+            if (p && p.startsWith(player)) total++;
+          }
+        }
+        return total;
+      }
+
+      function verificarFimDeJogoForcado() {
+        if (gameEnded) return true;
+
+        const brancas = contarPecas(WHITE);
+        const vermelhas = contarPecas(RED);
+
+        if (brancas === 0) {
+          onGameOver(RED);
+          return true;
+        }
+
+        if (vermelhas === 0) {
+          onGameOver(WHITE);
+          return true;
+        }
+
+        const movimentosBranco = allMoves(WHITE, board);
+        const movimentosVermelho = allMoves(RED, board);
+
+        if (movimentosBranco.length === 0) {
+          onGameOver(RED);
+          return true;
+        }
+
+        if (movimentosVermelho.length === 0) {
+          onGameOver(WHITE);
+          return true;
+        }
+
+        return false;
+      }
 
             function endTurn(mv){
+        // 🔒 Verifica se o jogo já acabou antes de processar a vez
+        if (verificarFimDeJogoForcado()) return;
+
         // 🔒 Regra: se a peça acabou de ser promovida nesse lance,
         // NÃO é permitido continuar capturando na mesma jogada.
         if (mv && mv.promoted) {
@@ -2267,11 +2315,7 @@ if (window.drawReason) {
         // Opcional: fala leve da IA (apenas modo IA local)
         if (!isOnline && !trainingMode && typeof say === 'function') {
           setTimeout(() => {
-            say([
-              "Equilíbrio absoluto. Ninguém cedeu.",
-              "Empate justo — controle total dos dois lados.",
-              "Partida tensa. Às vezes, não perder também é vitória."
-            ]);
+            say("draw");
           }, 1500);
         }
 
@@ -2420,27 +2464,8 @@ if (window.drawReason) {
             // 🔁 Desativado no modo treino
             if (!trainingMode) {
               setTimeout(() => {
-                if (diff > 5) {
-                  say([ // Helper de UI
-                    "Domínio completo. Tua defesa foi lenta demais.",
-                    "Essa diferença de peças mostra o controle do ritmo.",
-                    "Vitória tática — o centro foi meu desde o início."
-                  ]);
-                } else if (diff >= 2) {
-                  say([ // Helper de UI
-                    "Equilíbrio até o meio-jogo, mas minha leitura foi superior.",
-                    "Tuas trocas abriram diagonais que eu precisava.",
-                    "O jogo estava parelho, até tua pressa entregar espaço."
-                  ]);
-                } else {
-                  say([ // Helper de UI
-                    "Partida disputada. Um erro e a vantagem virou avalanche.",
-                    "Um cálculo adiantado te surpreendeu — precisão vence impulso.",
-                    "Pequenas brechas definem grandes vitórias."
-                  ]);
-                }
-                // 🐞 CORREÇÃO: Envolvido em array []
-                setTimeout(() => say(["Reiniciando protocolos para revanche..."]), 5000); // Helper de UI
+                say("win");
+                setTimeout(() => say("thinking"), 5000);
               }, 1500);
             }
             
@@ -2467,27 +2492,8 @@ if (window.drawReason) {
             // 🔁 Desativado no modo treino
             if (!trainingMode) {
               setTimeout(() => {
-                if (diff < -5) {
-                  say([ // Helper de UI
-                    "Derrota ampla. Teu domínio foi técnico e frio.",
-                    "Perdi o centro cedo demais, e você aproveitou.",
-                    "Errei na leitura das diagonais longas."
-                  ]);
-                } else if (diff <= -2) {
-                  say([ // Helper de UI
-                    "Boa partida. Tuas trocas foram mais eficientes que o previsto.",
-                    "Teus avanços foram precisos — o controle do tempo foi teu.",
-                    "Subestimei tua mobilidade nas colunas laterais."
-                  ]);
-                } else {
-                  say([ // Helper de UI
-                    "Margem pequena, mas tua paciência venceu.",
-                    "Equilíbrio técnico — tua última jogada foi cirúrgica.",
-                    "Uma vitória justa. Anotado para o aprendizado."
-                  ]);
-                }
-                // 🐞 CORREÇÃO: Envolvido em array []
-                setTimeout(() => say(["Reajustando parâmetros... pronto para a revanche."]), 5000); // Helper de UI
+                say("lose");
+                setTimeout(() => say("thinking"), 5000);
               }, 1500);
             }
             

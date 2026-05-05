@@ -944,7 +944,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
     <!-- ====================================================== -->
     <!-- ========== BLOCO 2: LÓGICA (game-core.js) ============ -->
     <!-- ====================================================== -->
-    <script src="game-core.js?v=7"></script>
+    <script src="game-core.js?v=9"></script>
 
     <!-- ====================================================== -->
     <!-- =========== BLOCO 3: INTERFACE (ui.js) =============== -->
@@ -1692,7 +1692,9 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         if (isOnline || trainingMode) return;
 
         const now = performance.now();
-        if (now - lastTauntAt < 900) return;
+        const prioridade = ["capture", "multi", "promo", "win", "lose", "ahead", "behind", "nearWin"].includes(group);
+
+        if (!prioridade && now - lastTauntAt < 900) return;
         lastTauntAt = now;
 
         const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -1780,11 +1782,18 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
        * @param {string} extra         Texto extra a ser concatenado
        */
       function sayWithContext(ctxKey, extra = "") {
-        if (typeof ctxKey === 'string' && CONTEXT_PHRASES[ctxKey]) {
-          say(CONTEXT_PHRASES[ctxKey], extra);
-        } else {
-          say(ctxKey, extra);
+        const map = {
+          sacrifice: "capture",
+          surprisePromo: "promo",
+          lowMaterial: "thinking"
+        };
+
+        if (map[ctxKey]) {
+          say(map[ctxKey], extra);
+          return;
         }
+
+        say(ctxKey, extra);
       }
       
       // Esta função continua igual. 

@@ -1,4 +1,4 @@
-const CACHE_NAME = "damas-ia-v1";
+const CACHE_NAME = "damas-ia-v9";
 
 const urlsToCache = [
   "/",
@@ -22,9 +22,28 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  const url = new URL(req.url);
+
+  const isAppFile =
+    url.pathname.endsWith(".html") ||
+    url.pathname.endsWith(".js") ||
+    url.pathname.endsWith(".json");
+
+  if (isAppFile) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
+
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
+    caches.match(req).then((res) => res || fetch(req))
   );
 });
