@@ -1163,7 +1163,7 @@ async function initPerfilJogador() {
         rankingJaPontuouNaPartida = false;
         iaJaAprendeuNaPartida = false;
         livroJaAtualizouNaPartida = false;
-        gameEnded = false; lockInteraction(false); clearAllTimeouts();
+        gameEnded = false; lockInteraction(false); clearAllTimeouts(); current = WHITE;
         // 🧠 Mostra o botão de opções (⋮) com fade (Função de UI)
         showOptionsButton(true);
         // 🧠 ETAPA 1 (Reset): Reinicia histórico da partida
@@ -2331,7 +2331,7 @@ if (window.drawReason) {
         registrarLivroAberturaAutomatico(winner);
 
         // 🐝 ALIMENTAR COLMEIA: só professores (hard/master) ensinam
-        const dificuldadeAtual = (currentDifficulty || 'medium').toLowerCase();
+        const dificuldadeAtual = getDificuldadeAtualIA();
         const resultadoFinal = (winner === RED) ? 'ia_win' : (winner === WHITE ? 'player_win' : 'draw');
         alimentarColmeia(gameHistory, resultadoFinal, dificuldadeAtual);
 
@@ -2920,6 +2920,78 @@ if (window.drawReason) {
         }
       }
 
+      async function consultarLivroAberturasSupabase() {
+  try {
+    if (trainingMode || isTrainingMode) return null;
+    if (!window.supabase) return null;
+    if (!Array.isArray(legal) || !legal.length) return null;
+
+    // Só usa livro no começo/meio inicial
+    if (Array.isArray(gameHistory) && gameHistory.length > 12) return null;
+
+    const dificuldadeAtual = getDificuldadeAtualIA();
+    const dificuldadeLivro = dificuldadeAtual === "master" ? "master" : "universal";
+
+    const hashAtual = String(getBoardHash(board)).replace(/n$/, "");
+
+    const { data, error } = await window.supabase
+      .from("aberturas")
+      .select("*")
+      .eq("zobrist_hash", hashAtual)
+      .in("dificuldade", [dificuldadeLivro, "universal"])
+      .order("peso", { ascending: false })
+      .order("vitorias_vermelho", { ascending: false })
+      .order("vezes_usada", { ascending: true })
+      .limit(10);
+
+    if (error) {
+      console.warn("📚 Livro Supabase: erro ao consultar:", error.message);
+      return null;
+    }
+
+    if (!data?.length) return null;
+
+    for (const row of data) {
+      const mv = legal.find(m =>
+        m.from?.[0] === Number(row.from_row) &&
+        m.from?.[1] === Number(row.from_col) &&
+        m.to?.[0] === Number(row.to_row) &&
+        m.to?.[1] === Number(row.to_col)
+      );
+
+      if (!mv) continue;
+
+      console.log("📚 Livro Supabase ativado:", {
+        nome: row.nome_abertura,
+        dificuldade: row.dificuldade,
+        peso: row.peso,
+        vezes_usada: row.vezes_usada,
+        jogada: mv
+      });
+
+      // Atualiza uso sem travar a jogada
+      window.supabase
+        .from("aberturas")
+        .update({
+          vezes_usada: Number(row.vezes_usada || 0) + 1,
+          atualizado_em: new Date().toISOString()
+        })
+        .eq("id", row.id)
+        .then(({ error }) => {
+          if (error) console.warn("📚 Livro Supabase: erro ao atualizar uso:", error.message);
+        });
+
+      return mv;
+    }
+
+    return null;
+
+  } catch (e) {
+    console.warn("📚 Livro Supabase falhou sem travar jogo:", e);
+    return null;
+  }
+}
+
       async function aiMove(movesToConsider=null){
         if (gameEnded) return;
         if(isOnline) return; // IA não joga online
@@ -2959,6 +3031,16 @@ if (window.drawReason) {
         else if (diff === 'medium') thinkTimeMs = 800;
         else if (diff === 'hard')   thinkTimeMs = 1600;
         else if (diff === 'master') thinkTimeMs = 3000;
+
+        // 📚 LIVRO SUPABASE: aberturas catalogadas pela colmeia
+        const jogadaLivroSupabase = await consultarLivroAberturasSupabase();
+
+        if (jogadaLivroSupabase) {
+          setTimeout(() => {
+            handleAIResult(jogadaLivroSupabase, -0.15, 0);
+          }, 250);
+          return;
+        }
 
         // 🧠 INSTINTO: memória confiável da posição atual
         const jogadaInstinto = await consultarInstintoMemoriaIA();
@@ -3487,7 +3569,7 @@ async function enviarPesosColmeia(resultado, lances) {
       return;
     }
 
-    const dif = (currentDifficulty || '').toLowerCase();
+    const dif = getDificuldadeAtualIA();
     const validas = ['hard', 'master', 'dificil', 'mestre'];
     if (!validas.includes(dif)) {
       console.log('[Colmeia] Dificuldade baixa, não envia:', dif);
