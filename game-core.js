@@ -207,6 +207,30 @@ async function initPerfilJogador() {
       let endgameTrainingMode = false;
       let endgameTrainingScenario = 'random';
 
+      function resetGameModes() {
+        isOnline = false;
+        trainingMode = false;
+        isTrainingMode = false;
+        isMultiplayer = false;
+
+        endgameTrainingMode = false;
+        endgameTrainingScenario = 'random';
+        trainingTargetGames = null;
+
+        gameEnded = false;
+        isReturningToMenu = false;
+        current = WHITE;
+        selected = null;
+        legal = [];
+
+        lockInteraction(false);
+
+        if (typeof removeTrainingHud === 'function') {
+          removeTrainingHud();
+        }
+
+        console.log("🧹 Modos resetados");
+      }
 
       // Estatísticas da sessão de treino IA vs IA
       let trainingSessionStats = { games: 0, redWins: 0, whiteWins: 0 };
@@ -3588,17 +3612,23 @@ async function baixarPesosColmeia() {
     endgameRed[1] = misturar(endgameRed[1], data.opposition_weight, 0.3);
     endgameRed[2] = misturar(endgameRed[2], data.king_cornering_weight, 0.3);
 
-    // Salva e atualiza cache real
+    // Salva e atualiza cache real (ambas as cores)
     saveNeuralWeights("red", neuralRed);
+    saveNeuralWeights("white", neuralRed);
+
     saveEndgameWeights("red", endgameRed);
+    saveEndgameWeights("white", endgameRed);
 
     if (!getNeuralWeights.cache) getNeuralWeights.cache = {};
     if (!getEndgameWeights.cache) getEndgameWeights.cache = {};
 
     getNeuralWeights.cache.red = neuralRed;
-    getEndgameWeights.cache.red = endgameRed;
+    getNeuralWeights.cache.white = neuralRed;
 
-    console.log("🐝 Colmeia aplicada na IA vermelha:", {
+    getEndgameWeights.cache.red = endgameRed;
+    getEndgameWeights.cache.white = endgameRed;
+
+    console.log("🐝 Colmeia universal aplicada nas duas IAs:", {
       neuralRed,
       endgameRed,
       total_contributors: data.total_contributors,
