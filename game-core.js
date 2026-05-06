@@ -204,6 +204,8 @@ async function initPerfilJogador() {
       let isTrainingMode = false;   // alias usado em initBoard
       let isMultiplayer = false;    // true = modo multiplayer externo
       let trainingSpeed = 400;      // velocidade em ms entre lances da IA
+      let endgameTrainingMode = false;
+      let endgameTrainingScenario = 'random';
 
 
       // Estatísticas da sessão de treino IA vs IA
@@ -1152,6 +1154,88 @@ async function initPerfilJogador() {
         return piece;
       }
 
+      // ♟️ FUNÇÕES DE TREINO DE FINAIS
+      function emptyBoard() {
+        return Array(8).fill(null).map(() => Array(8).fill(null));
+      }
+
+      function randomEndgameScenarioType() {
+        const types = [
+          '3x1',
+          '3x2',
+          '4x2',
+          '4x3',
+          'duas_damas_vs_uma',
+          'dama_mais_duas_vs_duas'
+        ];
+        return types[Math.floor(Math.random() * types.length)];
+      }
+
+      function setupEndgameScenario(type = 'random') {
+        const b = emptyBoard();
+        const scenario = type === 'random' ? randomEndgameScenarioType() : type;
+
+        switch (scenario) {
+          case '3x1':
+            b[2][3] = WHITE;
+            b[3][4] = WHITE;
+            b[4][5] = WHITE + KING;
+            b[5][2] = RED;
+            break;
+
+          case '3x2':
+            b[2][3] = WHITE;
+            b[3][4] = WHITE;
+            b[4][1] = WHITE + KING;
+            b[5][2] = RED;
+            b[6][5] = RED;
+            break;
+
+          case '4x2':
+            b[2][1] = WHITE;
+            b[2][3] = WHITE;
+            b[3][4] = WHITE;
+            b[4][5] = WHITE + KING;
+            b[5][2] = RED;
+            b[6][5] = RED;
+            break;
+
+          case '4x3':
+            b[2][1] = WHITE;
+            b[2][3] = WHITE;
+            b[3][4] = WHITE;
+            b[4][5] = WHITE + KING;
+            b[5][2] = RED;
+            b[5][6] = RED;
+            b[6][3] = RED;
+            break;
+
+          case 'duas_damas_vs_uma':
+            b[2][1] = WHITE + KING;
+            b[3][4] = WHITE + KING;
+            b[5][6] = RED + KING;
+            break;
+
+          case 'dama_mais_duas_vs_duas':
+            b[2][1] = WHITE + KING;
+            b[3][4] = WHITE;
+            b[4][5] = WHITE;
+            b[5][2] = RED;
+            b[6][5] = RED;
+            break;
+
+          default:
+            b[2][3] = WHITE;
+            b[3][4] = WHITE;
+            b[4][5] = WHITE + KING;
+            b[5][2] = RED;
+            break;
+        }
+
+        console.log('♟️ Treino de final criado:', scenario);
+        return b;
+      }
+
       // 🐞 Declaração antecipada para evitar closure frágil
       const elBoard = document.getElementById('board');
       const elOverlay = document.getElementById('overlay');
@@ -1213,7 +1297,7 @@ async function initPerfilJogador() {
             sq.dataset.r = vRow;
             sq.dataset.c = vCol;
             // Povoamento inicial de peças com base nas coordenadas internas
-            if (dark) {
+            if (dark && !endgameTrainingMode) {
               if (r < 3) {
                 const p = createPiece(P_VERMELHA, RED);
                 sq.appendChild(p);
@@ -1228,6 +1312,12 @@ async function initPerfilJogador() {
             sq.addEventListener('click', onSquareClick);
           }
         }
+
+        if (endgameTrainingMode) {
+          board = setupEndgameScenario(endgameTrainingScenario);
+          drawBoardFromData(board);
+        }
+
         computeLegal();
         
         if (isOnline) {
@@ -2222,6 +2312,55 @@ async function registrarAprendizadoIAPosPartida(winner) {
   }
 }
 
+async function salvarTreinoFinalNoBanco(winner) {
+  try {
+    if (!endgameTrainingMode) return;
+    if (!window.supabase) return;
+    if (!Array.isArray(gameHistory) || !gameHistory.length) return;
+
+    const resultado =
+      winner === RED ? "red_win" :
+      winner === WHITE ? "white_win" :
+      "draw";
+
+    const totalPecas = board.flat().filter(Boolean).length;
+    const estado = stringifyWithBigInt(board);
+
+    const rows = gameHistory
+      .filter(m => m?.from && m?.to)
+      .slice(-12)
+      .map(m => ({
+        zobrist_hash: String(getBoardHash(board)).replace(/n$/, ""),
+        estado_tabuleiro: estado,
+        scenario: endgameTrainingScenario || "random",
+        total_pecas: totalPecas,
+        resultado,
+        from_row: m.from[0],
+        from_col: m.from[1],
+        to_row: m.to[0],
+        to_col: m.to[1],
+        peso: resultado === "draw" ? 0.3 : 1,
+        origem: "treino_final"
+      }));
+
+    if (!rows.length) return;
+
+    const { error } = await window.supabase
+      .from("endgame_patterns")
+      .insert(rows);
+
+    if (error) {
+      console.warn("♟️ Erro ao salvar treino de final:", error.message);
+      return;
+    }
+
+    console.log("♟️ Treino de final salvo no banco:", rows.length, "padrões");
+
+  } catch (e) {
+    console.warn("♟️ Falha leve ao salvar final:", e);
+  }
+}
+
 async function registrarResultadoRankingVsIA(winner) {
   try {
     if (rankingJaPontuouNaPartida) return;
@@ -2312,6 +2451,20 @@ if (window.drawReason) {
         // Exibe painel de fim de jogo (overlay)
         showOverlay(overlayMsg, true);
 
+        setTimeout(() => {
+          showOverlay("", false);
+        }, 4000);
+
+        setTimeout(() => {
+          if (typeof openAnalysisModal === "function") {
+            openAnalysisModal([
+              "Partida encerrada em empate.",
+              "O sistema detectou uma condição sem vantagem real para nenhum lado.",
+              "Esse resultado foi registrado como equilíbrio técnico da posição."
+            ], "neutral");
+          }
+        }, 5000);
+
         // Opcional: fala leve da IA (apenas modo IA local)
         if (!isOnline && !trainingMode && typeof say === 'function') {
           setTimeout(() => {
@@ -2320,6 +2473,10 @@ if (window.drawReason) {
         }
 
         // Limpa motivo para futuros jogos
+        if (endgameTrainingMode) {
+          salvarTreinoFinalNoBanco(null);
+        }
+
         window.drawReason = null;
         return;
 }
@@ -2328,12 +2485,19 @@ if (window.drawReason) {
 
         registrarResultadoRankingVsIA(winner);
         registrarAprendizadoIAPosPartida(winner);
-        registrarLivroAberturaAutomatico(winner);
+        salvarTreinoFinalNoBanco(winner);
+        if (!endgameTrainingMode) {
+          registrarLivroAberturaAutomatico(winner);
+        }
 
         // 🐝 ALIMENTAR COLMEIA: só professores (hard/master) ensinam
         const dificuldadeAtual = getDificuldadeAtualIA();
         const resultadoFinal = (winner === RED) ? 'ia_win' : (winner === WHITE ? 'player_win' : 'draw');
-        alimentarColmeia(gameHistory, resultadoFinal, dificuldadeAtual);
+        if (!endgameTrainingMode) {
+          alimentarColmeia(gameHistory, resultadoFinal, dificuldadeAtual);
+        } else {
+          console.log("♟️ Treino de final: não envia para colmeia geral ainda.");
+        }
 
         // 🔁 Modo TREINO (IA vs IA): fluxo focado em estatísticas e looping opcional
         if (trainingMode) {
@@ -2422,6 +2586,8 @@ if (window.drawReason) {
             }
             // Reseta alvo de treino para próxima sessão
             trainingTargetGames = null;
+            endgameTrainingMode = false;
+            endgameTrainingScenario = 'random';
             // Salva a inteligência global ao final do lote de treino
             try { salvarInteligenciaIA().catch(() => {}); } catch(_) {}
           }, 2000);

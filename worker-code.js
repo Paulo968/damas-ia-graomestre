@@ -288,6 +288,61 @@
       // ==========================================================
       // ✅ NOVA FUNÇÃO: EVALIAÇÃO DE FIM DE JOGO (ENDGAME EVAL)
       // ==========================================================
+      // ==========================================================
+      // ✅ FUNÇÃO: DETECÇÃO DE FIM DE JOGO (<= 6 peças)
+      // ==========================================================
+
+      function isEndgame(board) {
+        let total = 0;
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            if (board[r][c]) total++;
+          }
+        }
+        return total <= 6;
+      }
+
+      // ==========================================================
+      // ✅ FUNÇÃO: HEURÍSTICA DE FIM DE JOGO
+      // ==========================================================
+
+      function evaluateEndgame(board, player) {
+        let score = 0;
+        const opponent = (player === WHITE) ? RED : WHITE;
+
+        let myMoves = allMoves(player, board).length;
+        let oppMoves = allMoves(opponent, board).length;
+
+        // mobilidade
+        score += (myMoves - oppMoves) * 0.15;
+
+        for (let r = 0; r < 8; r++) {
+          for (let c = 0; c < 8; c++) {
+            const p = board[r][c];
+            if (!p) continue;
+
+            const mine = p.startsWith(player);
+
+            // evitar borda
+            if (mine && (c === 0 || c === 7)) {
+              score -= 0.05;
+            }
+
+            // controle centro
+            if (mine && r >= 2 && r <= 5 && c >= 2 && c <= 5) {
+              score += 0.08;
+            }
+
+            // reis ativos
+            if (mine && p.endsWith(KING)) {
+              score += 0.25;
+            }
+          }
+        }
+
+        return score;
+      }
+
 
       function evalEndgame(b, player, weights) {
           // [Control_Diag, Oposição_Rei, Forçar_Canto]
@@ -653,6 +708,11 @@
         // Mobilidade (mantida)
         score += (wMoves - rMoves) * 0.22;
       
+        // Heurística de fim de jogo (<= 6 peças)
+        if (isEndgame(b)) {
+          score += evaluateEndgame(b, WHITE);
+        }
+
         // Predição de armadilhas / ritmo (bloco antigo mantido)
         if (rMoves > wMoves + 4) score -= 0.3;
         if (phase === 'mid' && Math.abs(score) < 0.2) {

@@ -610,6 +610,11 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           ⚡ Iniciar Treino
         </button>
 
+        <button id="btnEndgameTraining"
+          class="bg-fuchsia-700 hover:bg-fuchsia-600 text-white text-sm px-4 py-2 rounded-lg shadow-md border border-fuchsia-500/60 mb-4 w-60">
+          ♟️ Treinar só finais
+        </button>
+
         <!-- Botões de treino em lote -->
         <div class="flex flex-col gap-2 mb-4 w-60">
           <button id="btnTraining50"
@@ -2541,6 +2546,7 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         const mainTitle = document.getElementById('mainTitle'); // 🧠 NOVO (para dblclick)
         const trainingMenuScreen = document.getElementById('trainingMenuScreen'); // 🧠 NOVO
         const btnTraining     = document.getElementById('btnTraining'); // (Botão que foi movido)
+        const btnEndgameTraining = document.getElementById('btnEndgameTraining');
         const trainingSpeedEl = document.getElementById('trainingSpeed'); // (Seletor que foi movido)
         const btnVoltarTreino = document.getElementById('btnVoltarTreino'); // 🧠 NOVO
         const btnTraining50   = document.getElementById('btnTraining50');  // 🧠 NOVO
@@ -2687,6 +2693,10 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           btnTraining.addEventListener('click', () => {
             isOnline = false;
             trainingMode = true;               // ativa modo treino
+            if (!endgameTrainingMode) {
+              endgameTrainingMode = false;
+              endgameTrainingScenario = 'random';
+            }
             setPlayerColor('white');           // orientação branca no tabuleiro
 
             // Reinicia estatísticas de treino e HUD
@@ -2739,6 +2749,17 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           });
         }
         /* Fim do Listener (btnTraining) */
+
+        // ♟️ TREINO DE FINAIS
+        if (btnEndgameTraining) {
+          btnEndgameTraining.addEventListener('click', () => {
+            endgameTrainingMode = true;
+            endgameTrainingScenario = 'random';
+            trainingTargetGames = 50;
+
+            if (btnTraining) btnTraining.click();
+          });
+        }
 
         // 🧠 Botões de treino em lote (50 / 200 partidas)
         if (btnTraining50) {
