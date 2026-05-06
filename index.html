@@ -2649,6 +2649,18 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
           startBtn.addEventListener('click', () => {
             isOnline = false;
             trainingMode = false;              // garante modo normal
+            endgameTrainingMode = false;
+            endgameTrainingScenario = 'random';
+            trainingTargetGames = null;
+            isTrainingMode = false;
+
+            gameEnded = false;
+            lockInteraction(false);
+
+            if (typeof removeTrainingHud === 'function') {
+              removeTrainingHud();
+            }
+
             setPlayerColor('white');           // humano é branco
             try { setBubblePlaceholder('IA está analisando...'); } catch(_) {} // 🐞 limpa texto de sala
 
@@ -2765,6 +2777,8 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         if (btnTraining50) {
           btnTraining50.addEventListener('click', () => {
             trainingTargetGames = 50;
+            endgameTrainingMode = false;
+            endgameTrainingScenario = 'random';
             resetTrainingSessionStats();
             if (btnTraining) btnTraining.click();
           });
@@ -2772,6 +2786,8 @@ window.AI_FLAGS = { pool:true, aspiration:true, quiescence:true, lmr:true, see:t
         if (btnTraining200) {
           btnTraining200.addEventListener('click', () => {
             trainingTargetGames = 200;
+            endgameTrainingMode = false;
+            endgameTrainingScenario = 'random';
             resetTrainingSessionStats();
             if (btnTraining) btnTraining.click();
           });
