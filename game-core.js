@@ -2930,7 +2930,8 @@ if (window.drawReason) {
               legal: legalMoves || [],
               zobrist,
               difficulty,
-              playerColor
+              playerColor,
+              moveNumber: gameHistory.length
             })
           });
 
